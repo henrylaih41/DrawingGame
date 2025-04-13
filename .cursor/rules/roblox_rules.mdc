@@ -1,0 +1,122 @@
+---
+description: Guidelines to develop a Roblox game.
+globs: **/*
+---
+---
+description: Standards and best practices for Roblox Lua game development
+globs: **.lua, **.luau, **.rbxl, **.rbxm
+alwaysApply: true
+---
+
+- **Roblox Studio Folder Structure**
+  - This project uses Rojo to link to a Roblox Game Project.
+  - Refer to default.project.json for Roblox folder structure and Rojo mapping.
+  - Never assume where a models is or if it exists in the Roblox Studio, ask for user input
+
+- **Script Organization and Architecture**
+  - Place server-side logic in src/server 
+  - Place client-side logic in src/client 
+  - Use ModuleScripts for shared functionality, put it in roblox_scripts
+  - Follow a hierarchical structure for related functionality
+  ```lua
+  -- ✅ DO: Organize scripts by functionality
+  game.ServerScriptService.PlayerSystems.Inventory
+  game.ServerScriptService.PlayerSystems.Progression
+  
+  -- ❌ DON'T: Place all scripts at the root level
+  game.ServerScriptService.InventoryScript
+  game.ServerScriptService.ProgressionScript
+  ```
+
+- **Performance Optimization**
+  - Cache frequently accessed objects and values
+  - Use local variables instead of global variables
+  - Minimize expensive operations in RenderStepped events
+  - Use RunService events appropriately based on needs
+  ```lua
+  -- ✅ DO: Cache references to frequently used objects
+  local Players = game:GetService("Players")
+  local ReplicatedStorage = game:GetService("ReplicatedStorage")
+  
+  -- ❌ DON'T: Call GetService repeatedly
+  game:GetService("Players").LocalPlayer
+  game:GetService("Players").PlayerAdded:Connect(function() end)
+  ```
+
+- **Networking Best Practices**
+  - Use RemoteEvents for frequent, lightweight communications
+  - Use RemoteFunctions only when a return value is needed
+  - Validate all incoming remote data on the server
+  ```lua
+  -- ✅ DO: Validate all client inputs
+  RemoteFunction.OnServerInvoke = function(player, itemId)
+      if not typeof(itemId) == "number" or itemId < 0 then
+          return false, "Invalid item ID"
+      end
+      -- Process valid input
+  end
+  
+  -- ❌ DON'T: Trust client data without validation
+  RemoteFunction.OnServerInvoke = function(player, itemId)
+      giveItem(player, itemId) -- Dangerous!
+  end
+  ```
+
+- **Code Style**
+  - Use PascalCase for classes/modules
+  - Use camelCase for variables and functions
+  - Add comprehensive comments for complex logic
+  - Create meaningful variable and function names
+  ```lua
+  -- ✅ DO: Use descriptive names and consistent casing
+  local function calculateDamage(baseDamage, playerLevel)
+      -- Complex damage calculation
+      return baseDamage * (1 + playerLevel * 0.05)
+  end
+  
+  -- ❌ DON'T: Use cryptic naming
+  local function calc_dmg(bd, lv)
+      return bd * (1 + lv * 0.05)
+  end
+  ```
+
+- **Error Handling**
+  - Use pcall for operations that might fail
+  - Implement proper error reporting
+  - Never silently catch errors without logging
+  ```lua
+  -- ✅ DO: Use pcall with error logging
+  local success, result = pcall(function()
+      return dangerousOperation()
+  end)
+  
+  if not success then
+      warn("Operation failed: " .. result)
+      -- Handle error appropriately
+  end
+  
+  -- ❌ DON'T: Ignore errors
+  pcall(function()
+      dangerousOperation()
+  end)
+  ```
+
+- **Memory Management**
+  - Disconnect event connections when no longer needed
+  - Clean up instances properly when removing them
+  - Avoid circular references in tables
+  ```lua
+  -- ✅ DO: Clean up connections
+  local connection = runService.Heartbeat:Connect(function() 
+      -- Logic here
+  end)
+  
+  -- When done with the connection:
+  connection:Disconnect()
+  connection = nil
+  
+  -- ❌ DON'T: Leave connections hanging
+  runService.Heartbeat:Connect(function()
+      -- This will never be cleaned up
+  end)
+  ```
