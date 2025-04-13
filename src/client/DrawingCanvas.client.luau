@@ -51,6 +51,46 @@ local currentGameState = "LOBBY"
 local drawingTimeLeft = 0
 local canvasInitialized = false -- Flag to track canvas initialization
 
+local function showNotification(message, duration)
+    assert(duration, "Duration is required")
+    
+    if drawingScreen and drawingScreen:FindFirstChild("Notification") then
+        local notification = drawingScreen.Notification
+        notification.Text = message
+        notification.Visible = true
+        
+        task.delay(duration, function()
+            notification.Visible = false
+        end)
+    end
+end
+
+-- Function to submit drawing
+local function submitDrawing()
+    if not canvas then
+        showNotification("Error: Canvas not available", 3)
+        return
+    end
+    
+    -- Create image data from canvas
+    local success, imageData = pcall(function()
+        return canvas:CreateImageDataFromCanvas()
+    end)
+    
+    if success and imageData then
+        DebugLog("Drawing saved successfully, submitting to server")
+        
+        -- Submit to server
+        SubmitDrawingEvent:FireServer(imageData)
+        
+        -- Show confirmation
+        showNotification("Drawing submitted successfully!", 3)
+    else
+        warn("Failed to save drawing: ", imageData)
+        showNotification("Failed to submit drawing", 3)
+    end
+end
+
 -- Function to check if canvas UI is enabled/visible
 local function isCanvasEnabled()
     if not drawingScreen then
@@ -298,46 +338,6 @@ local function initCanvas()
     DebugLog("Canvas initialization complete")
 end
 
--- Function to show notification
-local function showNotification(message, duration)
-    assert(duration, "Duration is required")
-    
-    if drawingScreen and drawingScreen:FindFirstChild("Notification") then
-        local notification = drawingScreen.Notification
-        notification.Text = message
-        notification.Visible = true
-        
-        task.delay(duration, function()
-            notification.Visible = false
-        end)
-    end
-end
-
--- Function to submit drawing
-local function submitDrawing()
-    if not canvas then
-        showNotification("Error: Canvas not available", 3)
-        return
-    end
-    
-    -- Create image data from canvas
-    local success, imageData = pcall(function()
-        return canvas:SaveToImageData()
-    end)
-    
-    if success and imageData then
-        DebugLog("Drawing saved successfully, submitting to server")
-        
-        -- Submit to server
-        SubmitDrawingEvent:FireServer(imageData)
-        
-        -- Show confirmation
-        showNotification("Drawing submitted successfully!", 3)
-    else
-        warn("Failed to save drawing: ", imageData)
-        showNotification("Failed to submit drawing", 3)
-    end
-end
 
 -- Function to update the drawing time display
 local function updateTimeDisplay()
