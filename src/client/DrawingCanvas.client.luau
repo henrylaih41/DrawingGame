@@ -341,7 +341,9 @@ end
 
 -- Function to update the drawing time display
 local function updateTimeDisplay()
-    if drawingScreen and drawingScreen:FindFirstChild("TimeLabel") then
+    DebugLog("updateTimeDisplay function called")
+    if drawingScreen and drawingScreen:WaitForChild("TimeLabel") then
+        DebugLog("updateTimeDisplay function called - TimeLabel found")
         local minutes = math.floor(drawingTimeLeft / 60)
         local seconds = drawingTimeLeft % 60
         drawingScreen.TimeLabel.Text = string.format("Time Remaining: %d:%02d", minutes, seconds)
@@ -350,7 +352,7 @@ local function updateTimeDisplay()
         if drawingTimeLeft <= 30 then
             drawingScreen.TimeLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
         else
-            drawingScreen.TimeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+            drawingScreen.TimeLabel.TextColor3 = Color3.fromRGB(0, 0, 0)
         end
     end
 end
@@ -391,6 +393,7 @@ end)
 
 -- Handle countdown updates - repurpose for drawing time
 GameCountdownEvent.OnClientEvent:Connect(function(seconds, phase)
+    DebugLog("GameCountdownEvent received: " .. seconds .. " | Phase: " .. phase)
     if phase == "DRAWING" then
         drawingTimeLeft = seconds
         updateTimeDisplay()
