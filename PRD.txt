@@ -1,0 +1,272 @@
+# Product Requirements Document: Art Arena
+
+## Overview
+Art Arena is a multiplayer drawing competition game for Roblox where players compete to create the best artwork based on shared prompts. Players join lobbies, draw within a time limit, and rate each other's creations or receive AI-generated scores. The game combines creativity, competition, and social interaction to create an engaging platform for artistic expression.
+
+## Core Features
+
+### Lobby System
+- Capacity for up to 8 players per lobby
+- Visual representation of players with avatars/usernames
+- Ready-up system for players to indicate readiness
+- Host privileges for the first player who creates the lobby
+- Option to start game with fewer than 8 players if all are ready
+- Countdown timer before the drawing session begins
+
+### Drawing Canvas and Tools
+- Responsive drawing canvas for detailed artwork creation
+- Color palette with at least 16 standard colors
+- Multiple brush sizes (small, medium, large)
+- Essential drawing tools:
+  - Pencil/brush
+  - Eraser
+  - Fill bucket
+  - Shape tools (circle, rectangle, line)
+  - Undo/redo functionality
+- Visual indicator showing currently selected tool
+
+### Timed Drawing Sessions
+- Configurable time limit for drawing (default: 3 minutes)
+- Prominently displayed countdown timer visible to all players
+- Random prompt generation or selection from predefined list
+- Automatic submission when timer expires
+- Visual/audio cues when time is running low
+
+### Grading System
+- Two grading modes:
+  - Player Voting: Rating drawings on a scale of 1-10 stars
+  - AI Grading: External API evaluates drawings based on creativity and adherence to prompt
+- Gallery view of all submitted drawings during voting phase
+- Prevention of self-voting
+- Score calculation combining all votes
+
+### Winner Showcase
+- Leaderboard showing all players and their scores
+- Special showcase for top 3 winners with podium visualization
+- Display of winning artworks prominently
+- Celebration effects for winners
+
+### Replay System
+- Recording of all drawing actions during the drawing phase
+- Playback controls (play, pause, speed up, slow down)
+- Visual indication of tools being used during replay
+- Timestamp-based recreation of the drawing process
+
+## User Experience
+
+### User Personas
+1. **Competitive Artist**: Players who take pride in their artistic skills and compete to win
+2. **Social Player**: Players who enjoy the social aspect of creating and sharing art
+3. **Casual Drawer**: Players looking for a fun, low-pressure creative outlet
+
+### Key User Flows
+1. **Joining a Game**:
+   - Player enters lobby
+   - Player readies up
+   - Game starts when all players are ready or host initiates
+   
+2. **Drawing Phase**:
+   - Player receives prompt
+   - Player selects tools and creates artwork
+   - Timer counts down
+   - Drawing is automatically submitted when time expires
+   
+3. **Voting/Results Phase**:
+   - Players view all submissions
+   - Players rate each drawing (or AI evaluates)
+   - Scores are tallied and displayed
+   - Winners are announced and showcased
+
+### UI/UX Considerations
+- Clean, intuitive tool selection interface
+- Prominent display of time remaining
+- Clear communication of current game phase
+- Easily readable display of prompt
+- Visual feedback for tool selection and actions
+
+## Technical Architecture
+
+### System Components
+1. **Lobby Management System**:
+   - Player join/leave handling
+   - Ready state tracking
+   - Game start logic
+
+2. **Drawing Engine**:
+   - Canvas implementation using Roblox's drawing APIs
+   - Tool functionality implementation
+   - Input tracking and recording
+
+3. **Timer System**:
+   - Countdown management
+   - Synchronization across all players
+   - Phase transition handling
+
+4. **Voting System**:
+   - Vote collection and validation
+   - Score calculation
+   - AI grading integration (API connector)
+
+5. **Replay System**:
+   - Action recording and timestamp management
+   - Playback control implementation
+   - Drawing recreation logic
+
+### Data Models
+1. **Player Data**:
+   - Username
+   - Avatar
+   - Ready status
+   - Current score
+
+2. **Drawing Data**:
+   - Canvas state
+   - Action history (for replay)
+   - Final submission
+
+3. **Game Session**:
+   - Current phase
+   - Active players
+   - Timer state
+   - Current prompt
+
+4. **Vote Data**:
+   - Player votes
+   - AI scores
+   - Final rankings
+
+### Infrastructure Requirements
+- Server-side scripts for game logic and synchronization
+- Client-side scripts for UI and drawing functionality
+- Remote events for real-time communication
+- Data persistence for replay functionality
+
+## Development Roadmap
+
+### MVP Requirements (Phase 1)
+1. **Basic Lobby System**:
+   - Join/leave functionality
+   - Ready-up mechanism
+   - Game start with countdown
+
+2. **Core Drawing Canvas**:
+   - Basic canvas implementation
+   - Essential tools (pencil, eraser, color picker)
+   - Simple UI for tool selection
+
+3. **Timed Drawing Session**:
+   - Countdown timer
+   - Simple prompt system
+   - Automatic submission
+
+4. **Simple Voting System**:
+   - Player voting interface (1-10 stars)
+   - Basic score calculation
+   - Winner announcement
+
+5. **Essential Replay**:
+   - Recording of drawing actions
+   - Basic playback functionality
+
+### Future Enhancements (Phase 2)
+1. **Enhanced Drawing Tools**:
+   - Additional shapes and tools
+   - Layers system
+   - Advanced color picker
+   - Special effects
+
+2. **AI Grading Integration**:
+   - External API connection
+   - Smart evaluation criteria
+   - Detailed feedback
+
+3. **Advanced Replay Features**:
+   - Time-scrubbing
+   - Speed controls
+   - Highlight interesting moments
+
+4. **Expanded Game Modes**:
+   - Speed drawing
+   - Team battles
+   - Progressive challenges
+
+5. **Social Features**:
+   - Friend challenges
+   - Sharing creations
+   - Custom lobbies
+
+## Logical Dependency Chain
+
+1. **Foundation Components** (Must be built first):
+   - Basic lobby system
+   - Core drawing canvas implementation
+   - Game flow management
+
+2. **Core Gameplay Loop**:
+   - Timed drawing sessions
+   - Simple tool selection
+   - Prompt display
+
+3. **Evaluation System**:
+   - Player voting interface
+   - Score calculation
+   - Winner showcase
+
+4. **Replay System**:
+   - Action recording during drawing
+   - Basic playback functionality
+
+5. **Polish and UX Improvements**:
+   - UI refinement
+   - Visual feedback
+   - Sound effects
+
+## Risks and Mitigations
+
+### Technical Challenges
+- **Risk**: Drawing performance issues on lower-end devices
+  - **Mitigation**: Optimize canvas rendering, limit canvas size, implement quality settings
+
+- **Risk**: Network synchronization issues for real-time features
+  - **Mitigation**: Implement efficient data transmission, focus on essential synchronization only
+
+- **Risk**: Replay system storage limitations
+  - **Mitigation**: Compress action data, limit recording length, optimize storage format
+
+### MVP Scope
+- **Risk**: Feature creep extending development time
+  - **Mitigation**: Strictly prioritize core features, defer enhancements to future phases
+
+- **Risk**: Core drawing experience not engaging enough
+  - **Mitigation**: Focus on making the basic drawing tools feel responsive and satisfying
+
+### Resource Constraints
+- **Risk**: Limited development resources for all planned features
+  - **Mitigation**: Modular design allowing for incremental implementation
+
+- **Risk**: AI grading integration complexity
+  - **Mitigation**: Start with player voting only, add AI as a separate phase
+
+## Appendix
+
+### Drawing Tool Specifications
+- Brush sizes: 3 sizes (small: 2px, medium: 5px, large: 10px)
+- Default color palette: 16 colors including primary, secondary, and grayscale options
+- Shape tools: Circle, rectangle, straight line
+- Special tools: Fill bucket, eraser (multiple sizes)
+
+### Game Session Parameters
+- Default drawing time: 3 minutes (configurable from 1-10 minutes)
+- Voting time: 30 seconds per drawing
+- Maximum players: 8
+- Minimum players to start: 2
+
+### Prompt System
+- Categories: Objects, animals, scenes, emotions, abstract concepts
+- Difficulty levels: Easy, medium, hard
+- Random selection with option for themed sessions
+
+### Replay Format
+- Timestamped action records (tool selection, color change, stroke data)
+- Efficient storage format for minimal memory usage
+- Playback controls with variable speed options

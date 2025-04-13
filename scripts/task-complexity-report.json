@@ -1,0 +1,91 @@
+{
+  "meta": {
+    "generatedAt": "2025-04-13T03:56:59.163Z",
+    "tasksAnalyzed": 10,
+    "thresholdScore": 5,
+    "projectName": "Your Project Name",
+    "usedResearch": true
+  },
+  "complexityAnalysis": [
+    {
+      "taskId": 1,
+      "taskTitle": "Set up Basic Lobby System",
+      "complexityScore": 7,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Break down the task into subtasks for implementing player join/leave functionality, ready state tracking, host privileges, UI for avatars and usernames, and countdown timer logic.",
+      "reasoning": "The task involves multiple interconnected features such as player management, UI updates, and game state transitions, which require careful coordination and testing."
+    },
+    {
+      "taskId": 2,
+      "taskTitle": "Implement Core Drawing Canvas",
+      "complexityScore": 8,
+      "recommendedSubtasks": 6,
+      "expansionPrompt": "Divide the task into subtasks for creating the canvas, implementing each drawing tool, designing the color palette, building the UI, and ensuring input responsiveness.",
+      "reasoning": "The task requires integrating multiple tools and ensuring a seamless user experience, which involves both functional and UI/UX complexity."
+    },
+    {
+      "taskId": 3,
+      "taskTitle": "Develop Timed Drawing Sessions",
+      "complexityScore": 8,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Break down the task into subtasks for implementing the timer, creating the prompt system, designing visual/audio cues, handling automatic submissions, and transitioning to the next phase.",
+      "reasoning": "The task combines time-sensitive logic, user interaction, and seamless phase transitions, making it moderately complex."
+    },
+    {
+      "taskId": 4,
+      "taskTitle": "Implement Advanced Drawing Tools",
+      "complexityScore": 7,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Split the task into subtasks for implementing each advanced tool (shapes, fill bucket, undo/redo), updating the UI, and ensuring performance optimization.",
+      "reasoning": "Adding advanced tools requires extending existing functionality while maintaining performance and usability."
+    },
+    {
+      "taskId": 5,
+      "taskTitle": "Create Player Voting System",
+      "complexityScore": 8,
+      "recommendedSubtasks": 6,
+      "expansionPrompt": "Break down the task into subtasks for designing the gallery view, implementing the rating interface, preventing self-voting, handling timers, calculating scores, and managing transitions.",
+      "reasoning": "The task involves real-time interactions, score calculations, and UI design, which add to its complexity."
+    },
+    {
+      "taskId": 6,
+      "taskTitle": "Implement Winner Showcase",
+      "complexityScore": 6,
+      "recommendedSubtasks": 4,
+      "expansionPrompt": "Divide the task into subtasks for creating the leaderboard, designing the podium visualization, implementing celebration effects, and adding navigation options.",
+      "reasoning": "The task focuses on displaying results and enhancing user experience, which is less complex but still requires attention to detail."
+    },
+    {
+      "taskId": 7,
+      "taskTitle": "Develop Basic Replay System",
+      "complexityScore": 7,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Break down the task into subtasks for implementing the recording system, designing the storage format, building playback functionality, adding visual indicators, and ensuring accuracy.",
+      "reasoning": "The task involves capturing and replaying user actions, which requires precise implementation and testing."
+    },
+    {
+      "taskId": 8,
+      "taskTitle": "Enhance Replay System with Advanced Controls",
+      "complexityScore": 6,
+      "recommendedSubtasks": 4,
+      "expansionPrompt": "Split the task into subtasks for implementing speed controls, creating a timeline scrubber, adding timestamps, and optimizing performance.",
+      "reasoning": "The task builds on existing functionality by adding advanced features, which is moderately complex."
+    },
+    {
+      "taskId": 9,
+      "taskTitle": "Implement AI Grading Integration",
+      "complexityScore": 8,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Break down the task into subtasks for researching APIs, implementing the connector, designing evaluation criteria, handling errors, and creating the toggle system.",
+      "reasoning": "The task involves integrating external APIs and designing a robust evaluation system, which adds significant complexity."
+    },
+    {
+      "taskId": 10,
+      "taskTitle": "Polish UI/UX and Add Game Flow Refinements",
+      "complexityScore": 7,
+      "recommendedSubtasks": 6,
+      "expansionPrompt": "Divide the task into subtasks for adding visual feedback, implementing sound effects, designing transitions, creating tooltips, optimizing layouts, and adding a tutorial.",
+      "reasoning": "The task focuses on enhancing user experience and game flow, which involves multiple iterative refinements."
+    }
+  ]
+}
