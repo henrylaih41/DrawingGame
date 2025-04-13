@@ -315,7 +315,7 @@ local GuiService = game:GetService("GuiService")
 -- Modules
 local FastCanvas = require(script.Parent:WaitForChild("FastCanvas")) -- Credits to BoatBomber
 local StringCompressor = require(script.Parent:WaitForChild("StringCompressor")) -- Credits to 1waffle1 and BoatBomber
-local FontsFolder = script:WaitForChild("Fonts")
+local FontsFolder = script.Parent:WaitForChild("Fonts")
 local VectorFuncs = require(script.Parent:WaitForChild("VectorFuncs")) -- Credits to Krystaltinan
 local ImageDataConstructor = require(script.Parent:WaitForChild("ImageDataConstructor"))
 local SaveObjectReader = require(script.Parent:WaitForChild("SaveObjectReader"))

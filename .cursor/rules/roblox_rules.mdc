@@ -12,6 +12,7 @@ alwaysApply: true
   - This project uses Rojo to link to a Roblox Game Project.
   - Refer to default.project.json for Roblox folder structure and Rojo mapping.
   - Never assume where a models is or if it exists in the Roblox Studio, ask for user input
+  - If you need a UI / object / model that doesn't exist, defined the spec in a file models/name.spec the user will create that for you. 
 
 - **Script Organization and Architecture**
   - Place server-side logic in src/server 

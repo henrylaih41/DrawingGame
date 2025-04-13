@@ -1,72 +1,28 @@
 {
-  "name": "DrawingGame",
+  "name": "CanvasDrawProject",
   "tree": {
     "$className": "DataModel",
     "ReplicatedStorage": {
-      "Cursor": {
+      "$className": "ReplicatedStorage",
+      "Modules": {
         "$className": "Folder",
-        "$path": "src/roblox_scripts"
-      }
-    },
-
-    "ServerScriptService": {
-      "Server": {
-        "$path": "src/server"
-      }
-    },
-
-    "StarterPlayer": {
-      "StarterPlayerScripts": {
-        "Client": {
-          "$path": "src/client"
+        "Canvas": {
+          "$className": "Folder",
+          "$path": "src/roblox_scripts/canvas"
         }
-      }
-    },
-
-    "Workspace": {
-      "$properties": {
-        "FilteringEnabled": true
       },
-      "Baseplate": {
-        "$className": "Part",
-        "$properties": {
-          "Anchored": true,
-          "Color": [
-            0.38823,
-            0.37254,
-            0.38823
-          ],
-          "Locked": true,
-          "Position": [
-            0,
-            -10,
-            0
-          ],
-          "Size": [
-            512,
-            20,
-            512
-          ]
-        }
+      "RemoteEvents": {
+        "$className": "Folder"
       }
     },
-    "Lighting": {
-      "$properties": {
-        "Ambient": [
-          0,
-          0,
-          0
-        ],
-        "Brightness": 2,
-        "GlobalShadows": true,
-        "Outlines": false,
-        "Technology": "Voxel"
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "StarterPlayerScripts": {
+        "$path": "src/client/"
       }
     },
-    "SoundService": {
-      "$properties": {
-        "RespectFilteringEnabled": true
-      }
+    "ServerScriptService": {
+      "$path": "src/server/"
     }
   }
 }
