@@ -28,6 +28,8 @@ alwaysApply: true
   game.ServerScriptService.InventoryScript
   game.ServerScriptService.ProgressionScript
   ```
+- **Default value fallback**
+  - When a function requires a value to exist, instead of falling back to default value always assert false to failed early.
 
 - **Performance Optimization**
   - Cache frequently accessed objects and values

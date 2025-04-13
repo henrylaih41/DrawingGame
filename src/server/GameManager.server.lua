@@ -9,7 +9,7 @@ local Events = ReplicatedStorage:WaitForChild("Events")
 
 -- Game constants
 local MAX_PLAYERS = 8
-local COUNTDOWN_TIME = 5
+local COUNTDOWN_TIME = 1
 local DRAWING_TIME = 180 -- 3 minutes
 local DEBUG_ENABLED = true -- Debug flag to enable/disable debug messages
 

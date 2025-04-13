@@ -6,10 +6,13 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
+local DebugFlag = true
 
 -- Create debug function
 local function DebugLog(message)
-    print("DrawingCanvas DEBUG: " .. message)
+    if DebugFlag then
+        print("DrawingCanvas DEBUG: " .. message)
+    end
 end
 
 DebugLog("Script started")
@@ -30,10 +33,7 @@ end
 local Events = ReplicatedStorage:WaitForChild("Events")
 local GameStateChangedEvent = Events:WaitForChild("GameStateChanged")
 local GameCountdownEvent = Events:WaitForChild("GameCountdown")
-local SubmitDrawingEvent = Events:WaitForChild("SubmitDrawing", 10) or Instance.new("RemoteEvent", Events)
-if SubmitDrawingEvent.Name ~= "SubmitDrawing" then
-    SubmitDrawingEvent.Name = "SubmitDrawing"
-end
+local SubmitDrawingEvent = Events:WaitForChild("SubmitDrawing", 10)
 
 local LocalPlayer = Players.LocalPlayer
 DebugLog("LocalPlayer reference acquired: " .. tostring(LocalPlayer))
@@ -41,7 +41,6 @@ local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 DebugLog("PlayerGui reference acquired")
 
 -- Configuration
-local CANVAS_RESOLUTION = Vector2.new(512, 512)
 local DEFAULT_COLOR = Color3.new(0, 0, 0) -- Black
 local CURRENT_COLOR = DEFAULT_COLOR
 local BRUSH_SIZE = 5
@@ -50,6 +49,7 @@ local canvas = nil -- Canvas object reference
 local drawingScreen = nil -- Reference to the DrawingScreen UI
 local currentGameState = "LOBBY"
 local drawingTimeLeft = 0
+local canvasInitialized = false -- Flag to track canvas initialization
 
 -- Function to check if canvas UI is enabled/visible
 local function isCanvasEnabled()
@@ -60,28 +60,25 @@ local function isCanvasEnabled()
     -- Check if the ScreenGui is enabled
     if drawingScreen:IsA("ScreenGui") then
         return drawingScreen.Enabled
+    else 
+        assert(false, "DrawingScreen is not a ScreenGui")
     end
-    
-    -- Fall back to visibility check for other UI types
-    local success, isVisible = pcall(function() 
-        return drawingScreen.Visible 
-    end)
-    
-    return success and isVisible
 end
 
 -- Function to initialize the canvas
 local function initCanvas()
+    -- Prevent multiple initializations
+    if canvasInitialized then
+        DebugLog("Canvas already initialized, skipping initialization")
+        return
+    end
+    
+    -- Set initialization flag to true
+    canvasInitialized = true
+
     DebugLog("initCanvas function started")
     
-    -- Check if we already have the DrawingScreen UI
-    if PlayerGui:FindFirstChild("DrawingScreen") then
-        drawingScreen = PlayerGui:FindFirstChild("DrawingScreen")
-        DebugLog("Existing DrawingScreen found")
-    else 
-        DebugLog("DrawingScreen not found, waiting for it to be created")
-        assert(false, "DrawingScreen not found in PlayerGui")
-    end
+    drawingScreen = PlayerGui:WaitForChild("DrawingScreen")
     
     -- Get UI references
     local canvasFrame = drawingScreen.CanvasContainer.Canvas
@@ -93,12 +90,17 @@ local function initCanvas()
         canvas:Destroy()
     end
     
-    canvas = CanvasDraw.new(canvasFrame, CANVAS_RESOLUTION)
+    -- Use the actual frame size instead of a fixed resolution
+    local frameSize = canvasFrame.AbsoluteSize
+    DebugLog("Frame size: " .. frameSize.X .. ", " .. frameSize.Y)  
+    canvas = CanvasDraw.new(canvasFrame, Vector2.new(frameSize.X, frameSize.Y))
     canvas:Clear(Color3.new(1, 1, 1)) -- Start with white background
     canvas.GridEnabled = false  -- Disable grid
     canvas.AutoRender = true    -- Enable auto rendering
     
-    DebugLog("Canvas created successfully")
+    -- Add variable to track previous drawing position
+    local prevCanvasX = nil
+    local prevCanvasY = nil
     
     -- Set up color buttons
     local colorButtons = {
@@ -196,15 +198,26 @@ local function initCanvas()
     local function handleDrawing(input)
         if not isCanvasEnabled() or not canvas then return end
         
-        -- Only draw on left click
-        if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+        -- For MouseMovement inputs, we rely on IS_DRAWING flag being set
+        -- For MouseButton1 inputs, this is the initial click
+        if input.UserInputType ~= Enum.UserInputType.MouseButton1 and 
+           input.UserInputType ~= Enum.UserInputType.MouseMovement then 
+            return 
+        end
         
         -- Get the absolute position and size of the canvas frame
+        -- IMPORTANT: We must get these values EVERY time to prevent misalignment
         local canvasPosition = canvasFrame.AbsolutePosition
         local canvasSize = canvasFrame.AbsoluteSize
         
-        -- Get the mouse position
-        local mousePos = UserInputService:GetMouseLocation() - Vector2.new(0, game:GetService("GuiService"):GetGuiInset().Y)
+        -- Get the mouse position with accurate GuiInset calculation
+        local mousePos = UserInputService:GetMouseLocation()
+        local inset = game:GetService("GuiService"):GetGuiInset()
+        mousePos = mousePos - Vector2.new(0, inset.Y)
+        
+        DebugLog("Mouse position: " .. mousePos.X .. ", " .. mousePos.Y .. " | Canvas position: " .. 
+                  canvasPosition.X .. ", " .. canvasPosition.Y .. " | Canvas size: " .. 
+                  canvasSize.X .. ", " .. canvasSize.Y)
         
         -- Check if mouse is inside the canvas
         if mousePos.X >= canvasPosition.X and
@@ -212,40 +225,71 @@ local function initCanvas()
            mousePos.Y >= canvasPosition.Y and
            mousePos.Y <= canvasPosition.Y + canvasSize.Y then
             
+            DebugLog("Mouse is inside canvas boundaries")
+            
             -- Calculate relative position within the canvas (0-1)
             local relX = (mousePos.X - canvasPosition.X) / canvasSize.X
             local relY = (mousePos.Y - canvasPosition.Y) / canvasSize.Y
             
-            -- Convert to canvas pixel coordinates
-            local canvasX = math.floor(relX * CANVAS_RESOLUTION.X)
-            local canvasY = math.floor(relY * CANVAS_RESOLUTION.Y)
+            -- Convert to canvas pixel coordinates - use math.round for more precise positioning
+            local canvasX = math.round(relX * canvasSize.X)
+            local canvasY = math.round(relY * canvasSize.Y)
             
-            DebugLog("Drawing at canvas position: " .. canvasX .. ", " .. canvasY)
+            DebugLog("Drawing at canvas position: " .. canvasX .. ", " .. canvasY .. 
+                     " | Relative position: " .. relX .. ", " .. relY ..
+                     " | Using brush size: " .. BRUSH_SIZE .. 
+                     " | Using color: " .. tostring(CURRENT_COLOR))
             
             -- Draw a circle at the mouse position
             if canvas then
+                -- If we have a previous position and we're in the middle of drawing,
+                -- draw a line to connect the dots
+                if prevCanvasX and prevCanvasY and IS_DRAWING then
+                    -- Calculate distance between points
+                    local distance = math.sqrt((canvasX - prevCanvasX)^2 + (canvasY - prevCanvasY)^2)
+                    
+                    -- Only draw a line if points are far enough apart (prevents duplicate circles)
+                    if distance > BRUSH_SIZE * 0.5 then
+                        -- Draw line between previous point and current point for smoothing
+                        canvas:DrawLineXY(prevCanvasX, prevCanvasY, canvasX, canvasY, CURRENT_COLOR, BRUSH_SIZE, true)
+                    end
+                end
+                
+                -- Always draw a circle at the current position for consistent brush appearance
                 canvas:DrawCircleXY(canvasX, canvasY, BRUSH_SIZE, CURRENT_COLOR, 1, true)
+                
+                -- Update previous position for next drawing operation
+                prevCanvasX = canvasX
+                prevCanvasY = canvasY
             else
                 warn("Cannot draw - canvas object is nil")
             end
+        else
+            DebugLog("Mouse position outside canvas boundaries")
         end
     end
     
     -- Connect drawing input handlers
     UserInputService.InputBegan:Connect(function(input)
-        if currentGameState == "DRAWING" then
+        DebugLog("InputBegan event received")
+        if currentGameState == "DRAWING" and input.UserInputType == Enum.UserInputType.MouseButton1 then
             IS_DRAWING = true
             handleDrawing(input)
         end
     end)
     
+    -- Mouse button up - stop drawing and reset previous position
     UserInputService.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             IS_DRAWING = false
+            -- Reset previous position when we stop drawing
+            prevCanvasX = nil
+            prevCanvasY = nil
         end
     end)
     
     UserInputService.InputChanged:Connect(function(input)
+        DebugLog("InputChanged event received")
         if IS_DRAWING and input.UserInputType == Enum.UserInputType.MouseMovement and currentGameState == "DRAWING" then
             handleDrawing(input)
         end
@@ -256,7 +300,7 @@ end
 
 -- Function to show notification
 local function showNotification(message, duration)
-    duration = duration or 3
+    assert(duration, "Duration is required")
     
     if drawingScreen and drawingScreen:FindFirstChild("Notification") then
         local notification = drawingScreen.Notification
@@ -318,7 +362,7 @@ GameStateChangedEvent.OnClientEvent:Connect(function(newState)
     
     if newState == "DRAWING" then
         -- Initialize canvas if not already done
-        if not canvas then
+        if not canvasInitialized then
             initCanvas()
         end
         
@@ -358,16 +402,16 @@ GameCountdownEvent.OnClientEvent:Connect(function(seconds, phase)
     end
 end)
 
--- Try to initialize the canvas
-initCanvas()
-
 -- Create a timer to periodically check if canvas should be initialized
+-- This probably isn't needed, but it's here to be safe
 local checkCanvasTimer = nil
 checkCanvasTimer = task.spawn(function()
     while task.wait(1) do
-        if currentGameState == "DRAWING" and not canvas then
+        if currentGameState == "DRAWING" and not canvasInitialized then
             DebugLog("Drawing phase active but canvas not initialized, attempting to initialize")
             initCanvas()
+        else
+            break
         end
     end
 end) 
