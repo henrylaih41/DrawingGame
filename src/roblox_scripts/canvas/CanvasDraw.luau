@@ -1313,6 +1313,7 @@ function CanvasDraw.new(Parent: ParentType, Resolution: Vector2?, CanvasColour: 
 		Use <code>Canvas:SetBufferFromImage()</code> for a super performant alternative.
 	]]
 	function Canvas:DrawImageXY(ImageData: {}, X: number?, Y: number?, ScaleX: number?, ScaleY: number?, TransparencyEnabled: boolean?)
+        print("ImageData: ", ImageData)
 		X = X or 1
 		Y = Y or 1
 		ScaleX = ScaleX or 1

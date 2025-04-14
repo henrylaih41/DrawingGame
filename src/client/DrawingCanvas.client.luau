@@ -6,7 +6,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
-local DebugFlag = true
+local DebugFlag = true 
 
 -- Create debug function
 local function DebugLog(message)
@@ -133,7 +133,7 @@ local function initCanvas()
     -- Use the actual frame size instead of a fixed resolution
     local frameSize = canvasFrame.AbsoluteSize
     DebugLog("Frame size: " .. frameSize.X .. ", " .. frameSize.Y)  
-    canvas = CanvasDraw.new(canvasFrame, Vector2.new(frameSize.X, frameSize.Y))
+    canvas = CanvasDraw.new(canvasFrame, Vector2.new(math.ceil(frameSize.X), math.ceil(frameSize.Y)))
     canvas:Clear(Color3.new(1, 1, 1)) -- Start with white background
     canvas.GridEnabled = false  -- Disable grid
     canvas.AutoRender = true    -- Enable auto rendering
@@ -341,9 +341,7 @@ end
 
 -- Function to update the drawing time display
 local function updateTimeDisplay()
-    DebugLog("updateTimeDisplay function called")
     if drawingScreen and drawingScreen:WaitForChild("TimeLabel") then
-        DebugLog("updateTimeDisplay function called - TimeLabel found")
         local minutes = math.floor(drawingTimeLeft / 60)
         local seconds = drawingTimeLeft % 60
         drawingScreen.TimeLabel.Text = string.format("Time Remaining: %d:%02d", minutes, seconds)
@@ -393,7 +391,6 @@ end)
 
 -- Handle countdown updates - repurpose for drawing time
 GameCountdownEvent.OnClientEvent:Connect(function(seconds, phase)
-    DebugLog("GameCountdownEvent received: " .. seconds .. " | Phase: " .. phase)
     if phase == "DRAWING" then
         drawingTimeLeft = seconds
         updateTimeDisplay()
