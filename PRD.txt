@@ -14,6 +14,7 @@ Art Arena is a multiplayer drawing competition game for Roblox where players com
 - Countdown timer before the drawing session begins
 
 ### Drawing Canvas and Tools
+- Build the canvas system using the CanvasDraw module
 - Responsive drawing canvas for detailed artwork creation
 - Color palette with at least 16 standard colors
 - Multiple brush sizes (small, medium, large)
@@ -36,6 +37,9 @@ Art Arena is a multiplayer drawing competition game for Roblox where players com
 - Two grading modes:
   - Player Voting: Rating drawings on a scale of 1-10 stars
   - AI Grading: External API evaluates drawings based on creativity and adherence to prompt
+- AI Grading: There could be different AI graders for different prompts, they would each have different styles.
+- AI Grading: We can ask the AI graders to act as famous artists, they would each have different styles.
+- TDB: We can also store the chat history so the AI graders remembers previous drawings.
 - Gallery view of all submitted drawings during voting phase
 - Prevention of self-voting
 - Score calculation combining all votes
@@ -226,6 +230,7 @@ Art Arena is a multiplayer drawing competition game for Roblox where players com
 ### Technical Challenges
 - **Risk**: Drawing performance issues on lower-end devices
   - **Mitigation**: Optimize canvas rendering, limit canvas size, implement quality settings
+  - This should be fixed by using the CanvasDraw module
 
 - **Risk**: Network synchronization issues for real-time features
   - **Mitigation**: Implement efficient data transmission, focus on essential synchronization only

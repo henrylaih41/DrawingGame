@@ -8,8 +8,13 @@
         "$className": "Folder",
         "Canvas": {
           "$className": "Folder",
-          "$path": "src/roblox_scripts/canvas"
+          "$path": "src/modules/canvas"
+        },
+        "Services": {
+          "$className": "Folder",
+          "$path": "src/modules/services"
         }
+        
       },
       "RemoteEvents": {
         "$className": "Folder"

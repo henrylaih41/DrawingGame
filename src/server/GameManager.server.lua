@@ -45,6 +45,12 @@ local playerDrawings = {} -- Store player drawings for voting phase
 local playerVotes = {} -- Store player votes (who voted for whom)
 local voteResults = {} -- Tally of votes per drawing
 
+-- Add this with other game state tracking variables
+local playerDrawingAnalysis = {}
+
+-- Add this near the top with other services
+local BackendService = require(ReplicatedStorage.Modules.Services.BackendService)
+
 -- Debug print function that only outputs when debugging is enabled
 local function debugPrint(message, ...)
     if DEBUG_ENABLED then
@@ -136,6 +142,7 @@ PlayerReadyEvent.OnServerEvent:Connect(function(player, isReady)
 end)
 
 -- Handle game start request (from host)
+-- 
 StartGameEvent.OnServerEvent:Connect(function(player)
     debugPrint("Received start game request from player: %s", player.Name)
     -- Verify the request is from the host and we're in LOBBY state
@@ -300,8 +307,25 @@ SubmitDrawingEvent.OnServerEvent:Connect(function(player, imageData)
         -- Store the player's drawing
         playerDrawings[player.UserId] = imageData
         debugPrint("Received drawing from player: %s", player.Name)
-        print(imageData)
-        print("Received drawing from player: " .. player.Name)
+        
+        -- Process the drawing with OpenAI
+        task.spawn(function()
+            debugPrint("Processing drawing with OpenAI for player: %s", player.Name)
+            local imageBuffer = "dummy" 
+            
+            local prompt = string.format("Analyze this drawing by player %s. What does it appear to represent?", player.Name)
+            local response, error = BackendService:SendOpenAIRequest(imageBuffer, prompt)
+            
+            if error then
+                debugPrint("OpenAI request failed: %s", error)
+                return
+            end
+            
+            if response then
+                debugPrint("OpenAI analysis for %s's drawing: %s", player.Name, response.content or "No content")
+                playerDrawingAnalysis[player.UserId] = response.content or "No analysis available"
+            end
+        end)
     else
         debugPrint("Ignoring drawing from %s - received outside of drawing phase (current state: %s)", 
             player.Name, currentState)
