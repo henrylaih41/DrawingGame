@@ -357,35 +357,51 @@ end
 
 -- Handle game state changes
 GameStateChangedEvent.OnClientEvent:Connect(function(newState)
-    DebugLog("Game state changed to: " .. newState)
-    currentGameState = newState
-    
+    DebugLog("Game state changed from: " .. currentGameState .. " to: " .. newState)
+    local previousGameState = currentGameState -- Store the previous state
+    currentGameState = newState -- Update to the new state
+
     if newState == "DRAWING" then
         -- Initialize canvas if not already done
         if not canvasInitialized then
             initCanvas()
         end
-        
+
         -- Show drawing UI
         if drawingScreen then
             drawingScreen.Enabled = true
             showNotification("Start drawing now!", 3)
+        else
+            -- Assert false if drawingScreen is not available when needed
+            assert(false, "DrawingScreen is nil when trying to enable it for DRAWING state")
         end
     else
         -- Hide drawing UI for other states
         if drawingScreen then
             drawingScreen.Enabled = false
+        else
+            -- It might be okay for drawingScreen to be nil here if the UI isn't meant to be shown,
+            -- but add a debug log for clarity or assert if it should exist.
+            DebugLog("DrawingScreen is nil while hiding UI for state: " .. newState)
         end
-        
+
         -- If leaving drawing phase and canvas exists, attempt to submit
-        if newState == "VOTING" and canvas and currentGameState == "DRAWING" then
+        -- Use previousGameState to check if we were just drawing
+        if newState == "VOTING" and canvas and previousGameState == "DRAWING" then
+            DebugLog("Transitioning from DRAWING to VOTING, submitting drawing.")
             submitDrawing()
         end
     end
-    
+
     -- Reset canvas if returning to lobby
-    if newState == "LOBBY" and canvas then
-        canvas:Clear(Color3.new(1, 1, 1))
+    if newState == "LOBBY" then
+        if canvas then
+            canvas:Clear(Color3.new(1, 1, 1))
+            DebugLog("Canvas cleared on returning to LOBBY")
+        else
+            -- Log if canvas is nil when trying to clear, might indicate an issue
+            DebugLog("Canvas is nil when trying to clear for LOBBY state")
+        end
     end
 end)
 

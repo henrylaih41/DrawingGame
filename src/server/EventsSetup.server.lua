@@ -25,5 +25,6 @@ createEvent("GameCountdown")
 createEvent("SubmitDrawing")
 createEvent("DrawingsReceived")
 createEvent("SubmitVote")
+createEvent("ShowResults")
 
 print("Events setup complete") 

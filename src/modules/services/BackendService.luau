@@ -3,8 +3,18 @@
 -- Module for communicating with the backend server
 
 local HttpService = game:GetService("HttpService")
-
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CanvasDraw = require(ReplicatedStorage.Modules.Canvas.CanvasDraw)
+local PromptService = require(ReplicatedStorage.Modules.Services.PromptService)
 local BackendService = {}
+local DEBUG_ENABLED = true
+
+-- Debug print function that only outputs when debugging is enabled
+local function debugPrint(message, ...)
+    if DEBUG_ENABLED then
+        print(message)
+    end
+end
 
 -- Configuration
 BackendService.BaseUrl = "http://localhost:3000"
@@ -27,7 +37,7 @@ function BackendService:SendOpenAIRequest(imageBase64, prompt)
     assert(prompt, "Missing prompt parameter")
     
     local requestBody = {
-        image = "data:image/jpeg;base64," .. imageBase64,
+        image = imageBase64,
         prompt = prompt
     }
     
@@ -101,5 +111,45 @@ function BackendService:ImageToBase64(image)
     -- If you're using HTTP requests to fetch images that you then want to send to your backend,
     -- you might just want to pass the base64 data through rather than converting it again
 end
+
+-- TODO: Allow players to choose different prompts other than the BASIC_PROMPT.
+--       Some ideas include the SPONG BOB PROMPT, PIXAR PROMPT, etc.
+function BackendService:submitDrawingToBackendForGrading(player, imageData, theme)
+    -- Assert that we have valid image data before proceeding
+    if not imageData then
+        warn("submitDrawingToBackendForGrading called with nil imageData for player: " .. player.Name)
+        return nil, "Missing imageData"
+    end
+
+    -- Compress the image data using CanvasDraw utility
+    local compressedImageData = CanvasDraw.CompressImageDataCustom(imageData)
+
+    -- Assert that we have the compressed image data before proceeding
+    if not compressedImageData then
+        warn("submitDrawingToBackendForGrading failed to compress image data for player: " .. player.Name)
+        return nil, "Failed to compress image data"
+    end
+
+    -- Get the prompt from the PromptService
+    local prompt = PromptService:getPrompt("BASIC_PROMPT", theme)
+    if not prompt then
+        warn("submitDrawingToBackendForGrading failed to get prompt for player: " .. player.Name .. " with theme: " .. tostring(theme))
+        return nil, "Failed to get prompt"
+    end
+
+    local responseData, error =
+        BackendService:SendOpenAIRequest(compressedImageData, prompt)
+
+    if not responseData then
+        warn("submitDrawingToBackendForGrading failed to get response data for player: " .. player.Name)
+        return nil, "Failed to get response data"
+    else
+        debugPrint("submitDrawingToBackendForGrading received response data for player: " .. player.Name)
+        debugPrint(responseData)
+    end
+
+    return responseData, error
+end
+
 
 return BackendService 

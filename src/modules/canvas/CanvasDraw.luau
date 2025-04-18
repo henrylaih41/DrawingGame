@@ -1313,7 +1313,6 @@ function CanvasDraw.new(Parent: ParentType, Resolution: Vector2?, CanvasColour: 
 		Use <code>Canvas:SetBufferFromImage()</code> for a super performant alternative.
 	]]
 	function Canvas:DrawImageXY(ImageData: {}, X: number?, Y: number?, ScaleX: number?, ScaleY: number?, TransparencyEnabled: boolean?)
-        print("ImageData: ", ImageData)
 		X = X or 1
 		Y = Y or 1
 		ScaleX = ScaleX or 1
@@ -3028,6 +3027,64 @@ function CanvasDraw.CompressImageData(ImageData)
 
 	-- Compress the pixel data
 	local CompressedPixels = HttpService:JSONEncode(PixelBuffer)
+
+	-- Create the data object
+	local CompressedData = {}
+	CompressedData.Pixels = CompressedPixels
+	CompressedData.Width = Width
+	CompressedData.Height = Height
+
+	return CompressedData
+end
+
+function CanvasDraw.to_base64(data)
+    local b = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+    return ((data:gsub('.', function(x) 
+        local r,b='',x:byte()
+        for i=8,1,-1 do r=r..(b%2^i-b%2^(i-1)>0 and '1' or '0') end
+        return r;
+    end)..'0000'):gsub('%d%d%d?%d?%d?%d?', function(x)
+        if (#x < 6) then return '' end
+        local c=0
+        for i=1,6 do c=c+(x:sub(i,i)=='1' and 2^(6-i) or 0) end
+        return b:sub(c+1,c+1)
+    end)..({ '', '==', '=' })[#data%3+1])
+end
+
+function CanvasDraw.ConvertBufferToRawBase64(inputBuffer)
+    -- Validate input
+    if typeof(inputBuffer) ~= "buffer" then
+        warn("ConvertBufferToRawBase64: Input must be a buffer, received type:", typeof(inputBuffer))
+        return nil
+    end
+
+    -- Get the size of the buffer
+    local bufferSize = buffer.len(inputBuffer)
+
+    -- Handle empty buffer case
+    if bufferSize == 0 then
+        return ""
+    end
+
+    -- Read the entire buffer's content into a raw Lua string.
+    -- Note: Lua strings can hold any sequence of bytes, including nulls.
+    -- Warning: For very large buffers (hundreds of MB), this step might consume
+    -- significant memory or time.
+    local rawDataString = buffer.readstring(inputBuffer, 0, bufferSize)
+
+    -- Use HttpService to encode the raw byte string into Base64
+    local base64String = CanvasDraw.to_base64(rawDataString)
+
+    return base64String
+end
+
+-- We customize the serialization of the buffer and send it to the backend for OpenAI API call.
+function CanvasDraw.CompressImageDataCustom(ImageData)
+	local PixelBuffer = ImageData.ImageBuffer
+	local Width, Height = ImageData.Width, ImageData.Height
+
+	-- Compress the pixel data
+	local CompressedPixels = CanvasDraw.ConvertBufferToRawBase64(PixelBuffer)
 
 	-- Create the data object
 	local CompressedData = {}
