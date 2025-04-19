@@ -9,7 +9,10 @@ local DebugFlag = true
 -- Debug logging function
 local function DebugLog(message)
     if DebugFlag then
-        print("ResultControllerDEBUG: " .. message)
+        if type(message) == "table" then
+            message = table.concat(message, ", ")
+        end 
+        print("ResultControllerDEBUG: ".. message)
     end
 end
 
@@ -91,7 +94,7 @@ end
 -- Function to display the final results
 local function displayResults(resultData)
     assert(resultData ~= nil, "Result data is nil")
-    assert(resultData.drawingData ~= nil, "Result drawing data is nil")
+    assert(resultData.drawing ~= nil, "Result drawing is nil")
     assert(resultData.score ~= nil, "Result score is nil")
     assert(resultData.feedback ~= nil, "Result feedback is nil")
     assert(canvas ~= nil, "Canvas is nil for displaying results")
@@ -101,7 +104,7 @@ local function displayResults(resultData)
     DebugLog("Displaying results...")
 
     -- Display the winning drawing
-    displayDrawingData(canvas, resultData.drawingData)
+    displayDrawingData(canvas, resultData.drawing)
 
     -- Update the star rating
     updateStarDisplay(resultData.score)
@@ -166,13 +169,18 @@ end
 
 -- Handle game state changes
 ShowResultsEvent.OnClientEvent:Connect(function(message) -- Still needs resultData for RESULT state
+    assert(message ~= nil, "ResultController: Message is nil")
     DebugLog("ResultController: Message: " .. message.Action)
+
     -- Ensure UI is initialized. Init upon the first call.
     if not resultUIInitialized then
         initResultUI()
     end
     
     if message.Action == "Data" then
+        assert(message.Data ~= nil, "ResultController: Message.Data is nil")
+        DebugLog("ResultController: Received DATA message")
+        DebugLog(message.Data)
         resultData = message.Data
     end
 
@@ -187,7 +195,11 @@ ShowResultsEvent.OnClientEvent:Connect(function(message) -- Still needs resultDa
 
         -- Display the results using the provided data
         if resultData then
-            displayResults(resultData)
+            print(resultData)
+            print(LocalPlayer.UserId)
+            print(tostring(LocalPlayer.UserId))
+            print(resultData[tostring(LocalPlayer.UserId)])
+            displayResults(resultData[tostring(LocalPlayer.UserId)])
         else
             warn("ResultController: Received RESULT state but no resultData was provided.")
             -- Display error message or hide elements

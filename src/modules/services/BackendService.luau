@@ -90,7 +90,8 @@ function BackendService:Post(endpoint, data, options)
         if parseSuccess then
             return responseData, nil
         else
-            return response.Body, nil -- Return raw body if not valid JSON
+            warn("BackendService: Failed to parse response body as JSON: " .. parseError)
+            return nil, "Failed to parse response body as JSON"
         end
     else
         warn("BackendService: HTTP request failed with status " .. response.StatusCode)

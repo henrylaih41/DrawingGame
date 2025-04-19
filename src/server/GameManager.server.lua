@@ -273,17 +273,19 @@ StartGameEvent.OnServerEvent:Connect(function(player)
                     if imageData then
                         -- Asynchronously grade each drawing
                         task.spawn(function()
-                            local success = false -- Track success locally within spawn
-                            local resultOrError = nil -- Track result locally
+                            local errorMessage = false -- Track success locally within spawn
+                            local result = nil -- Track result locally
                             debugPrint("Submitting drawing for grading for player %s", p.Name)
-                            success, resultOrError = BackendService:submitDrawingToBackendForGrading(p, imageData, currentTheme)
+                            result, errorMessage = BackendService:submitDrawingToBackendForGrading(p, imageData, currentTheme)
+                            debugPrint("Result: %s", result)
+                            debugPrint("ErrorMessage: %s", errorMessage)
 
-                            if success and resultOrError then
+                            if result and result.success then
                                 debugPrint("Grading successful for %s", p.Name)
-                                playerScores[userId] = { score = resultOrError.score or "N/A", feedback = resultOrError.content or "No feedback" }
+                                playerScores[userId] = { drawing = imageData, score = result.result.Score or "N/A", feedback = result.result.Feedback}
                             else
-                                debugPrint("Grading failed for %s: %s", p.Name, tostring(resultOrError))
-                                playerScores[userId] = { score = "Error", feedback = "Failed to grade drawing." }
+                                debugPrint("Grading failed for %s: %s", p.Name, errorMessage)
+                                playerScores[userId] = { drawing = imageData, score = "Error", feedback = "Failed to grade drawing." }
                             end
 
                             -- Safely increment and check completion
@@ -295,16 +297,8 @@ StartGameEvent.OnServerEvent:Connect(function(player)
                             end
                         end)
                     else
-                        debugPrint("No drawing submitted for player %s, skipping grading.", p.Name)
-                        playerScores[userId] = { score = "N/A", feedback = "No drawing submitted." }
-                        -- Still count this player as "graded" for the purpose of moving on
-                        -- Safely increment and check completion
-                        playersGraded = playersGraded + 1
-                        debugPrint("Players graded: %d/%d", playersGraded, playersToGrade)
-                        if playersGraded == playersToGrade then
-                           debugPrint("All players processed (including skipped). Signaling completion.")
-                           allGradingCompleteSignal:Fire() -- Signal completion
-                        end
+                        -- This should never happen, but just in case
+                        assert(false, "No drawing submitted for player %s, skipping grading.", p.Name)
                     end
                 end
             end
@@ -383,21 +377,15 @@ StartGameEvent.OnServerEvent:Connect(function(player)
 
         end
         
+        local resultsData = nil
 
         -- === RESULTS PHASE ===
         -- This block now runs *after* either GRADING (and waiting) or VOTING completes and transitions here
         if currentState == GameState.RESULTS then -- Ensure we are in the correct state
             debugPrint("Entering RESULTS phase.")
-            local resultsData = {
-                mode = currentGameMode,
-                scores = nil, -- For single player
-                votes = nil, -- For multiplayer
-                winner = nil -- For multiplayer
-            }
-
             if currentGameMode == GameMode.SINGLE_PLAYER then
                 debugPrint("Preparing single-player results.")
-                resultsData.scores = playerScores -- Send the scores collected during GRADING
+                resultsData = playerScores -- Send the scores collected during GRADING
 
             elseif currentGameMode == GameMode.MULTIPLAYER then
                 debugPrint("Tallying multiplayer votes.")
