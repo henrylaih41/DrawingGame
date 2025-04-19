@@ -38,8 +38,11 @@ local feedbackLabel = nil
 local stars = {} -- Table to hold star ImageLabels
 
 -- Asset IDs for stars (Replace with your actual asset IDs)
-local EMPTY_STAR_ASSET = "rbxassetid://12794996359"
-local FILLED_STAR_ASSET = "rbxassetid://10002492897"
+local BASIC_TROPHY_ASSET = "rbxassetid://71126668050522"
+local NICE_TROPHY_ASSET = "rbxassetid://99220692640700"
+local GOOD_TROPHY_ASSET = "rbxassetid://77325310084856"
+local GREAT_TROPHY_ASSET = "rbxassetid://135071378763005"
+local EMPTY_TROPHY_ASSET = "rbxassetid://106246721622576"
 
 -- Function to display an image from ImageData
 --- Clears the target canvas and draws the provided image data onto it, scaling to fit.
@@ -65,7 +68,7 @@ end
 --- Handles potential issues with finding star ImageLabels.
 --- @param score number The score (0-10) determining the number of filled stars.
 local function updateStarDisplay(score)
-    assert(type(score) == "number" and score >= 0 and score <= 10, "Score must be a number between 0 and 10")
+    assert(type(score) == "number" and score >= 0 and score <= 10, "Score must be a number between 0 and 10" .. score)
     assert(starContainer ~= nil, "Star container is nil")
 
     if #stars ~= 10 then
@@ -89,9 +92,17 @@ local function updateStarDisplay(score)
     log("Updating star display for score: ", score)
     for i, starLabel in ipairs(stars) do
         if i <= score then
-            starLabel.Image = FILLED_STAR_ASSET
+            -- Determine which filled asset to use based on the total score
+            if i == 10 then
+                starLabel.Image = GREAT_TROPHY_ASSET -- Special trophy for the 10th star at max score
+            elseif i >= 7 then
+                starLabel.Image = GOOD_TROPHY_ASSET -- Use NICE trophy for scores 7-9
+            else -- Score is 1-6
+                starLabel.Image = GREAT_TROPHY_ASSET -- Use BASIC trophy for scores 1-6
+            end
         else
-            starLabel.Image = EMPTY_STAR_ASSET
+            -- Use empty string to clear the image for stars beyond the score
+            starLabel.Image = EMPTY_TROPHY_ASSET
         end
     end
     starContainer.Visible = true -- Ensure container is visible when updated

@@ -23,7 +23,7 @@ local ShowResultsEvent = EventsFolder:WaitForChild("ShowResults")
 -- Game constants
 local MAX_PLAYERS = 8
 local COUNTDOWN_TIME = 1
-local DRAWING_TIME = 5 -- 3 minutes
+local DRAWING_TIME = 500 -- 3 minutes
 local DEBUG_ENABLED = true -- Debug flag to enable/disable debug messages
 local VOTING_TIME = 30 -- 30 seconds for voting
 

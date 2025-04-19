@@ -5,7 +5,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local DebugUtils = require(ReplicatedStorage.Modules.Services.DebugUtils)
-local DebugFlag = true
+local DebugFlag = false
 
 -- Debug logging function using DebugUtils
 local function log(...)

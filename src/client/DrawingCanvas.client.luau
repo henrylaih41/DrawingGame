@@ -4,6 +4,7 @@
 -- Integrated with game state management
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Color = require(ReplicatedStorage.Modules.Canvas.ColorPicker)
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local DebugFlag = true
@@ -144,8 +145,15 @@ local function initCanvas()
     -- Add variable to track previous drawing position
     local prevCanvasX = nil
     local prevCanvasY = nil
+
+    -- Set up color picker
+    local c = Color.New(drawingScreen)
+    c:SetColor(CURRENT_COLOR)
     
-    -- Set up color buttons
+    c.Updated:Connect(function(color)
+        CURRENT_COLOR = color
+    end)
+
     local colorButtons = {
         ["Black"] = Color3.new(0, 0, 0),
         ["Red"] = Color3.new(1, 0, 0),
