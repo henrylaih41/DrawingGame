@@ -398,11 +398,6 @@ StartGameEvent.OnServerEvent:Connect(function(player)
             if currentGameMode == GameMode.SINGLE_PLAYER then
                 debugPrint("Preparing single-player results.")
                 resultsData.scores = playerScores -- Send the scores collected during GRADING
-                -- Determine winner based on score (optional, depends on how score is structured)
-                -- local highestScore = -1
-                -- local winnerId = nil
-                -- for userId, data in pairs(playerScores) do ... end
-                -- resultsData.winner = winnerId
 
             elseif currentGameMode == GameMode.MULTIPLAYER then
                 debugPrint("Tallying multiplayer votes.")
@@ -452,11 +447,13 @@ StartGameEvent.OnServerEvent:Connect(function(player)
             end
 
             -- Send results to all clients
-            debugPrint("Sending results to clients.")
-            ShowResultsEvent:FireAllClients(resultsData)
-
-            -- Show results for a duration
-            task.wait(10)
+            -- debugPrint("Sending results to clients.")
+            -- ShowResultsEvent:FireAllClients(resultsData)
+            ShowResultsEvent:FireAllClients({Action = "Data", Data = resultsData})
+            ShowResultsEvent:FireAllClients({Action = "Show"})
+            wait(10)
+            ShowResultsEvent:FireAllClients({Action = "Hide"})
+            wait(1)
 
             -- === RETURN TO LOBBY ===
             debugPrint("Returning to LOBBY.")
