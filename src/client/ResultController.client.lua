@@ -7,12 +7,11 @@ local Players = game:GetService("Players")
 local DebugFlag = true
 
 -- Debug logging function
+--- Logs a message to the console if DebugFlag is enabled.
+--- @param message any The message to log (will be converted to string).
 local function DebugLog(message)
     if DebugFlag then
-        if type(message) == "table" then
-            message = table.concat(message, ", ")
-        end 
-        print("ResultControllerDEBUG: ".. message)
+        print("ResultControllerDEBUG: ".. tostring(message))
     end
 end
 
@@ -42,6 +41,9 @@ local EMPTY_STAR_ASSET = "rbxassetid://12794996359"
 local FILLED_STAR_ASSET = "rbxassetid://10002492897"
 
 -- Function to display an image from ImageData
+--- Clears the target canvas and draws the provided image data onto it, scaling to fit.
+--- @param targetCanvas CanvasDraw The CanvasDraw instance to draw on.
+--- @param imageData table The image data containing Width, Height, and ImageBuffer.
 local function displayDrawingData(targetCanvas, imageData)
     assert(targetCanvas ~= nil, "Canvas is nil")
     assert(imageData ~= nil, "ImageData is nil")
@@ -58,6 +60,9 @@ local function displayDrawingData(targetCanvas, imageData)
 end
 
 -- Function to update the star display based on score
+--- Updates the star images (empty/filled) based on the provided score.
+--- Handles potential issues with finding star ImageLabels.
+--- @param score number The score (0-10) determining the number of filled stars.
 local function updateStarDisplay(score)
     assert(type(score) == "number" and score >= 0 and score <= 10, "Score must be a number between 0 and 10")
     assert(starContainer ~= nil, "Star container is nil")
@@ -92,6 +97,14 @@ local function updateStarDisplay(score)
 end
 
 -- Function to display the final results
+--- Displays the results for a specific player.
+--- @param resultData table A table containing the result information for the player.
+--- Expected structure:
+--- {
+---    drawing = ImageData, -- The drawing data to display.
+---    score = number,      -- The score (0-10) to display as stars.
+---    feedback = string    -- The feedback text to display.
+--- }
 local function displayResults(resultData)
     assert(resultData ~= nil, "Result data is nil")
     assert(resultData.drawing ~= nil, "Result drawing is nil")
@@ -116,6 +129,9 @@ end
 
 
 -- Function to initialize the result UI
+--- Finds and initializes the necessary UI elements for the result screen,
+--- including the canvas, star container, feedback label, and star images.
+--- Creates the CanvasDraw instance. Prevents multiple initializations.
 local function initResultUI()
     -- Prevent multiple initializations
     if resultUIInitialized then
@@ -168,6 +184,10 @@ local function initResultUI()
 end
 
 -- Handle game state changes
+--- Handles messages received from the server via ShowResultsEvent.
+--- Initializes UI if needed, stores data, shows/hides the screen,
+--- and triggers result display based on message action ("Data", "Show", "Hide").
+--- @param message table The message from the server, containing Action and optional Data.
 ShowResultsEvent.OnClientEvent:Connect(function(message) -- Still needs resultData for RESULT state
     assert(message ~= nil, "ResultController: Message is nil")
     DebugLog("ResultController: Message: " .. message.Action)
@@ -176,7 +196,7 @@ ShowResultsEvent.OnClientEvent:Connect(function(message) -- Still needs resultDa
     if not resultUIInitialized then
         initResultUI()
     end
-    
+
     if message.Action == "Data" then
         assert(message.Data ~= nil, "ResultController: Message.Data is nil")
         DebugLog("ResultController: Received DATA message")
@@ -195,10 +215,6 @@ ShowResultsEvent.OnClientEvent:Connect(function(message) -- Still needs resultDa
 
         -- Display the results using the provided data
         if resultData then
-            print(resultData)
-            print(LocalPlayer.UserId)
-            print(tostring(LocalPlayer.UserId))
-            print(resultData[tostring(LocalPlayer.UserId)])
             displayResults(resultData[tostring(LocalPlayer.UserId)])
         else
             warn("ResultController: Received RESULT state but no resultData was provided.")
@@ -212,7 +228,7 @@ ShowResultsEvent.OnClientEvent:Connect(function(message) -- Still needs resultDa
             if starContainer then starContainer.Visible = false end
             if canvas then canvas:Clear() end
         end
-    end 
+    end
 
     if message.Action == "Hide" then
         -- Hide UI for other states (e.g., LOBBY, DRAWING)
