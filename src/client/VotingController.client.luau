@@ -4,17 +4,18 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
+local DebugUtils = require(ReplicatedStorage.Modules.Services.DebugUtils)
 local DebugFlag = true
 
--- Debug logging function
-local function DebugLog(message)
+-- Debug logging function using DebugUtils
+local function log(...)
+    -- Check if DebugUtils is enabled before printing
     if DebugFlag then
-        print("VotingController DEBUG: " .. message)
+        DebugUtils.print("VotingController:", ...)
     end
 end
 
-DebugLog("Script started")
+log("Script started")
 
 -- Get services
 local LocalPlayer = Players.LocalPlayer
@@ -62,8 +63,9 @@ local function displayCurrentDrawing()
     -- Display the drawing
     displayDrawingData(canvas, currentDrawing.imageData)
     
-    DebugLog("Displaying drawing " .. currentDrawingIndex .. " by player " .. currentDrawing.playerId)
+    log("Displaying drawing", currentDrawingIndex, "by player", currentDrawing.playerId)
 end
+
 -- Function to update the timer display
 local function updateTimeDisplay()
     if votingScreen and votingScreen:FindFirstChild("TimeLabel") then
@@ -97,33 +99,33 @@ end
 local function initVotingUI()
     -- Prevent multiple initializations
     if votingInitialized then
-        DebugLog("Voting UI already initialized")
+        log("Voting UI already initialized")
         return
     end
     
     votingInitialized = true
-    DebugLog("Initializing voting UI")
+    log("Initializing voting UI")
     
     -- Get or create voting screen
     votingScreen = PlayerGui:WaitForChild("VotingScreen")
-    DebugLog("VotingScreen: " .. votingScreen.Name)
+    log("VotingScreen:", votingScreen.Name)
     -- Set up navigation buttons
     local nextButton = votingScreen:WaitForChild("NextButton")
     local prevButton = votingScreen:WaitForChild("PrevButton")
     local voteButton = votingScreen:WaitForChild("VoteButton")
-    DebugLog("NextButton: " .. nextButton.Name)
-    DebugLog("PrevButton: " .. prevButton.Name)
-    DebugLog("VoteButton: " .. voteButton.Name)
+    log("NextButton:", nextButton.Name)
+    log("PrevButton:", prevButton.Name)
+    log("VoteButton:", voteButton.Name)
     local displayContainer = votingScreen:WaitForChild("DrawingDisplayContainer")
-    DebugLog("DisplayContainer: " .. displayContainer.Name)
+    log("DisplayContainer:", displayContainer.Name)
     local displayFrame = displayContainer:WaitForChild("DrawingDisplay")
-    DebugLog("DisplayFrame: " .. displayFrame.Name)
+    log("DisplayFrame:", displayFrame.Name)
 
-    DebugLog("DisplayFrame Size: " .. displayFrame.AbsoluteSize.X .. " " .. displayFrame.AbsoluteSize.Y)
+    log("DisplayFrame Size:", displayFrame.AbsoluteSize.X, displayFrame.AbsoluteSize.Y)
 
     -- Create a canvas for the drawing display
     canvas = CanvasDraw.new(displayFrame, Vector2.new(math.ceil(displayFrame.AbsoluteSize.X), math.ceil(displayFrame.AbsoluteSize.Y)))
-    DebugLog("Canvas: Created")
+    log("Canvas: Created")
 
     -- Handle next button
     nextButton.MouseButton1Click:Connect(function()
@@ -163,7 +165,10 @@ local function initVotingUI()
         
         -- Get current drawing's player ID
         local currentDrawing = allDrawings[currentDrawingIndex]
-        if not currentDrawing then return end
+        if not currentDrawing then 
+            assert(false, "Current drawing is nil when trying to vote.")
+            return 
+        end
         
         -- Submit vote to server
         SubmitVoteEvent:FireServer(currentDrawing.playerId)
@@ -176,12 +181,12 @@ local function initVotingUI()
         showNotification("Vote submitted!", 2)
     end)
     
-    DebugLog("Voting UI initialized successfully")
+    log("Voting UI initialized successfully")
 end
 
 -- Handle game state changes
 GameStateChangedEvent.OnClientEvent:Connect(function(newState)
-    DebugLog("Game state changed: " .. newState)
+    log("Game state changed:", newState)
     currentGameState = newState
     
     if newState == "VOTING" then
@@ -216,7 +221,7 @@ end)
 
 -- Handle drawings received from server
 DrawingsReceivedEvent.OnClientEvent:Connect(function(drawings)
-    DebugLog("Received " .. #drawings .. " drawings from server")
+    log("Received", #drawings, "drawings from server")
     initVotingUI()
     
     -- Store received drawings
@@ -239,7 +244,11 @@ end)
 
 -- Handle countdown updates
 GameCountdownEvent.OnClientEvent:Connect(function(seconds, phase)
-    initVotingUI()
+    if not votingInitialized then
+        log("Countdown update received but voting UI not initialized yet. Phase:", phase)
+        return
+    end
+    
     if phase == "VOTING" then
         votingTimeLeft = seconds
         updateTimeDisplay()
@@ -251,4 +260,4 @@ if currentGameState == "VOTING" then
     initVotingUI()
 end
 
-DebugLog("VotingController script loaded") 
+log("VotingController script loaded") 

@@ -499,27 +499,30 @@ SubmitVoteEvent.OnServerEvent:Connect(function(player, votedPlayerId)
     debugPrint("Player %s voted for %s", player.Name, votedId)
 end)
 
-debugPrint("Processing existing players when script starts")
--- Process existing players when script starts
-for _, player in ipairs(Players:GetPlayers()) do
-    debugPrint("Processing existing player: %s", player.Name)
-    -- If this is the first player, they become the host
-    if #lobbyPlayers == 0 then
-        hostPlayer = player
-        debugPrint("Set host player to: %s", player.Name)
+function processExistingPlayers() 
+    debugPrint("Processing existing players when script starts")
+    -- Process existing players when script starts
+    for _, player in ipairs(Players:GetPlayers()) do
+        debugPrint("Processing existing player: %s", player.Name)
+        -- If this is the first player, they become the host
+        if #lobbyPlayers == 0 then
+            hostPlayer = player
+            debugPrint("Set host player to: %s", player.Name)
+        end
+        
+        table.insert(lobbyPlayers, player)
+        readyPlayers[player.UserId] = false
+        
+        -- Tell the existing player the current game state
+        debugPrint("Sending current game state to existing player: %s", currentState)
+        GameStateChangedEvent:FireClient(player, currentState)
     end
-    
-    table.insert(lobbyPlayers, player)
-    readyPlayers[player.UserId] = false
-    
-    -- Tell the existing player the current game state
-    debugPrint("Sending current game state to existing player: %s", currentState)
-    GameStateChangedEvent:FireClient(player, currentState)
+
+    -- Update lobby players list for all after processing existing players
+    if #lobbyPlayers > 0 then
+        updateLobbyPlayers()
+    end
+    debugPrint("Done processing existing players when script starts")
 end
 
--- Update lobby players list for all after processing existing players
-if #lobbyPlayers > 0 then
-    updateLobbyPlayers()
-end
-debugPrint("Done processing existing players when script starts")
-
+processExistingPlayers()

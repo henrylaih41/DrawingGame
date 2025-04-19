@@ -5,17 +5,18 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local DebugFlag = true
+local DebugUtils = require(ReplicatedStorage.Modules.Services.DebugUtils)
 
--- Debug logging function
+-- Debug logging function using DebugUtils
 --- Logs a message to the console if DebugFlag is enabled.
---- @param message any The message to log (will be converted to string).
-local function DebugLog(message)
+--- @param ... any The message parts to log.
+local function log(...)
     if DebugFlag then
-        print("ResultControllerDEBUG: ".. tostring(message))
+        DebugUtils.print("ResultController:", ...)
     end
 end
 
-DebugLog("Script started")
+log("Script started")
 
 -- Get services
 local LocalPlayer = Players.LocalPlayer
@@ -56,7 +57,7 @@ local function displayDrawingData(targetCanvas, imageData)
     local scaleX = targetCanvas.Resolution.X / reconstructedImage.Width
     local scaleY = targetCanvas.Resolution.Y / reconstructedImage.Height
     targetCanvas:DrawImage(reconstructedImage, Vector2.new(1, 1), Vector2.new(scaleX, scaleY))
-    DebugLog("Drawing displayed on canvas")
+    log("Drawing displayed on canvas")
 end
 
 -- Function to update the star display based on score
@@ -68,7 +69,7 @@ local function updateStarDisplay(score)
     assert(starContainer ~= nil, "Star container is nil")
 
     if #stars ~= 10 then
-        DebugLog("Warning: Expected 10 stars, found " .. #stars .. ". Attempting to repopulate.")
+        log("Warning: Expected 10 stars, found ", #stars, ". Attempting to repopulate.")
         -- Attempt to repopulate stars table if container exists
         stars = {}
         for i = 1, 10 do
@@ -85,7 +86,7 @@ local function updateStarDisplay(score)
         end
     end
 
-    DebugLog("Updating star display for score: " .. score)
+    log("Updating star display for score: ", score)
     for i, starLabel in ipairs(stars) do
         if i <= score then
             starLabel.Image = FILLED_STAR_ASSET
@@ -114,7 +115,7 @@ local function displayResults(resultData)
     assert(feedbackLabel ~= nil, "Feedback label is nil")
     assert(starContainer ~= nil, "Star container is nil")
 
-    DebugLog("Displaying results...")
+    log("Displaying results...")
 
     -- Display the winning drawing
     displayDrawingData(canvas, resultData.drawing)
@@ -135,24 +136,24 @@ end
 local function initResultUI()
     -- Prevent multiple initializations
     if resultUIInitialized then
-        DebugLog("Result UI already initialized")
+        log("Result UI already initialized")
         return
     end
 
     resultUIInitialized = true
-    DebugLog("Initializing Result UI")
+    log("Initializing Result UI")
 
     -- Get result screen
     resultScreen = PlayerGui:WaitForChild("ResultScreen") -- Renamed from VotingScreen
     assert(resultScreen ~= nil, "ResultScreen not found in PlayerGui")
-    DebugLog("ResultScreen: " .. resultScreen.Name)
+    log("ResultScreen: ", resultScreen.Name)
 
     local displayContainer = resultScreen:WaitForChild("DrawingDisplayContainer")
     assert(displayContainer ~= nil, "DrawingDisplayContainer not found")
-    DebugLog("DisplayContainer: " .. displayContainer.Name)
+    log("DisplayContainer: ", displayContainer.Name)
     local displayFrame = displayContainer:WaitForChild("DrawingDisplay")
     assert(displayFrame ~= nil, "DrawingDisplay not found")
-    DebugLog("DisplayFrame: " .. displayFrame.Name)
+    log("DisplayFrame: ", displayFrame.Name)
 
     -- Get references to result-specific UI elements
     starContainer = resultScreen:WaitForChild("StarContainer")
@@ -169,18 +170,18 @@ local function initResultUI()
         assert(star:IsA("ImageLabel"), "Star" .. i .. " must be an ImageLabel")
         table.insert(stars, star)
     end
-    DebugLog("Found " .. #stars .. " star labels.")
-    DebugLog("DisplayFrame Size: " .. displayFrame.AbsoluteSize.X .. " " .. displayFrame.AbsoluteSize.Y)
+    log("Found ", #stars, " star labels.")
+    log("DisplayFrame Size: ", displayFrame.AbsoluteSize.X, " ", displayFrame.AbsoluteSize.Y)
 
     -- Create a canvas for the drawing display
     if not canvas then -- Create canvas only if it doesn't exist
          canvas = CanvasDraw.new(displayFrame, Vector2.new(math.ceil(displayFrame.AbsoluteSize.X), math.ceil(displayFrame.AbsoluteSize.Y)))
-         DebugLog("Canvas: Created")
+         log("Canvas: Created")
     else
-         DebugLog("Canvas: Already exists")
+         log("Canvas: Already exists")
     end
     assert(canvas ~= nil, "Failed to create or find canvas")
-    DebugLog("Result UI initialized successfully")
+    log("Result UI initialized successfully")
 end
 
 -- Handle game state changes
@@ -190,7 +191,7 @@ end
 --- @param message table The message from the server, containing Action and optional Data.
 ShowResultsEvent.OnClientEvent:Connect(function(message) -- Still needs resultData for RESULT state
     assert(message ~= nil, "ResultController: Message is nil")
-    DebugLog("ResultController: Message: " .. message.Action)
+    log("ResultController: Message: ", message.Action)
 
     -- Ensure UI is initialized. Init upon the first call.
     if not resultUIInitialized then
@@ -199,8 +200,8 @@ ShowResultsEvent.OnClientEvent:Connect(function(message) -- Still needs resultDa
 
     if message.Action == "Data" then
         assert(message.Data ~= nil, "ResultController: Message.Data is nil")
-        DebugLog("ResultController: Received DATA message")
-        DebugLog(message.Data)
+        log("ResultController: Received DATA message")
+        log(message.Data)
         resultData = message.Data
     end
 
@@ -234,10 +235,10 @@ ShowResultsEvent.OnClientEvent:Connect(function(message) -- Still needs resultDa
         -- Hide UI for other states (e.g., LOBBY, DRAWING)
         if resultScreen then
             resultScreen.Enabled = false
-            DebugLog("ResultScreen disabled")
+            log("ResultScreen disabled")
         end
         canvas:Clear()
     end
 end)
 
-DebugLog("ResultController script loaded") 
+log("ResultController script loaded") 
