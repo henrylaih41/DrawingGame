@@ -11,6 +11,7 @@ https://devforum.roblox.com/t/2577233
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local GuiService = game:GetService("GuiService")
 local DebugUtils = require(ReplicatedStorage.Modules.Services.DebugUtils) -- Added: Import DebugUtils
 local DebugFlag = true
 -- Debug logging function using DebugUtils
@@ -176,6 +177,8 @@ function Color:Create(ColorPicker)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 			self.Connections.wheelReposition = RunService.Heartbeat:Connect(function(dt)
 				local mousePos = self:GetMousePos()
+				-- local mousePos = absoluteMousePos - Vector2.new(0, guiInset.Y)
+
 				if mousePos then
 					if firstPick then
 						valueSlider.Select.Position = UDim2.fromScale(0,0)
@@ -289,19 +292,19 @@ end
 -- Return the mouse position of the player relative to the parent GUI
 function Color:GetMousePos()
 	local mousePos = UserInputService:GetMouseLocation()
-	if self.Gui:IsA("ScreenGui") then
-		return mousePos - Vector2.new(0,36)
-	else
-		-- Find the intersection point of the mouse ray and SurfaceGui plane
-		local ray = game.Workspace.CurrentCamera:ViewportPointToRay(mousePos.X,mousePos.Y)
-		local planePoint,planeNormal = getScreenGuiWorldDetails(self.Gui)
+	local guiInset = GuiService:GetGuiInset()
+	return mousePos - Vector2.new(0, guiInset.Y)
+	-- else
+	-- 	-- Find the intersection point of the mouse ray and SurfaceGui plane
+	-- 	local ray = game.Workspace.CurrentCamera:ViewportPointToRay(mousePos.X,mousePos.Y)
+	-- 	local planePoint,planeNormal = getScreenGuiWorldDetails(self.Gui)
 		
-		local p = -((ray.Origin - planePoint):Dot(planeNormal)) / (ray.Direction:Dot(planeNormal))
-		local mouseHit = ray.Origin + ray.Direction * p
+	-- 	local p = -((ray.Origin - planePoint):Dot(planeNormal)) / (ray.Direction:Dot(planeNormal))
+	-- 	local mouseHit = ray.Origin + ray.Direction * p
 		
-		local relative = (-self.Gui.Parent.CFrame:PointToObjectSpace(mouseHit) + self.Gui.Parent.Size / 2) * self.Gui.PixelsPerStud
-		return Vector2.new(relative.X,relative.Y)
-	end
+	-- 	local relative = (-self.Gui.Parent.CFrame:PointToObjectSpace(mouseHit) + self.Gui.Parent.Size / 2) * self.Gui.PixelsPerStud
+	-- 	return Vector2.new(relative.X,relative.Y)
+	-- end
 end
 
 -- Updates the properties and color preview

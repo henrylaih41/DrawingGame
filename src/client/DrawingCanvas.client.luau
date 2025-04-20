@@ -47,10 +47,13 @@ local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 log("PlayerGui reference acquired") -- Updated: Use new log function
 
 -- Configuration
+local CANVAS_BACKGROUND_COLOR = nil 
 local DEFAULT_COLOR = Color3.new(0, 0, 0) -- Black
 local CURRENT_COLOR = DEFAULT_COLOR
+local DRAWING_COLOR = CURRENT_COLOR
 local BRUSH_SIZE = 5
 local IS_DRAWING = false
+local DRAWING_MODE = "PENCIL"
 local canvas = nil -- Canvas object reference
 local drawingScreen = nil -- Reference to the DrawingScreen UI
 local currentGameState = "LOBBY"
@@ -63,16 +66,30 @@ local createBrushIndicator = function()
     if brushIndicator then brushIndicator:Destroy() end -- Destroy previous if any
     brushIndicator = Instance.new("Frame")
     brushIndicator.Name = "BrushIndicator"
-    brushIndicator.Size = UDim2.fromOffset(BRUSH_SIZE * 2, BRUSH_SIZE * 2) -- Initial size based on default
+    brushIndicator.Size = UDim2.fromOffset(BRUSH_SIZE * 1.8, BRUSH_SIZE * 1.8) -- Initial size based on default
     brushIndicator.BackgroundColor3 = CURRENT_COLOR -- Initial color
-    brushIndicator.BackgroundTransparency = 0.5 -- Semi-transparent
-    brushIndicator.BorderSizePixel = 0
+    brushIndicator.BackgroundTransparency = 1.0 -- Semi-transparent
     brushIndicator.AnchorPoint = Vector2.new(0.5, 0.5) -- Center the frame on the position
     brushIndicator.Visible = false -- Initially hidden
     brushIndicator.ZIndex = 10 -- Ensure it's above the canvas, adjust if needed
     brushIndicator.Active = false -- Prevent input capture
     brushIndicator.Selectable = false -- Prevent selection
     brushIndicator.Parent = canvasFrame-- Parent to the main screen
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0.5, 0) -- Makes it a circle
+    corner.Parent = brushIndicator
+
+    -- Add UIStroke for the border/outline
+    local stroke = Instance.new("UIStroke")
+    stroke.Thickness = 1 -- Border thickness
+    stroke.Color = Color3.fromRGB(0, 0, 0) -- Border color (black)
+    stroke.Transparency = 0.5 -- Border transparency
+    stroke.LineJoinMode = Enum.LineJoinMode.Round -- Smoother joins for the circle
+    stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual -- Apply stroke inside the bounds
+    stroke.Parent = brushIndicator
+
+    log("Brush indicator created with UICorner and UIStroke") -- Updated log message
 end
 
 local function showNotification(message, duration)
@@ -127,6 +144,21 @@ local function isCanvasEnabled()
     else 
         assert(false, "DrawingScreen is not a ScreenGui")
     end
+end
+
+local function setupPencilAndEraserButtons(controls)
+    local pencilButton = controls:WaitForChild("PencilButton")
+    local eraserButton = controls:WaitForChild("EraserButton")
+
+    pencilButton.MouseButton1Click:Connect(function()
+        log("Pencil button clicked") -- Updated: Use new log function
+        DRAWING_MODE = "PENCIL"
+    end)
+
+    eraserButton.MouseButton1Click:Connect(function()
+        log("Eraser button clicked") -- Updated: Use new log function
+        DRAWING_MODE = "ERASER"
+    end)
 end
 
 local function setupClearButton(controls)
@@ -189,10 +221,10 @@ local function initCanvas()
     canvasInitialized = true
     drawingScreen = PlayerGui:WaitForChild("DrawingScreen")
     -- Get UI references
-    local canvasContainer = drawingScreen:WaitForChild("CanvasContainer")
-    assert(canvasContainer, "CanvasContainer not found in DrawingScreen")
-    canvasFrame = canvasContainer:WaitForChild("Canvas") -- Assign to higher scope variable
-    assert(canvasFrame, "Canvas not found in CanvasContainer")
+    canvasFrame = drawingScreen:WaitForChild("CanvasFrame") -- Assign to higher scope variable
+
+    CANVAS_BACKGROUND_COLOR = canvasFrame.BackgroundColor3
+    assert(canvasFrame, "Canvas not found in DrawingScreen")
     local controls = drawingScreen:WaitForChild("Controls")
     assert(controls, "Controls not found in DrawingScreen")
     
@@ -205,16 +237,11 @@ local function initCanvas()
     local frameSize = canvasFrame.AbsoluteSize
     log("Frame size:", frameSize.X, ",", frameSize.Y) -- Updated: Use new log function
     canvas = CanvasDraw.new(canvasFrame, Vector2.new(math.ceil(frameSize.X), math.ceil(frameSize.Y)))
-    canvas:Clear(Color3.new(1, 1, 1)) -- Start with white background
+    canvas:Clear(CANVAS_BACKGROUND_COLOR) -- Start with white background
     canvas.GridEnabled = false  -- Disable grid
     canvas.AutoRender = true    -- Enable auto rendering
     
     createBrushIndicator()
-
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0.5, 0) -- Makes it a circle
-    corner.Parent = brushIndicator
-    log("Brush indicator created")
 
     -- Add variable to track previous drawing position
     local prevCanvasX = nil
@@ -232,21 +259,8 @@ local function initCanvas()
         end
         log("Color updated via picker:", color)
     end)
-
-    -- for colorName, colorValue in pairs(colorButtons) do
-    --     local button = colorPalette:FindFirstChild(colorName)
-    --     if button then
-    --         log("Setting up", colorName, "button") -- Updated: Use new log function
-    --         button.BackgroundColor3 = colorValue
-    --         button.MouseButton1Click:Connect(function()
-    --             CURRENT_COLOR = colorValue
-    --             log("Color changed to:", colorName) -- Updated: Use new log function
-    --         end)
-    --     else
-    --         warn("Color button not found: " .. colorName)
-    --     end
-    -- end
     
+    setupPencilAndEraserButtons(controls)
     setupClearButton(controls)
     setupSubmitButton(controls)
     
@@ -321,10 +335,16 @@ local function initCanvas()
             local canvasX = math.round(relX * canvasSize.X)
             local canvasY = math.round(relY * canvasSize.Y)
             
+            if DRAWING_MODE == "PENCIL" then
+                DRAWING_COLOR = CURRENT_COLOR -- Update drawing color
+            elseif DRAWING_MODE == "ERASER" then
+                DRAWING_COLOR = CANVAS_BACKGROUND_COLOR -- Update drawing color
+            end
+            
             log("Drawing at canvas position:", canvasX, ",", canvasY, -- Updated: Use new log function
                      "| Relative position:", relX, ",", relY,
                      "| Using brush size:", BRUSH_SIZE,
-                     "| Using color:", tostring(CURRENT_COLOR))
+                     "| Using color:", tostring(DRAWING_COLOR))
             
             -- Draw a circle at the mouse position
             if canvas then
@@ -337,12 +357,12 @@ local function initCanvas()
                     -- Only draw a line if points are far enough apart (prevents duplicate circles)
                     if distance > BRUSH_SIZE * 0.5 then
                         -- Draw line between previous point and current point for smoothing
-                        canvas:DrawLineXY(prevCanvasX, prevCanvasY, canvasX, canvasY, CURRENT_COLOR, BRUSH_SIZE, true)
+                        canvas:DrawLineXY(prevCanvasX, prevCanvasY, canvasX, canvasY, DRAWING_COLOR, BRUSH_SIZE, true)
                     end
                 end
                 
                 -- Always draw a circle at the current position for consistent brush appearance
-                canvas:DrawCircleXY(canvasX, canvasY, BRUSH_SIZE, CURRENT_COLOR, 1, true)
+                canvas:DrawCircleXY(canvasX, canvasY, BRUSH_SIZE, DRAWING_COLOR, 1, true)
                 
                 -- Update previous position for next drawing operation
                 prevCanvasX = canvasX
@@ -360,6 +380,7 @@ local function initCanvas()
         log("InputBegan event received") -- Updated: Use new log function
         if currentGameState == "DRAWING" and input.UserInputType == Enum.UserInputType.MouseButton1 then
             IS_DRAWING = true
+            brushIndicator.Visible = true
             handleDrawing(input)
         end
     end)
@@ -368,6 +389,7 @@ local function initCanvas()
     UserInputService.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             IS_DRAWING = false
+            brushIndicator.Visible = false
             -- Reset previous position when we stop drawing
             prevCanvasX = nil
             prevCanvasY = nil
@@ -476,10 +498,19 @@ task.spawn(function()
     end
 end)
 
-
-
 RunService.RenderStepped:Connect(function()
-    if currentGameState == "DRAWING" and canvasFrame and brushIndicator and 
+    -- If brushIndicator is not found, return
+    if not brushIndicator then
+        return
+    end
+
+    if not IS_DRAWING then
+        brushIndicator.Visible = false
+        return
+    end
+
+    -- Update brush indicator position if drawing
+    if currentGameState == "DRAWING" and canvasFrame and 
         drawingScreen and drawingScreen.Enabled then
 
         local mousePos = UserInputService:GetMouseLocation()
@@ -490,10 +521,7 @@ RunService.RenderStepped:Connect(function()
         local canvasSize = canvasFrame.AbsoluteSize
 
         -- Adjust mouse Y position for the GUI inset ONLY if IgnoreGuiInset is false
-        local adjustedMouseY = mousePos.Y
-        if not drawingScreen.IgnoreGuiInset then
-             adjustedMouseY = mousePos.Y - guiInset.Y
-        end
+        local adjustedMouseY = mousePos.Y - guiInset.Y
 
         -- Check if mouse is inside the canvas frame bounds using the adjusted Y position
         if mousePos.X >= canvasPosition.X and
