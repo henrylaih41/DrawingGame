@@ -9,6 +9,8 @@ local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local DebugFlag = true
 local DebugUtils = require(ReplicatedStorage.Modules.Services.DebugUtils) -- Added: Import DebugUtils
+local RunService = game:GetService("RunService") -- Added RunService
+local GuiService = game:GetService("GuiService") -- Added GuiService
 
 -- Debug logging function using DebugUtils
 --- Logs a message to the console if DebugFlag is enabled.
@@ -54,6 +56,24 @@ local drawingScreen = nil -- Reference to the DrawingScreen UI
 local currentGameState = "LOBBY"
 local drawingTimeLeft = 0
 local canvasInitialized = false -- Flag to track canvas initialization
+local canvasFrame = nil -- Declare canvasFrame at a higher scope
+local brushIndicator = nil -- Declare brushIndicator at a higher scope
+
+local createBrushIndicator = function()
+    if brushIndicator then brushIndicator:Destroy() end -- Destroy previous if any
+    brushIndicator = Instance.new("Frame")
+    brushIndicator.Name = "BrushIndicator"
+    brushIndicator.Size = UDim2.fromOffset(BRUSH_SIZE * 2, BRUSH_SIZE * 2) -- Initial size based on default
+    brushIndicator.BackgroundColor3 = CURRENT_COLOR -- Initial color
+    brushIndicator.BackgroundTransparency = 0.5 -- Semi-transparent
+    brushIndicator.BorderSizePixel = 0
+    brushIndicator.AnchorPoint = Vector2.new(0.5, 0.5) -- Center the frame on the position
+    brushIndicator.Visible = false -- Initially hidden
+    brushIndicator.ZIndex = 10 -- Ensure it's above the canvas, adjust if needed
+    brushIndicator.Active = false -- Prevent input capture
+    brushIndicator.Selectable = false -- Prevent selection
+    brushIndicator.Parent = canvasFrame-- Parent to the main screen
+end
 
 local function showNotification(message, duration)
     assert(duration, "Duration is required")
@@ -149,6 +169,11 @@ local function updateBrushSize(sizeSlider, sizeValue)
     BRUSH_SIZE = math.floor(1 + relativeX * 19)
     sizeValue.Text = tostring(BRUSH_SIZE)
     log("Brush size updated to:", BRUSH_SIZE) -- Updated: Use new log function
+
+    -- Update brush indicator size
+    if brushIndicator then
+        brushIndicator.Size = UDim2.fromOffset(BRUSH_SIZE * 2, BRUSH_SIZE * 2)
+    end
 end
 
 -- Function to initialize the canvas
@@ -159,16 +184,17 @@ local function initCanvas()
         return
     end
     
+    log("initCanvas function started") -- Updated: Use new log function
     -- Set initialization flag to true
     canvasInitialized = true
-
-    log("initCanvas function started") -- Updated: Use new log function
-    
     drawingScreen = PlayerGui:WaitForChild("DrawingScreen")
-    
     -- Get UI references
-    local canvasFrame = drawingScreen.CanvasContainer.Canvas
-    local controls = drawingScreen.Controls
+    local canvasContainer = drawingScreen:WaitForChild("CanvasContainer")
+    assert(canvasContainer, "CanvasContainer not found in DrawingScreen")
+    canvasFrame = canvasContainer:WaitForChild("Canvas") -- Assign to higher scope variable
+    assert(canvasFrame, "Canvas not found in CanvasContainer")
+    local controls = drawingScreen:WaitForChild("Controls")
+    assert(controls, "Controls not found in DrawingScreen")
     
     -- Create canvas with CanvasDraw
     if canvas then
@@ -183,6 +209,13 @@ local function initCanvas()
     canvas.GridEnabled = false  -- Disable grid
     canvas.AutoRender = true    -- Enable auto rendering
     
+    createBrushIndicator()
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0.5, 0) -- Makes it a circle
+    corner.Parent = brushIndicator
+    log("Brush indicator created")
+
     -- Add variable to track previous drawing position
     local prevCanvasX = nil
     local prevCanvasY = nil
@@ -193,6 +226,11 @@ local function initCanvas()
     
     c.Updated:Connect(function(color)
         CURRENT_COLOR = color
+        -- Update brush indicator color
+        if brushIndicator then
+            brushIndicator.BackgroundColor3 = color
+        end
+        log("Color updated via picker:", color)
     end)
 
     -- for colorName, colorValue in pairs(colorButtons) do
@@ -436,4 +474,59 @@ task.spawn(function()
             break
         end
     end
-end) 
+end)
+
+
+
+RunService.RenderStepped:Connect(function()
+    if currentGameState == "DRAWING" and canvasFrame and brushIndicator and 
+        drawingScreen and drawingScreen.Enabled then
+
+        local mousePos = UserInputService:GetMouseLocation()
+        -- Get the GUI inset (space reserved for top bar, etc.)
+        local guiInset = GuiService:GetGuiInset()
+
+        local canvasPosition = canvasFrame.AbsolutePosition
+        local canvasSize = canvasFrame.AbsoluteSize
+
+        -- Adjust mouse Y position for the GUI inset ONLY if IgnoreGuiInset is false
+        local adjustedMouseY = mousePos.Y
+        if not drawingScreen.IgnoreGuiInset then
+             adjustedMouseY = mousePos.Y - guiInset.Y
+        end
+
+        -- Check if mouse is inside the canvas frame bounds using the adjusted Y position
+        if mousePos.X >= canvasPosition.X and
+           mousePos.X <= canvasPosition.X + canvasSize.X and
+           adjustedMouseY >= canvasPosition.Y and -- Use adjusted Y
+           adjustedMouseY <= canvasPosition.Y + canvasSize.Y then -- Use adjusted Y
+
+            -- Mouse is inside: show and position the indicator
+            brushIndicator.Visible = true
+            -- Calculate position relative to the canvasFrame (parent) size
+            -- Avoid division by zero if canvas size is somehow zero
+            if canvasSize.X > 0 and canvasSize.Y > 0 then
+                -- Calculate mouse position relative to the canvas frame's top-left corner using adjusted Y
+                local relativeMouseX = mousePos.X - canvasPosition.X
+                local relativeMouseY = adjustedMouseY - canvasPosition.Y -- Use adjusted Y
+
+                -- Calculate scale based on relative position and canvas size
+                local scaleX = relativeMouseX / canvasSize.X
+                local scaleY = relativeMouseY / canvasSize.Y
+                -- Use fromScale. Assumes AnchorPoint (0.5, 0.5) to center it.
+                brushIndicator.Position = UDim2.fromScale(scaleX, scaleY)
+            else
+                -- Fallback or hide if canvas size is invalid
+                brushIndicator.Visible = false
+                -- Use warn instead of log for potential issues
+                warn("Warning: canvasFrame AbsoluteSize is zero, cannot position brush indicator.")
+            end
+        else
+            -- Mouse is outside: hide the indicator
+            brushIndicator.Visible = false
+        end
+    else
+        -- Hide indicator if not in drawing state or UI elements are missing/disabled
+        brushIndicator.Visible = false
+    end
+end)
