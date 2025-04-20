@@ -109,6 +109,48 @@ local function isCanvasEnabled()
     end
 end
 
+local function setupClearButton(controls)
+        -- Clear button functionality
+    local clearButton = controls:WaitForChild("ClearButton")
+    log("ClearButton found") -- Updated: Use new log function
+    
+    clearButton.MouseButton1Click:Connect(function()
+        log("Clear button clicked") -- Updated: Use new log function
+        if canvas then
+            canvas:Clear(Color3.new(1, 1, 1)) -- Clear to white
+            log("Canvas cleared") -- Updated: Use new log function
+        else
+            warn("Cannot clear canvas - canvas object is nil")
+        end
+    end)
+end
+
+local function setupSubmitButton(controls)
+    -- Submit button functionality 
+    local submitButton = controls:WaitForChild("SubmitButton")
+    log("SubmitButton found") -- Updated: Use new log function
+    
+    submitButton.MouseButton1Click:Connect(function()
+        log("Submit button clicked") -- Updated: Use new log function
+        submitDrawing()
+    end)
+end
+    
+-- Function to update brush size based on slider position
+local function updateBrushSize(sizeSlider, sizeValue)
+    local sliderPosition = sizeSlider.AbsolutePosition
+    local sliderSize = sizeSlider.AbsoluteSize
+    local mousePosition = UserInputService:GetMouseLocation() - Vector2.new(0, game:GetService("GuiService"):GetGuiInset().Y)
+    
+    -- Calculate relative position (0-1)
+    local relativeX = math.clamp((mousePosition.X - sliderPosition.X) / sliderSize.X, 0, 1)
+    
+    -- Convert to brush size (1-20)
+    BRUSH_SIZE = math.floor(1 + relativeX * 19)
+    sizeValue.Text = tostring(BRUSH_SIZE)
+    log("Brush size updated to:", BRUSH_SIZE) -- Updated: Use new log function
+end
+
 -- Function to initialize the canvas
 local function initCanvas()
     -- Prevent multiple initializations
@@ -127,7 +169,6 @@ local function initCanvas()
     -- Get UI references
     local canvasFrame = drawingScreen.CanvasContainer.Canvas
     local controls = drawingScreen.Controls
-    local colorPalette = controls.ColorPalette
     
     -- Create canvas with CanvasDraw
     if canvas then
@@ -154,67 +195,38 @@ local function initCanvas()
         CURRENT_COLOR = color
     end)
 
-    local colorButtons = {
-        ["Black"] = Color3.new(0, 0, 0),
-        ["Red"] = Color3.new(1, 0, 0),
-        ["Green"] = Color3.new(0, 1, 0),
-        ["Blue"] = Color3.new(0, 0, 1),
-        ["Yellow"] = Color3.new(1, 1, 0),
-        ["Purple"] = Color3.new(0.7, 0, 1),
-        ["White"] = Color3.new(1, 1, 1),
-    }
+    -- for colorName, colorValue in pairs(colorButtons) do
+    --     local button = colorPalette:FindFirstChild(colorName)
+    --     if button then
+    --         log("Setting up", colorName, "button") -- Updated: Use new log function
+    --         button.BackgroundColor3 = colorValue
+    --         button.MouseButton1Click:Connect(function()
+    --             CURRENT_COLOR = colorValue
+    --             log("Color changed to:", colorName) -- Updated: Use new log function
+    --         end)
+    --     else
+    --         warn("Color button not found: " .. colorName)
+    --     end
+    -- end
     
-    for colorName, colorValue in pairs(colorButtons) do
-        local button = colorPalette:FindFirstChild(colorName)
-        if button then
-            log("Setting up", colorName, "button") -- Updated: Use new log function
-            button.BackgroundColor3 = colorValue
-            button.MouseButton1Click:Connect(function()
-                CURRENT_COLOR = colorValue
-                log("Color changed to:", colorName) -- Updated: Use new log function
-            end)
-        else
-            warn("Color button not found: " .. colorName)
-        end
-    end
-    
-    -- Clear button functionality
-    local clearButton = controls:WaitForChild("ClearButton")
-    log("ClearButton found") -- Updated: Use new log function
-    
-    clearButton.MouseButton1Click:Connect(function()
-        log("Clear button clicked") -- Updated: Use new log function
-        if canvas then
-            canvas:Clear(Color3.new(1, 1, 1)) -- Clear to white
-            log("Canvas cleared") -- Updated: Use new log function
-        else
-            warn("Cannot clear canvas - canvas object is nil")
-        end
-    end)
-    
-    -- Submit button functionality 
-    local submitButton = controls:WaitForChild("SubmitButton")
-    log("SubmitButton found") -- Updated: Use new log function
-    
-    submitButton.MouseButton1Click:Connect(function()
-        log("Submit button clicked") -- Updated: Use new log function
-        submitDrawing()
-    end)
+    setupClearButton(controls)
+    setupSubmitButton(controls)
     
     -- Brush size slider functionality
     local sizeSlider = controls:WaitForChild("SizeSlider")
-    log("SizeSlider found") -- Updated: Use new log function
+    assert(sizeSlider, "SizeSlider not found")
     
     local sizeValue = controls:WaitForChild("SizeValue")
-    log("SizeValue found") -- Updated: Use new log function
+    assert(sizeValue, "SizeValue not found")
     
     -- Use UserInputService to handle slider interaction
     local isDraggingSlider = false
     
+    -- Connect slider input handlers
     sizeSlider.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             isDraggingSlider = true
-            updateBrushSize(input)
+            updateBrushSize(sizeSlider, sizeValue)
         end
     end)
     
@@ -226,25 +238,10 @@ local function initCanvas()
     
     UserInputService.InputChanged:Connect(function(input)
         if isDraggingSlider and input.UserInputType == Enum.UserInputType.MouseMovement then
-            updateBrushSize(input)
+            updateBrushSize(sizeSlider, sizeValue)
         end
     end)
-    
-    -- Function to update brush size based on slider position
-    function updateBrushSize(input)
-        local sliderPosition = sizeSlider.AbsolutePosition
-        local sliderSize = sizeSlider.AbsoluteSize
-        local mousePosition = UserInputService:GetMouseLocation() - Vector2.new(0, game:GetService("GuiService"):GetGuiInset().Y)
-        
-        -- Calculate relative position (0-1)
-        local relativeX = math.clamp((mousePosition.X - sliderPosition.X) / sliderSize.X, 0, 1)
-        
-        -- Convert to brush size (1-20)
-        BRUSH_SIZE = math.floor(1 + relativeX * 19)
-        sizeValue.Text = tostring(BRUSH_SIZE)
-        log("Brush size updated to:", BRUSH_SIZE) -- Updated: Use new log function
-    end
-    
+
     -- Drawing functionality
     local function handleDrawing(input)
         if not isCanvasEnabled() or not canvas then return end
@@ -349,7 +346,6 @@ local function initCanvas()
     log("Canvas initialization complete") -- Updated: Use new log function
 end
 
-
 -- Function to update the drawing time display
 local function updateTimeDisplay()
     if drawingScreen and drawingScreen:WaitForChild("TimeLabel") then
@@ -431,8 +427,7 @@ end)
 
 -- Create a timer to periodically check if canvas should be initialized
 -- This probably isn't needed, but it's here to be safe
-local checkCanvasTimer = nil
-checkCanvasTimer = task.spawn(function()
+task.spawn(function()
     while task.wait(1) do
         if currentGameState == "DRAWING" and not canvasInitialized then
             log("Drawing phase active but canvas not initialized, attempting to initialize") -- Updated: Use new log function
