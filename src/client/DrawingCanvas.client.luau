@@ -56,6 +56,8 @@ local IS_DRAWING = false
 local DRAWING_MODE = "PENCIL"
 local canvas = nil -- Canvas object reference
 local drawingScreen = nil -- Reference to the DrawingScreen UI
+local timeLabel = nil -- Reference to the TimeLabel UI
+local topLevelFrame = nil -- Reference to the TopLevelFrame UI
 local currentGameState = "LOBBY"
 local drawingTimeLeft = 0
 local canvasInitialized = false -- Flag to track canvas initialization
@@ -216,16 +218,21 @@ local function initCanvas()
         return
     end
     
+    local playerMod = require(LocalPlayer:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule"))
+    local playerControls = playerMod:GetControls()
+    playerControls:Disable()      -- joystick + jump vanish, camera still works
     log("initCanvas function started") -- Updated: Use new log function
     -- Set initialization flag to true
     canvasInitialized = true
     drawingScreen = PlayerGui:WaitForChild("DrawingScreen")
+    timeLabel = drawingScreen:WaitForChild("TimeLabel")
+    topLevelFrame = drawingScreen:WaitForChild("TopLevelFrame")
     -- Get UI references
-    canvasFrame = drawingScreen:WaitForChild("CanvasFrame") -- Assign to higher scope variable
+    canvasFrame = topLevelFrame:WaitForChild("CanvasFrame") -- Assign to higher scope variable
 
     CANVAS_BACKGROUND_COLOR = canvasFrame.BackgroundColor3
     assert(canvasFrame, "Canvas not found in DrawingScreen")
-    local controls = drawingScreen:WaitForChild("Controls")
+    local controls = topLevelFrame:WaitForChild("Controls")
     assert(controls, "Controls not found in DrawingScreen")
     
     -- Create canvas with CanvasDraw
@@ -248,7 +255,7 @@ local function initCanvas()
     local prevCanvasY = nil
 
     -- Set up color picker
-    local c = Color.New(drawingScreen)
+    local c = Color.New(topLevelFrame)
     c:SetColor(CURRENT_COLOR)
     
     c.Updated:Connect(function(color)
@@ -408,16 +415,16 @@ end
 
 -- Function to update the drawing time display
 local function updateTimeDisplay()
-    if drawingScreen and drawingScreen:WaitForChild("TimeLabel") then
+    if timeLabel then
         local minutes = math.floor(drawingTimeLeft / 60)
         local seconds = drawingTimeLeft % 60
-        drawingScreen.TimeLabel.Text = string.format("Time Remaining: %d:%02d", minutes, seconds)
+        timeLabel.Text = string.format("Time Remaining: %d:%02d", minutes, seconds)
         
         -- Make time red when less than 30 seconds
         if drawingTimeLeft <= 30 then
-            drawingScreen.TimeLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
+            timeLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
         else
-            drawingScreen.TimeLabel.TextColor3 = Color3.fromRGB(0, 0, 0)
+            timeLabel.TextColor3 = Color3.fromRGB(0, 0, 0)
         end
     end
 end
