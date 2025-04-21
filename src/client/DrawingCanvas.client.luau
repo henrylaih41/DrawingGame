@@ -94,6 +94,51 @@ local createBrushIndicator = function()
     log("Brush indicator created with UICorner and UIStroke") -- Updated log message
 end
 
+local function updateBrushIndicator(pointerPos)
+    -- If brushIndicator is not found, return
+    if not brushIndicator then
+        return
+    end
+
+    if not IS_DRAWING then
+        brushIndicator.Visible = false
+        return
+    end
+
+    local canvasPosition = canvasFrame.AbsolutePosition
+    local canvasSize = canvasFrame.AbsoluteSize
+
+    -- Check if pointer is inside the canvas frame bounds using the adjusted Y position
+    if pointerPos.X >= canvasPosition.X and
+       pointerPos.X <= canvasPosition.X + canvasSize.X and
+       pointerPos.Y >= canvasPosition.Y and -- Use adjusted Y
+       pointerPos.Y <= canvasPosition.Y + canvasSize.Y then -- Use adjusted Y
+
+        -- Pointer is inside: show and position the indicator
+        if not brushIndicator.Visible then -- Only update if needed
+             brushIndicator.Visible = true
+        end
+        -- Calculate position relative to the canvasFrame (parent) size
+        if canvasSize.X > 0 and canvasSize.Y > 0 then
+            local relativePointerX = pointerPos.X - canvasPosition.X
+            local relativePointerY = pointerPos.Y - canvasPosition.Y -- Use adjusted Y
+            local scaleX = relativePointerX / canvasSize.X
+            local scaleY = relativePointerY / canvasSize.Y
+            brushIndicator.Position = UDim2.fromScale(scaleX, scaleY)
+        else
+            if brushIndicator.Visible then -- Only update if needed
+                brushIndicator.Visible = false
+            end
+            warn("Warning: canvasFrame AbsoluteSize is zero, cannot position brush indicator.")
+        end
+    else
+        -- Pointer is outside: hide the indicator
+        if brushIndicator.Visible then -- Only update if needed
+            brushIndicator.Visible = false
+        end
+    end
+end
+
 local function showNotification(message, duration)
     assert(duration, "Duration is required")
     
@@ -191,14 +236,16 @@ local function setupSubmitButton(controls)
 end
     
 -- Function to update brush size based on slider position
-local function updateBrushSize(sizeSlider, sizeValue)
+local function updateBrushSize(sizeSlider, sizeValue, inputPosition)
     local sliderPosition = sizeSlider.AbsolutePosition
     local sliderSize = sizeSlider.AbsoluteSize
-    local mousePosition = UserInputService:GetMouseLocation() - Vector2.new(0, game:GetService("GuiService"):GetGuiInset().Y)
-    
+    -- Use provided input position (for touch/click) or fallback to current mouse location
+    local currentPosition = inputPosition or UserInputService:GetMouseLocation()
+    currentPosition = currentPosition - Vector2.new(0, GuiService:GetGuiInset().Y)
+
     -- Calculate relative position (0-1)
-    local relativeX = math.clamp((mousePosition.X - sliderPosition.X) / sliderSize.X, 0, 1)
-    
+    local relativeX = math.clamp((currentPosition.X - sliderPosition.X) / sliderSize.X, 0, 1)
+
     -- Convert to brush size (1-20)
     BRUSH_SIZE = math.floor(1 + relativeX * 19)
     sizeValue.Text = tostring(BRUSH_SIZE)
@@ -283,94 +330,111 @@ local function initCanvas()
     
     -- Connect slider input handlers
     sizeSlider.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             isDraggingSlider = true
-            updateBrushSize(sizeSlider, sizeValue)
+            -- Pass the specific input position for accuracy
+            updateBrushSize(sizeSlider, sizeValue, Vector2.new(input.Position.X, input.Position.Y))
         end
     end)
     
     sizeSlider.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             isDraggingSlider = false
         end
     end)
     
     UserInputService.InputChanged:Connect(function(input)
-        if isDraggingSlider and input.UserInputType == Enum.UserInputType.MouseMovement then
-            updateBrushSize(sizeSlider, sizeValue)
+        if isDraggingSlider and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            -- Pass the specific input position for accuracy during drag
+            updateBrushSize(sizeSlider, sizeValue, Vector2.new(input.Position.X, input.Position.Y))
         end
     end)
 
     -- Drawing functionality
     local function handleDrawing(input)
         if not isCanvasEnabled() or not canvas then return end
-        
-        -- For MouseMovement inputs, we rely on IS_DRAWING flag being set
-        -- For MouseButton1 inputs, this is the initial click
-        if input.UserInputType ~= Enum.UserInputType.MouseButton1 and 
-           input.UserInputType ~= Enum.UserInputType.MouseMovement then 
-            return 
+
+        -- Check for relevant input types
+        if input.UserInputType ~= Enum.UserInputType.MouseButton1 and
+           input.UserInputType ~= Enum.UserInputType.MouseMovement and
+           input.UserInputType ~= Enum.UserInputType.Touch then
+            return
         end
-        
+
         -- Get the absolute position and size of the canvas frame
-        -- IMPORTANT: We must get these values EVERY time to prevent misalignment
         local canvasPosition = canvasFrame.AbsolutePosition
         local canvasSize = canvasFrame.AbsoluteSize
-        
-        -- Get the mouse position with accurate GuiInset calculation
-        local mousePos = UserInputService:GetMouseLocation()
-        local inset = game:GetService("GuiService"):GetGuiInset()
-        mousePos = mousePos - Vector2.new(0, inset.Y)
-        
-        log("Mouse position:", mousePos.X, ",", mousePos.Y, "| Canvas position:", -- Updated: Use new log function
+
+        -- Get the input position, adjusting for GuiInset
+        local currentPos = Vector2.new(input.Position.X, input.Position.Y) -- Use input.Position for Touch and initial MouseButton1/Touch
+        log(input.Position)
+        log(UserInputService:GetMouseLocation())
+
+        -- if input.UserInputType == Enum.UserInputType.MouseMovement then
+        --      -- For mouse movement, GetMouseLocation is more reliable during drag
+        --     currentPos = UserInputService:GetMouseLocation()
+        -- end
+
+        local inset = GuiService:GetGuiInset()
+        if (drawingScreen.IgnoreGuiInset) then
+            inset = Vector2.new(0, 0)
+        end
+
+        currentPos = currentPos - Vector2.new(0, inset.Y)
+
+        updateBrushIndicator(currentPos)
+
+        log("Input position:", currentPos.X, ",", currentPos.Y, "| Canvas position:", -- Updated: Use new log function
                   canvasPosition.X, ",", canvasPosition.Y, "| Canvas size:",
                   canvasSize.X, ",", canvasSize.Y)
-        
-        -- Check if mouse is inside the canvas
-        if mousePos.X >= canvasPosition.X and
-           mousePos.X <= canvasPosition.X + canvasSize.X and
-           mousePos.Y >= canvasPosition.Y and
-           mousePos.Y <= canvasPosition.Y + canvasSize.Y then
-            
-            log("Mouse is inside canvas boundaries") -- Updated: Use new log function
-            
+
+        -- Check if input is inside the canvas
+        if currentPos.X >= canvasPosition.X and
+           currentPos.X <= canvasPosition.X + canvasSize.X and
+           currentPos.Y >= canvasPosition.Y and
+           currentPos.Y <= canvasPosition.Y + canvasSize.Y then
+
+            log("Input is inside canvas boundaries") -- Updated: Use new log function
+
+
             -- Calculate relative position within the canvas (0-1)
-            local relX = (mousePos.X - canvasPosition.X) / canvasSize.X
-            local relY = (mousePos.Y - canvasPosition.Y) / canvasSize.Y
-            
+            local relX = (currentPos.X - canvasPosition.X) / canvasSize.X
+            local relY = (currentPos.Y - canvasPosition.Y) / canvasSize.Y
+
             -- Convert to canvas pixel coordinates - use math.round for more precise positioning
             local canvasX = math.round(relX * canvasSize.X)
             local canvasY = math.round(relY * canvasSize.Y)
-            
+
             if DRAWING_MODE == "PENCIL" then
                 DRAWING_COLOR = CURRENT_COLOR -- Update drawing color
             elseif DRAWING_MODE == "ERASER" then
                 DRAWING_COLOR = CANVAS_BACKGROUND_COLOR -- Update drawing color
             end
-            
+
             log("Drawing at canvas position:", canvasX, ",", canvasY, -- Updated: Use new log function
                      "| Relative position:", relX, ",", relY,
                      "| Using brush size:", BRUSH_SIZE,
                      "| Using color:", tostring(DRAWING_COLOR))
-            
-            -- Draw a circle at the mouse position
+
+            -- Draw a circle at the input position
             if canvas then
                 -- If we have a previous position and we're in the middle of drawing,
                 -- draw a line to connect the dots
                 if prevCanvasX and prevCanvasY and IS_DRAWING then
                     -- Calculate distance between points
                     local distance = math.sqrt((canvasX - prevCanvasX)^2 + (canvasY - prevCanvasY)^2)
-                    
+
                     -- Only draw a line if points are far enough apart (prevents duplicate circles)
+                    -- Adjust threshold based on input type? Maybe not necessary yet.
                     if distance > BRUSH_SIZE * 0.5 then
                         -- Draw line between previous point and current point for smoothing
                         canvas:DrawLineXY(prevCanvasX, prevCanvasY, canvasX, canvasY, DRAWING_COLOR, BRUSH_SIZE, true)
                     end
                 end
-                
+
                 -- Always draw a circle at the current position for consistent brush appearance
                 canvas:DrawCircleXY(canvasX, canvasY, BRUSH_SIZE, DRAWING_COLOR, 1, true)
-                
+
                 -- Update previous position for next drawing operation
                 prevCanvasX = canvasX
                 prevCanvasY = canvasY
@@ -378,38 +442,47 @@ local function initCanvas()
                 warn("Cannot draw - canvas object is nil")
             end
         else
-            log("Mouse position outside canvas boundaries") -- Updated: Use new log function
-        end
-    end
-    
-    -- Connect drawing input handlers
-    UserInputService.InputBegan:Connect(function(input)
-        log("InputBegan event received") -- Updated: Use new log function
-        if currentGameState == "DRAWING" and input.UserInputType == Enum.UserInputType.MouseButton1 then
-            IS_DRAWING = true
-            brushIndicator.Visible = true
-            handleDrawing(input)
-        end
-    end)
-    
-    -- Mouse button up - stop drawing and reset previous position
-    UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            IS_DRAWING = false
-            brushIndicator.Visible = false
-            -- Reset previous position when we stop drawing
+            log("Input position outside canvas boundaries") -- Updated: Use new log function
+            -- Reset previous position if finger/mouse drags off canvas
             prevCanvasX = nil
             prevCanvasY = nil
         end
-    end)
-    
-    UserInputService.InputChanged:Connect(function(input)
-        log("InputChanged event received") -- Updated: Use new log function
-        if IS_DRAWING and input.UserInputType == Enum.UserInputType.MouseMovement and currentGameState == "DRAWING" then
+    end
+
+    -- Connect drawing input handlers
+    UserInputService.InputBegan:Connect(function(input)
+        log("InputBegan event received:", input.UserInputType) -- Updated: Use new log function
+        -- Handle both MouseButton1 and Touch starts
+        if currentGameState == "DRAWING" and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
+            IS_DRAWING = true
+            brushIndicator.Visible = true -- Show indicator immediately on touch/click
             handleDrawing(input)
         end
     end)
-    
+
+    -- Mouse/Touch button up - stop drawing and reset previous position
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            if IS_DRAWING then
+                 log("InputEnded event received for drawing:", input.UserInputType)
+                 IS_DRAWING = false
+                 brushIndicator.Visible = false -- Hide indicator when drawing stops
+                 -- Reset previous position when we stop drawing
+                 prevCanvasX = nil
+                 prevCanvasY = nil
+            end
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        -- Handle both MouseMovement and Touch movement while drawing
+        if IS_DRAWING and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) and currentGameState == "DRAWING" then
+            log("InputChanged event received while drawing:", input.UserInputType) -- Updated: Use new log function
+            handleDrawing(input)
+        end
+        -- Handle slider dragging (already covered by the slider-specific InputChanged connection)
+    end)
+
     log("Canvas initialization complete") -- Updated: Use new log function
 end
 
@@ -502,66 +575,5 @@ task.spawn(function()
         else
             break
         end
-    end
-end)
-
-RunService.RenderStepped:Connect(function()
-    -- If brushIndicator is not found, return
-    if not brushIndicator then
-        return
-    end
-
-    if not IS_DRAWING then
-        brushIndicator.Visible = false
-        return
-    end
-
-    -- Update brush indicator position if drawing
-    if currentGameState == "DRAWING" and canvasFrame and 
-        drawingScreen and drawingScreen.Enabled then
-
-        local mousePos = UserInputService:GetMouseLocation()
-        -- Get the GUI inset (space reserved for top bar, etc.)
-        local guiInset = GuiService:GetGuiInset()
-
-        local canvasPosition = canvasFrame.AbsolutePosition
-        local canvasSize = canvasFrame.AbsoluteSize
-
-        -- Adjust mouse Y position for the GUI inset ONLY if IgnoreGuiInset is false
-        local adjustedMouseY = mousePos.Y - guiInset.Y
-
-        -- Check if mouse is inside the canvas frame bounds using the adjusted Y position
-        if mousePos.X >= canvasPosition.X and
-           mousePos.X <= canvasPosition.X + canvasSize.X and
-           adjustedMouseY >= canvasPosition.Y and -- Use adjusted Y
-           adjustedMouseY <= canvasPosition.Y + canvasSize.Y then -- Use adjusted Y
-
-            -- Mouse is inside: show and position the indicator
-            brushIndicator.Visible = true
-            -- Calculate position relative to the canvasFrame (parent) size
-            -- Avoid division by zero if canvas size is somehow zero
-            if canvasSize.X > 0 and canvasSize.Y > 0 then
-                -- Calculate mouse position relative to the canvas frame's top-left corner using adjusted Y
-                local relativeMouseX = mousePos.X - canvasPosition.X
-                local relativeMouseY = adjustedMouseY - canvasPosition.Y -- Use adjusted Y
-
-                -- Calculate scale based on relative position and canvas size
-                local scaleX = relativeMouseX / canvasSize.X
-                local scaleY = relativeMouseY / canvasSize.Y
-                -- Use fromScale. Assumes AnchorPoint (0.5, 0.5) to center it.
-                brushIndicator.Position = UDim2.fromScale(scaleX, scaleY)
-            else
-                -- Fallback or hide if canvas size is invalid
-                brushIndicator.Visible = false
-                -- Use warn instead of log for potential issues
-                warn("Warning: canvasFrame AbsoluteSize is zero, cannot position brush indicator.")
-            end
-        else
-            -- Mouse is outside: hide the indicator
-            brushIndicator.Visible = false
-        end
-    else
-        -- Hide indicator if not in drawing state or UI elements are missing/disabled
-        brushIndicator.Visible = false
     end
 end)
