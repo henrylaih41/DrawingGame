@@ -57,8 +57,9 @@ local DRAWING_MODE = "PENCIL"
 local canvas = nil -- Canvas object reference
 local drawingScreen = nil -- Reference to the DrawingScreen UI
 local timeLabel = nil -- Reference to the TimeLabel UI
-local topLevelFrame = nil -- Reference to the TopLevelFrame UI
-local currentGameState = "LOBBY"
+local canvasContainer = nil
+local uiContainer = nil
+currentGameState = "LOBBY"
 local drawingTimeLeft = 0
 local canvasInitialized = false -- Flag to track canvas initialization
 local canvasFrame = nil -- Declare canvasFrame at a higher scope
@@ -273,13 +274,14 @@ local function initCanvas()
     canvasInitialized = true
     drawingScreen = PlayerGui:WaitForChild("DrawingScreen")
     timeLabel = drawingScreen:WaitForChild("TimeLabel")
-    topLevelFrame = drawingScreen:WaitForChild("TopLevelFrame")
+    canvasContainer = drawingScreen:WaitForChild("CanvasContainer")
+    uiContainer = drawingScreen:WaitForChild("UIContainer")
     -- Get UI references
-    canvasFrame = topLevelFrame:WaitForChild("CanvasFrame") -- Assign to higher scope variable
+    canvasFrame = canvasContainer:WaitForChild("CanvasFrame") -- Assign to higher scope variable
 
     CANVAS_BACKGROUND_COLOR = canvasFrame.BackgroundColor3
     assert(canvasFrame, "Canvas not found in DrawingScreen")
-    local controls = topLevelFrame:WaitForChild("Controls")
+    local controls = uiContainer:WaitForChild("Controls")
     assert(controls, "Controls not found in DrawingScreen")
     
     -- Create canvas with CanvasDraw
@@ -302,7 +304,7 @@ local function initCanvas()
     local prevCanvasY = nil
 
     -- Set up color picker
-    local c = Color.New(topLevelFrame)
+    local c = Color.New(uiContainer)
     c:SetColor(CURRENT_COLOR)
     
     c.Updated:Connect(function(color)

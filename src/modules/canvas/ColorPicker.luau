@@ -151,15 +151,6 @@ function Color:Create(ColorPicker)
 		end
 	end
 
-	for i,v in pairs({ColorPicker.Properties.HSV,ColorPicker.Properties.RGB}) do
-		for q,e in pairs(v:GetChildren()) do
-			if e:IsA("Frame") then
-				e.Frame.BackgroundColor3 = self.Params.Secondary.Color
-				e.Frame.BackgroundTransparency = self.Params.Secondary.Transparency
-			end
-		end
-	end
-	
 	for i,v in pairs(ColorPicker:GetDescendants()) do
 		if not self.Params.RoundedCorners and v:IsA("UICorner") and v.Parent.Name ~= "Select" then
 			v:Destroy()
@@ -243,11 +234,6 @@ function Color:Create(ColorPicker)
 		end
 	end)
 	
-	ColorPicker.Content.Bottom.Hex.Frame.TextBox.FocusLost:Connect(function()
-		local color = Color3.fromHex(ColorPicker.Content.Bottom.Hex.Frame.TextBox.Text)
-		self:SetColor(color)
-	end)
-	
 	-- Properties
 	for i,v in pairs(ColorPicker.Properties.RGB:GetChildren()) do
 		if v:IsA("Frame") then
@@ -260,30 +246,6 @@ function Color:Create(ColorPicker)
 			end)
 		end
 	end
-	
-	for i,v in pairs(ColorPicker.Properties.HSV:GetChildren()) do
-		if v:IsA("Frame") then
-			v.Frame.TextBox.FocusLost:Connect(function()
-				self:SetColor(Color3.fromHSV(
-					math.clamp(tonumber(ColorPicker.Properties.HSV.H.Frame.TextBox.Text) or 0,0,360) / 360,
-					math.clamp(tonumber(ColorPicker.Properties.HSV.S.Frame.TextBox.Text) or 1,0,1),
-					math.clamp(tonumber(ColorPicker.Properties.HSV.V.Frame.TextBox.Text) or 1,0,1)
-				))
-			end)
-		end
-	end
-	
-	ColorPicker.Content.Bottom.Buttons.Confirm.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			ColorPicker.FinishedEvent:Fire(Color3.fromHSV(self.Hue,self.Saturation,self.Value))
-		end
-	end)
-	
-	ColorPicker.Content.Bottom.Buttons.Cancel.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			ColorPicker.CanceledEvent:Fire()
-		end
-	end)
 	
 	self.Instance = ColorPicker
 	return ColorPicker
@@ -318,16 +280,9 @@ function Color:UpdateColorVisual()
 			ColorSequenceKeypoint.new(1,Color3.fromRGB(0,0,0))
 		})
 		
-		self.Instance.Content.Bottom.Color.Frame.BackgroundColor3 = color
-		self.Instance.Content.Bottom.Hex.Frame.TextBox.Text = string.format("#%s",color:ToHex())
-		
 		self.Instance.Properties.RGB.R.Frame.TextBox.Text = math.floor(color.R * 255)
 		self.Instance.Properties.RGB.G.Frame.TextBox.Text = math.floor(color.G * 255)
 		self.Instance.Properties.RGB.B.Frame.TextBox.Text = math.floor(color.B * 255)
-		
-		self.Instance.Properties.HSV.H.Frame.TextBox.Text = math.floor(self.Hue * 360)
-		self.Instance.Properties.HSV.S.Frame.TextBox.Text = roundToHundredths(self.Saturation)
-		self.Instance.Properties.HSV.V.Frame.TextBox.Text = roundToHundredths(self.Value)
 	end
 end
 
