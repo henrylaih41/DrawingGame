@@ -12,8 +12,11 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GuiService = game:GetService("GuiService")
+local UIS        = game:GetService("UserInputService")
 local DebugUtils = require(ReplicatedStorage.Modules.Services.DebugUtils) -- Added: Import DebugUtils
+local InputUtils = require(ReplicatedStorage.Modules.Utils.InputUtils) -- Added: Import InputUtils
 local DebugFlag = true
+local firstWheelSelect = true
 -- Debug logging function using DebugUtils
 --- Logs a message to the console if DebugFlag is enabled.
 --- @param ... any The message parts to log.
@@ -23,9 +26,9 @@ local function log(...) -- Renamed and updated function signature
     end
 end
 
+
+
 local Color = {}
--- When the user first picks a color, we moved the slider to the top. 
-local firstPick = true 
 Color.__index = Color
 
 export type ParameterStyle = {
@@ -96,7 +99,6 @@ function Color.New(gui : LayerCollector,params : Parameters?)
 	params = template(params,{
 		Position = UDim2.fromOffset(defaultPos.X,defaultPos.Y),
 		RoundedCorners = true,
-		Draggable = true,
 		ZIndex = 1,
 		Size = 0.4,
 		
@@ -121,19 +123,7 @@ end
 
 function Color:Create(ColorPicker)
 	log("Creating ColorPicker")
-	-- Create ColorPicker
 	-- Drag
-	if self.Params.Draggable then
-		ColorPicker.Topbar.Button.MouseButton1Down:Connect(function()
-			local startMousePos = self:GetMousePos() or Vector2.zero
-			local startWindowPos = self.Instance.Position
-			self._dragFunc = RunService.Heartbeat:Connect(function()
-				local pos = ((self:GetMousePos() or Vector2.zero) - startMousePos)
-				self.Instance.Position = startWindowPos + UDim2.fromOffset(pos.X,pos.Y)
-			end)
-		end)
-	end
-	
 	-- Events
 	self.Updated = ColorPicker.UpdateEvent.Event
 	self.Finished = ColorPicker.FinishedEvent.Event
@@ -164,76 +154,43 @@ function Color:Create(ColorPicker)
 	
 	-- Wheel
 	local wheel = ColorPicker.Content.Wheel
-	wheel.Button.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			self.Connections.wheelReposition = RunService.Heartbeat:Connect(function(dt)
-				local mousePos = self:GetMousePos()
-				-- local mousePos = absoluteMousePos - Vector2.new(0, guiInset.Y)
 
-				if mousePos then
-					if firstPick then
-						valueSlider.Select.Position = UDim2.fromScale(0,0)
-						self.Value = 1
-						firstPick = false
-					end
-
-					local wheelMid = wheel.Image.AbsolutePosition + wheel.Image.AbsoluteSize / 2
-					local toWheelMid = (mousePos - wheelMid) / wheel.Image.AbsoluteSize
-					if toWheelMid.Magnitude > 0.5 then
-						toWheelMid = toWheelMid.Unit / 2
-					end
-
-					wheel.Image.Select.Position = UDim2.fromScale(0.5 + toWheelMid.X,0.5 + toWheelMid.Y)
-
-					local phi,len = toPolar(toWheelMid * Vector2.new(1,-1))
-					local hue,saturation = math.clamp(radToDeg(phi) / 360,0,1),math.clamp(len * 2,0,1)
-
-					self.Saturation = saturation
-					self.Hue = hue
-
-					self:UpdateColorVisual()
-				end
-			end)
+	self.Connections.wheelDrag = InputUtils.bindDrag(wheel.Button, function(pointerPos: Vector2) -- Updated: Use InputUtils.bindDrag
+		if firstWheelSelect then
+			firstWheelSelect = false
+			valueSlider.Select.Position = UDim2.fromScale(0, 0)
+			self.Value = 1
 		end
-	end)
-	
-	valueSlider.Button.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			self.Connections.valueReposition = RunService.Heartbeat:Connect(function(dt)
-				local mousePos = self:GetMousePos()
-				if mousePos then
-					local valueTop = valueSlider.AbsolutePosition
-					
-					local v = 1 - math.clamp((mousePos.Y - valueTop.Y) / valueSlider.AbsoluteSize.Y,0,1)
-					self.Value = v
-					
-					valueSlider.Select.Position = UDim2.fromScale(0,1 - v)
-					self:UpdateColorVisual()
-				end
-			end)
+
+		local wheelMid   = wheel.Image.AbsolutePosition + wheel.Image.AbsoluteSize / 2
+		local toWheelMid = (pointerPos - wheelMid) / wheel.Image.AbsoluteSize
+		if toWheelMid.Magnitude > 0.5 then         -- clamp to circle rim
+			toWheelMid = toWheelMid.Unit / 2
 		end
+
+		wheel.Image.Select.Position = UDim2.fromScale(0.5 + toWheelMid.X,
+													0.5 + toWheelMid.Y)
+
+		-- convert to HSV
+		local phi, len  = toPolar(toWheelMid * Vector2.new(1, -1))
+		local hue       = math.clamp(radToDeg(phi) / 360, 0, 1)
+		local sat       = math.clamp(len * 2,              0, 1)
+
+		self.Hue        = hue
+		self.Saturation = sat
+		self:UpdateColorVisual()
 	end)
-	
-	-- Connections
-	self.Connections.inputEnded = UserInputService.InputEnded:Connect(function(input,typing)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			if self.Connections.wheelReposition then
-				self.Connections.wheelReposition:Disconnect()
-				self.Connections.wheelReposition = nil
-			end
-			
-			if self.Connections.valueReposition then
-				self.Connections.valueReposition:Disconnect()
-				self.Connections.valueReposition = nil
-			end
-			
-			if self._dragFunc then
-				self._dragFunc:Disconnect()
-				self._dragFunc = nil
-			end
-		end
+
+	self.Connections.valueDrag = InputUtils.bindDrag(valueSlider.Button, function(pointerPos: Vector2) -- Updated: Use InputUtils.bindDrag
+		local valueTop = valueSlider.AbsolutePosition
+		local v = 1 - math.clamp(
+			(pointerPos.Y - valueTop.Y) / valueSlider.AbsoluteSize.Y, 0, 1)
+
+		self.Value = v
+		valueSlider.Select.Position = UDim2.fromScale(0, 1 - v)
+		self:UpdateColorVisual()
 	end)
-	
+
 	-- Properties
 	for i,v in pairs(ColorPicker.Properties.RGB:GetChildren()) do
 		if v:IsA("Frame") then
@@ -256,17 +213,6 @@ function Color:GetMousePos()
 	local mousePos = UserInputService:GetMouseLocation()
 	local guiInset = GuiService:GetGuiInset()
 	return mousePos - Vector2.new(0, guiInset.Y)
-	-- else
-	-- 	-- Find the intersection point of the mouse ray and SurfaceGui plane
-	-- 	local ray = game.Workspace.CurrentCamera:ViewportPointToRay(mousePos.X,mousePos.Y)
-	-- 	local planePoint,planeNormal = getScreenGuiWorldDetails(self.Gui)
-		
-	-- 	local p = -((ray.Origin - planePoint):Dot(planeNormal)) / (ray.Direction:Dot(planeNormal))
-	-- 	local mouseHit = ray.Origin + ray.Direction * p
-		
-	-- 	local relative = (-self.Gui.Parent.CFrame:PointToObjectSpace(mouseHit) + self.Gui.Parent.Size / 2) * self.Gui.PixelsPerStud
-	-- 	return Vector2.new(relative.X,relative.Y)
-	-- end
 end
 
 -- Updates the properties and color preview
@@ -297,7 +243,7 @@ function Color:SetColor(c : Color3)
 		local h2 = h * math.pi * 2
 		local wv = Vector2.new(-math.cos(h2) / 2 * s,math.sin(h2) / 2 * s)
 		self.Instance.Content.Wheel.Image.Select.Position = UDim2.fromScale(0.5 + wv.X,0.5 + wv.Y)
-		self.Instance.Content.Right.Value.Select.Position = UDim2.fromScale(0,1 - v)
+	
 		
 		self:UpdateColorVisual()
 	end
@@ -311,11 +257,16 @@ function Color:Destroy()
 		end
 	end
 	
-	if self._dragFunc then
-		self._dragFunc:Disconnect()
-		self._dragFunc = nil
+	if self.Connections.wheelDrag then
+		self.Connections.wheelDrag:Disconnect()
+		self.Connections.wheelDrag = nil
 	end
 	
+	if self.Connections.valueDrag then
+		self.Connections.valueDrag:Disconnect()
+		self.Connections.valueDrag = nil
+	end
+			
 	if self.Instance then
 		self.Instance:Destroy()
 		self.Instance = nil

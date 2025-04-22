@@ -13,6 +13,10 @@
         "Services": {
           "$className": "Folder",
           "$path": "src/modules/services"
+        },
+        "Utils": {
+          "$className": "Folder",
+          "$path": "src/modules/utils"
         }
         
       },
