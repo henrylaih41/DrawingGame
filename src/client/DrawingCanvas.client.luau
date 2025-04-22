@@ -58,6 +58,9 @@ local canvasInitialized= false
 local currentGameState = "LOBBY"
 local drawingTimeLeft  = 0
 
+-- Track UI event connections for cleanup
+local uiConnections = {}
+
 ------------------------------------------------------------------------
 -- 5️⃣  HELPERS
 ------------------------------------------------------------------------
@@ -119,6 +122,12 @@ local function showActiveIndicator(show: boolean, pointerPos: Vector2)
     local cPos, cSize = canvasFrame.AbsolutePosition, canvasFrame.AbsoluteSize
     if cSize.X == 0 or cSize.Y == 0 then return end
 
+    -- Check if pointer is within canvas bounds
+    if pointerPos.X < cPos.X or pointerPos.X > cPos.X+cSize.X or 
+       pointerPos.Y < cPos.Y or pointerPos.Y > cPos.Y+cSize.Y then
+        return -- Exit function if pointer is outside canvas bounds
+    end
+
     local relX = (pointerPos.X - cPos.X) / cSize.X
     local relY = (pointerPos.Y - cPos.Y) / cSize.Y
     ind.Position = UDim2.fromScale(relX, relY)
@@ -131,17 +140,28 @@ end
 local function bindBrushSlider(slider: Frame, getSize, setSize)
     local track = slider:WaitForChild("Track")
     local knob  = track:WaitForChild("Knob")
-
-    InputUtils.bindDrag(knob, function(ptr: Vector2)
+    
+    -- Helper function to update knob position and size value
+    local function updateFromPosition(pos: Vector2)
         local left   = track.AbsolutePosition.X
         local width  = track.AbsoluteSize.X
         local right  = left + width
-        local x      = math.clamp(ptr.X, left, right)
+        local x      = math.clamp(pos.X, left, right)
         local alpha  = (x-left)/width
         knob.Position= UDim2.fromScale(alpha, knob.Position.Y.Scale)
         local sz     = math.floor(BRUSH_SIZE_MIN + alpha*(BRUSH_SIZE_MAX-BRUSH_SIZE_MIN) + 0.5)
         setSize(sz)
         refreshIndicatorSizes()
+    end
+    
+    -- Make track clickable/touchable to jump knob position
+    InputUtils.bindDrag(track, function(ptr: Vector2)
+        updateFromPosition(ptr)
+    end)
+    
+    -- Keep original knob drag functionality
+    InputUtils.bindDrag(knob, function(ptr: Vector2)
+        updateFromPosition(ptr)
     end)
 
     task.defer(function()
@@ -154,26 +174,99 @@ end
 ------------------------------------------------------------------------
 -- 9️⃣  UI BUTTON SETUP
 ------------------------------------------------------------------------
+local function applyButtonHoverEffects(button: GuiObject, onClick: (button: GuiObject) -> nil, customColors: {default: Color3?, hover: Color3?, press: Color3?}?)
+    customColors = customColors or {}
+    local defaultColor = customColors.default or button.BackgroundColor3
+    local hoverColor = customColors.hover or Color3.fromRGB(220, 220, 220)
+    local pressColor = customColors.press or Color3.fromRGB(180, 180, 180)
+    
+    local connections = {}
+    
+    -- Mouse input handling
+    table.insert(connections, button.MouseEnter:Connect(function()
+        button.BackgroundColor3 = hoverColor
+    end))
+    
+    table.insert(connections, button.MouseLeave:Connect(function()
+        button.BackgroundColor3 = defaultColor
+    end))
+    
+    table.insert(connections, button.MouseButton1Down:Connect(function()
+        button.BackgroundColor3 = pressColor
+    end))
+    
+    table.insert(connections, button.MouseButton1Up:Connect(function()
+        button.BackgroundColor3 = hoverColor
+    end))
+    
+    -- For both mouse and touch
+    if onClick then
+        table.insert(connections, button.MouseButton1Click:Connect(function()
+            onClick(button)
+        end))
+    end
+    
+    -- Return disconnect function for cleanup
+    return function()
+        for _, connection in ipairs(connections) do
+            connection:Disconnect()
+        end
+    end
+end
+
+local function updateModeButtonsAppearance(pencilButton, eraserButton)
+    -- Reset both buttons
+    pencilButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    eraserButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    
+    -- Highlight active button
+    if DRAWING_MODE == "PENCIL" then
+        pencilButton.BackgroundColor3 = Color3.fromRGB(85, 85, 85)
+    else -- ERASER
+        eraserButton.BackgroundColor3 = Color3.fromRGB(85, 85, 85)
+    end
+end
+
 local function setupPencilAndEraserButtons(controls: Frame)
     local pencilButton = controls:WaitForChild("PencilButton")
     local eraserButton = controls:WaitForChild("EraserButton")
 
-    pencilButton.MouseButton1Click:Connect(function()
+    -- Setup pencil button
+    local connections = {}
+    table.insert(connections, pencilButton.MouseButton1Click:Connect(function()
         DRAWING_MODE = "PENCIL"
+        updateModeButtonsAppearance(pencilButton, eraserButton)
         refreshIndicatorSizes()
-    end)
-
-    eraserButton.MouseButton1Click:Connect(function()
+    end))
+    
+    -- Setup eraser button
+    table.insert(connections, eraserButton.MouseButton1Click:Connect(function()
         DRAWING_MODE = "ERASER"
+        updateModeButtonsAppearance(pencilButton, eraserButton)
         refreshIndicatorSizes()
+    end))
+    -- Add cleanup function
+    local cleanup = function()
+        for _, connection in ipairs(connections) do
+            connection:Disconnect()
+        end
+    end
+    table.insert(uiConnections, cleanup)
+    
+    -- Set initial button appearance based on default mode
+    task.defer(function()
+        updateModeButtonsAppearance(pencilButton, eraserButton)
     end)
 end
 
 local function setupClearButton(controls: Frame)
     local clearButton = controls:WaitForChild("ClearButton")
-    clearButton.MouseButton1Click:Connect(function()
+    
+    local cleanup = applyButtonHoverEffects(clearButton, function()
         if canvas then canvas:Clear(CANVAS_BACKGROUND_COLOR) end
     end)
+    
+    table.insert(uiConnections, cleanup)
 end
 
 local function submitDrawing()
@@ -183,7 +276,13 @@ local function submitDrawing()
 end
 
 local function setupSubmitButton(controls: Frame)
-    controls:WaitForChild("SubmitButton").MouseButton1Click:Connect(submitDrawing)
+    local submitButton = controls:WaitForChild("SubmitButton")
+    
+    local cleanup = applyButtonHoverEffects(submitButton, function()
+        submitDrawing()
+    end)
+    
+    table.insert(uiConnections, cleanup)
 end
 
 ------------------------------------------------------------------------
@@ -321,7 +420,13 @@ GameStateChangedEvent.OnClientEvent:Connect(function(newState)
     else
         if drawingScreen then drawingScreen.Enabled = false end
         if newState == "VOTING" and prev == "DRAWING" then submitDrawing() end
-        if newState == "LOBBY" and canvas then canvas:Clear(CANVAS_BACKGROUND_COLOR) end
+        if newState == "LOBBY" and canvas then 
+            canvas:Clear(CANVAS_BACKGROUND_COLOR)
+            -- Clean up connections when returning to lobby
+            if prev == "VOTING" then
+                cleanupConnections()
+            end
+        end
 
         -- Re‑enable mobile controls when leaving drawing phase
         if playerControls then playerControls:Enable() end
@@ -338,3 +443,10 @@ GameCountdownEvent.OnClientEvent:Connect(function(sec, phase)
         timeLabel.TextColor3 = (sec<=30) and Color3.fromRGB(255,50,50) or Color3.fromRGB(0,0,0)
     end
 end)
+
+local function cleanupConnections()
+    for _, cleanup in ipairs(uiConnections) do
+        cleanup()
+    end
+    table.clear(uiConnections)
+end
