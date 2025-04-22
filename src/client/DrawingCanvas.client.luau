@@ -5,6 +5,7 @@
 -- ▸ Requires two sliders in UIContainer/ColorPickerContainer:
 --       • BrushSizeSlider   (for pencil)
 --       • EraserSizeSlider  (for eraser)
+-- ▸ Added undo/redo functionality
 
 ------------------------------------------------------------------------
 -- 1️⃣  SERVICES & MODULES
@@ -60,6 +61,11 @@ local drawingTimeLeft  = 0
 
 -- Track UI event connections for cleanup
 local uiConnections = {}
+
+-- History stacks for undo/redo
+local undoStack = {}
+local redoStack = {}
+local MAX_HISTORY = 20  -- Maximum number of states to remember
 
 ------------------------------------------------------------------------
 -- 5️⃣  HELPERS
@@ -259,11 +265,68 @@ local function setupPencilAndEraserButtons(controls: Frame)
     end)
 end
 
+local function setupUndoButton(controls: Frame)
+    local undoButton = controls:WaitForChild("UndoButton")
+
+    local cleanup = applyButtonHoverEffects(undoButton, function()
+        if #undoStack > 1 and canvas then               -- at least two states
+            local current = table.remove(undoStack)     -- pop current
+            table.insert(redoStack, current)            -- move → redo
+            if #redoStack > MAX_HISTORY then
+                table.remove(redoStack, 1)
+            end
+
+            canvas:SetBufferFromImage(undoStack[#undoStack]) -- show new top
+        end
+    end)
+
+    table.insert(uiConnections, cleanup)
+end
+
+local function setupRedoButton(controls: Frame)
+    local redoButton = controls:WaitForChild("RedoButton")
+
+    local cleanup = applyButtonHoverEffects(redoButton, function()
+        if #redoStack > 0 and canvas then
+            local nextState = table.remove(redoStack)   -- pop redo frame
+            table.insert(undoStack, nextState)          -- push → undo
+            if #undoStack > MAX_HISTORY then
+                table.remove(undoStack, 1)
+            end
+
+            canvas:SetBufferFromImage(nextState)     -- show it
+        end
+    end)
+
+    table.insert(uiConnections, cleanup)
+end
+
+local function takeCanvasSnapshot()
+    if canvas then
+        -- Clear redo stack when new action is taken
+        table.clear(redoStack)
+        
+        log("Taking snapshot")
+        -- Add current state to undo stack
+        local imageData = canvas:CreateImageDataFromCanvas()
+        table.insert(undoStack, imageData)
+        
+        -- Limit stack size
+        if #undoStack > MAX_HISTORY then
+            table.remove(undoStack, 1)
+        end
+    end
+end
+
 local function setupClearButton(controls: Frame)
     local clearButton = controls:WaitForChild("ClearButton")
     
     local cleanup = applyButtonHoverEffects(clearButton, function()
-        if canvas then canvas:Clear(CANVAS_BACKGROUND_COLOR) end
+        if canvas then 
+            -- Take snapshot before clearing
+            takeCanvasSnapshot()
+            canvas:Clear(CANVAS_BACKGROUND_COLOR) 
+        end
     end)
     
     table.insert(uiConnections, cleanup)
@@ -347,6 +410,8 @@ local function initCanvas()
     setupPencilAndEraserButtons(controls)
     setupClearButton(controls)
     setupSubmitButton(controls)
+    setupUndoButton(controls)
+    setupRedoButton(controls)
 
     ------------------------------------------------------------------
     -- DRAWING LOGIC (same as previous version)
@@ -385,7 +450,14 @@ local function initCanvas()
 
     UserInputService.InputBegan:Connect(function(i)
         if currentGameState=="DRAWING" and (i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch) then
-            IS_DRAWING = true
+            local pos = Vector2.new(i.Position.X, i.Position.Y)
+            local inset = drawingScreen.IgnoreGuiInset and Vector2.new(0,0) or GuiService:GetGuiInset()
+            pos -= Vector2.new(0, inset.Y)
+            
+            local cPos, cSize = canvasFrame.AbsolutePosition, canvasFrame.AbsoluteSize
+            if not (pos.X < cPos.X or pos.X > cPos.X+cSize.X or pos.Y < cPos.Y or pos.Y > cPos.Y+cSize.Y) then
+                IS_DRAWING = true
+            end
             handleDrawing(i)
         end
     end)
@@ -398,6 +470,11 @@ local function initCanvas()
 
     UserInputService.InputEnded:Connect(function(i)
         if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then
+            if IS_DRAWING then
+                log("Taking snapshot input ended")
+                -- Take snapshot when user finishes drawing
+                takeCanvasSnapshot()
+            end
             IS_DRAWING = false
             showActiveIndicator(false, Vector2.zero)
             prevX, prevY = nil, nil
@@ -405,6 +482,9 @@ local function initCanvas()
     end)
 
     refreshIndicatorSizes()
+    
+    -- Take initial snapshot of empty canvas
+    takeCanvasSnapshot()
 end
 
 ------------------------------------------------------------------------
@@ -422,9 +502,11 @@ GameStateChangedEvent.OnClientEvent:Connect(function(newState)
         if newState == "VOTING" and prev == "DRAWING" then submitDrawing() end
         if newState == "LOBBY" and canvas then 
             canvas:Clear(CANVAS_BACKGROUND_COLOR)
-            -- Clean up connections when returning to lobby
+            -- Clean up connections and history when returning to lobby
             if prev == "VOTING" then
                 cleanupConnections()
+                table.clear(undoStack)
+                table.clear(redoStack)
             end
         end
 
