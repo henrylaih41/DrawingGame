@@ -463,7 +463,10 @@ local function initCanvas()
     end)
 
     UserInputService.InputChanged:Connect(function(i)
-        if IS_DRAWING and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) and currentGameState=="DRAWING" then
+        if IS_DRAWING and 
+            (i.UserInputType==Enum.UserInputType.MouseMovement or
+             i.UserInputType==Enum.UserInputType.Touch) and
+            currentGameState=="DRAWING" then
             handleDrawing(i)
         end
     end)
@@ -490,7 +493,8 @@ end
 ------------------------------------------------------------------------
 -- 1️⃣1️⃣  GAME STATE & COUNTDOWN HANDLERS
 ------------------------------------------------------------------------
-GameStateChangedEvent.OnClientEvent:Connect(function(newState)
+GameStateChangedEvent.OnClientEvent:Connect(function(stateData)
+    local newState = stateData.state
     local prev = currentGameState
     currentGameState = newState
 

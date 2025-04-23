@@ -140,7 +140,8 @@ UpdateLobbyPlayersEvent.OnClientEvent:Connect(function(playersList, hostPlayer, 
 end)
 
 -- Handle game state changes
-GameStateChangedEvent.OnClientEvent:Connect(function(newState)
+GameStateChangedEvent.OnClientEvent:Connect(function(stateData)
+    local newState = stateData.state
     currentGameState = newState
     
     -- Update UI based on game state
