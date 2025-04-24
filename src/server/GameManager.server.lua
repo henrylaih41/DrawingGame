@@ -206,17 +206,25 @@ end
 local function runDrawingPhase()
     GameManager.playerDrawings = {} -- Clear previous drawings
     GameManager.playerScores = {} -- Clear previous scores
+    GameManager.skipDrawingTime = false -- Reset skip flag
     debugPrint("Cleared previous drawings and scores")
 
     -- TODO: Get the actual theme for the round
     local currentTheme = "Numbers" -- Placeholder
 
     for i = CONSTANTS.DRAWING_TIME, 0, -1 do
+        -- Check if we should skip the remaining time
+        if GameManager.skipDrawingTime then
+            debugPrint("Skipping remaining drawing time as all players have submitted.")
+            break
+        end
+        
         Events.GameCountdown:FireAllClients(i, GameState.DRAWING)
         if i > 0 then task.wait(1) end -- Wait unless it's the last second
     end
-    debugPrint("Drawing time complete.")
-    task.wait(2) -- Short grace period for submissions
+
+    debugPrint("Drawing phase complete.")
+    task.wait(1) -- Short grace period for submissions
     
     return currentTheme
 end
@@ -226,51 +234,46 @@ local function runGradingPhase(currentTheme)
     local playersGraded = 0
     local allGradingCompleteSignal = Instance.new("BindableEvent")
 
-    if playersToGrade == 0 then
-        debugPrint("No players left to grade.")
-        allGradingCompleteSignal:Fire()
-    else
-        -- Iterate and submit drawings for grading
-        for _, p in ipairs(GameManager.lobbyPlayers) do
-            local userId = p.UserId
-            local imageData = GameManager.playerDrawings[userId]
+    -- Iterate and submit drawings for grading
+    for _, p in ipairs(GameManager.lobbyPlayers) do
+        local userId = p.UserId
+        local imageData = GameManager.playerDrawings[userId]
 
-            if imageData then
-                -- Asynchronously grade each drawing
-                task.spawn(function()
-                    local errorMessage = false
-                    local result = nil
-                    debugPrint("Submitting drawing for grading for player %s", p.Name)
-                    result, errorMessage = BackendService:submitDrawingToBackendForGrading(p, imageData, currentTheme)
-                    debugPrint("Result: %s", result)
-                    debugPrint("ErrorMessage: %s", errorMessage)
+        if imageData then
+            -- Asynchronously grade each drawing
+            task.spawn(function()
+                local errorMessage = false
+                local result = nil
+                debugPrint("Submitting drawing for grading for player %s", p.Name)
+                result, errorMessage = BackendService:submitDrawingToBackendForGrading(p, imageData, currentTheme)
+                debugPrint("Result: %s", result)
+                debugPrint("ErrorMessage: %s", errorMessage)
 
-                    if result and result.success then
-                        debugPrint("Grading successful for %s", p.Name)
-                        GameManager.playerScores[userId] = { 
-                            drawing = imageData, 
-                            score = result.result.Score or "N/A", 
-                            feedback = result.result.Feedback
-                        }
-                    else
-                        debugPrint("Grading failed for %s: %s", p.Name, errorMessage)
-                        GameManager.playerScores[userId] = { 
-                            drawing = imageData, 
-                            score = "Error", 
-                            feedback = "Failed to grade drawing." 
-                        }
-                    end
+                if result and result.success then
+                    debugPrint("Grading successful for %s", p.Name)
+                    GameManager.playerScores[userId] = { 
+                        drawing = imageData, 
+                        score = result.result.Score or "N/A", 
+                        feedback = result.result.Feedback
+                    }
+                else
+                    debugPrint("Grading failed for %s: %s", p.Name, errorMessage)
+                    GameManager.playerScores[userId] = { 
+                        drawing = imageData, 
+                        score = "Error", 
+                        feedback = "Failed to grade drawing." 
+                    }
+                end
 
-                    playersGraded = playersGraded + 1
-                    debugPrint("Players graded: %d/%d", playersGraded, playersToGrade)
-                    if playersGraded == playersToGrade then
-                        debugPrint("All players graded. Signaling completion.")
-                        allGradingCompleteSignal:Fire()
-                    end
-                end)
-            else
-                assert(false, "No drawing submitted for player %s, skipping grading.", p.Name)
-            end
+                playersGraded = playersGraded + 1
+                debugPrint("Players graded: %d/%d", playersGraded, playersToGrade)
+                if playersGraded == playersToGrade then
+                    debugPrint("All players graded. Signaling completion.")
+                    allGradingCompleteSignal:Fire()
+                end
+            end)
+        else
+            assert(false, "No drawing submitted for player %s, skipping grading.", p.Name)
         end
     end
 
@@ -384,14 +387,6 @@ local function getMultiplayerResults()
     return resultsData
 end
 
-local function showResults(resultsData)
-    Events.ShowResults:FireAllClients({Action = "Data", Data = resultsData})
-    Events.ShowResults:FireAllClients({Action = "Show"})
-    wait(10)
-    Events.ShowResults:FireAllClients({Action = "Hide"})
-    wait(1)
-end
-
 -- Game Flow
 local function startGame()
     -- === COUNTDOWN PHASE ===
@@ -412,9 +407,9 @@ local function startGame()
         runGradingPhase(currentTheme)
         
         -- === RESULTS PHASE ===
-        transitionToState(GameState.RESULTS)
+        transitionToState(GameState.RESULTS, {playerScores = GameManager.playerScores})
         debugPrint("Preparing single-player results.")
-        resultsData = GameManager.playerScores
+        task.wait(15)
         
     elseif GameManager.currentGameMode == GameMode.MULTIPLAYER then
         -- === VOTING PHASE (Multiplayer) ===
@@ -426,8 +421,6 @@ local function startGame()
         transitionToState(GameState.RESULTS)
         resultsData = getMultiplayerResults()
     end
-    
-    showResults(resultsData)
     
     -- === RETURN TO LOBBY ===
     debugPrint("Returning to LOBBY.")
@@ -490,7 +483,7 @@ local function handleReadyStatusChange(player, isReady)
 end
 
 local function handleDrawingSubmission(player, imageData)
-    if GameManager.currentState == GameState.DRAWING or GameManager.currentState == GameState.COUNTDOWN then
+    if GameManager.currentState == GameState.DRAWING then
         -- Ensure we have valid image data
         if not imageData then
             warn("Received nil imageData from player: " .. player.Name)
@@ -499,6 +492,22 @@ local function handleDrawingSubmission(player, imageData)
 
         GameManager.playerDrawings[player.UserId] = imageData
         debugPrint("Stored drawing from player: %s", player.Name)
+        
+        -- Check if all players have submitted drawings
+        local allSubmitted = true
+        for _, p in ipairs(GameManager.lobbyPlayers) do
+            if not GameManager.playerDrawings[p.UserId] then
+                allSubmitted = false
+                break
+            end
+        end
+        
+        -- If all players have submitted, move to the next phase
+        if allSubmitted then
+            debugPrint("All players have submitted drawings. Advancing to next phase.")
+            -- Signal to skip the remaining drawing time
+            GameManager.skipDrawingTime = true
+        end
     else
         debugPrint("Ignoring drawing from %s - received outside of drawing phase (current state: %s)",
             player.Name, GameManager.currentState)
