@@ -6,6 +6,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local DebugFlag = true
 local DebugUtils = require(ReplicatedStorage.Modules.Services.DebugUtils)
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 
 -- Debug logging function using DebugUtils
 --- Logs a message to the console if DebugFlag is enabled.
@@ -59,6 +61,42 @@ local function displayDrawingData(targetCanvas, imageData)
     log("Drawing displayed on canvas")
 end
 
+-- Function to create a starburst effect
+local function createStarburstEffect(parent)
+    for i = 1, 8 do
+        local spark = Instance.new("Frame")
+        spark.BorderSizePixel = 0
+        spark.BackgroundColor3 = Color3.fromRGB(255, 255, 150) -- Yellow spark
+        spark.Size = UDim2.new(0, 2, 0, 10)
+        spark.AnchorPoint = Vector2.new(0.5, 0.5)
+        spark.Position = UDim2.new(0.5, 0, 0.5, 0)
+        spark.Rotation = i * 45 -- Evenly spaced around
+        spark.ZIndex = 10 -- Ensure it appears above the trophy
+        spark.Parent = parent
+        
+        -- Create glow effect
+        local uiGradient = Instance.new("UIGradient")
+        uiGradient.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 200, 50))
+        })
+        uiGradient.Parent = spark
+        
+        -- Animate the spark outward
+        local tweenInfo = TweenInfo.new(0.7, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+        local tween = TweenService:Create(spark, tweenInfo, {
+            Size = UDim2.new(0, 2, 0, 40),
+            BackgroundTransparency = 1
+        })
+        tween:Play()
+        
+        -- Clean up after animation
+        tween.Completed:Connect(function()
+            spark:Destroy()
+        end)
+    end
+end
+
 -- Function to update the star display based on score
 --- Updates the star images (empty/filled) based on the provided score.
 --- Handles potential issues with finding star ImageLabels.
@@ -68,24 +106,67 @@ local function updateStarDisplay(score)
     assert(trophyContainer ~= nil, "Star container is nil")
     assert(#trophies == 10, "Expected 10 trophies, found " .. #trophies)
     log("Updating star display for score: ", score)
-    score = 8
+    score = 10
+    
+    -- First clean up any previous trophy overlays
     for i, trophyLabel in ipairs(trophies) do
-        log("Updating trophy: ", i)
-        log("score: ", score)
-        if i <= score then
-            log("trophy: ", i)
-            -- Determine which filled asset to use based on the total score
-            if i == 10 then
-                trophyLabel.Image = HIGH_TROPHY_ASSET -- Special trophy for the 10th trophy at max score
-            elseif i >= 7 then
-                trophyLabel.Image = MID_TROPHY_ASSET -- Use NICE trophy for scores 7-9
-            else -- Score is 1-6
-                trophyLabel.Image = LOW_TROPHY_ASSET -- Use BASIC trophy for scores 1-6
-            end
+        local existingOverlay = trophyLabel:FindFirstChild("TrophyOverlay")
+        if existingOverlay then
+            existingOverlay:Destroy()
         end
     end
-
-    trophyContainer.Visible = true -- Ensure container is visible when updated
+    
+    trophyContainer.Visible = true -- Ensure container is visible
+    
+    task.wait(1)
+    -- Animate trophies sequentially
+    for i = 1, score do
+        if i <= #trophies then
+            task.delay((i - 1) * 0.3, function()
+                local trophy = trophies[i]
+                if trophy then
+                    -- Determine which trophy asset to use
+                    local trophyAsset
+                    if i == 10 then
+                        trophyAsset = HIGH_TROPHY_ASSET -- Special trophy for the 10th trophy at max score
+                    elseif i >= 7 then
+                        trophyAsset = MID_TROPHY_ASSET -- Use NICE trophy for scores 7-9
+                    else -- Score is 1-6
+                        trophyAsset = LOW_TROPHY_ASSET -- Use BASIC trophy for scores 1-6
+                    end
+                    
+                    -- Create a new overlay ImageLabel that will be placed on top of the original
+                    local overlay = Instance.new("ImageLabel")
+                    overlay.Name = "TrophyOverlay"
+                    overlay.Image = trophyAsset
+                    overlay.BackgroundTransparency = 1
+                    overlay.Size = UDim2.new(1, 0, 1, 0)
+                    overlay.AnchorPoint = Vector2.new(0.5, 0.5)
+                    overlay.Position = UDim2.new(0.5, 0, 0.5, 0)
+                    overlay.ZIndex = trophy.ZIndex + 1 -- Ensure it appears above the original trophy
+                    
+                    -- Create UIScale for scaling animation
+                    local uiScale = Instance.new("UIScale")
+                    uiScale.Scale = 0 -- Start from zero scale
+                    uiScale.Parent = overlay
+                    
+                    -- Add the overlay to the trophy
+                    overlay.Parent = trophy
+                    
+                    -- Animation for appearing with a bounce effect using UIScale
+                    local tweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+                    local tween = TweenService:Create(uiScale, tweenInfo, {Scale = 1})
+                    tween:Play()
+                    
+                    task.delay(0.5, function()
+                        task.delay(0.2, function()
+                            createStarburstEffect(overlay)
+                        end)
+                    end)
+                end
+            end)
+        end
+    end
 end
 
 -- Function to display the final results
@@ -110,6 +191,9 @@ local function displayResults(playerScore)
 
     -- Display the winning drawing
     displayDrawingData(canvas, playerScore.drawing)
+
+    -- Show result UI once the image is loaded.
+    resultScreen.Enabled = true
 
     -- Update the star rating
     updateStarDisplay(playerScore.score)
@@ -156,13 +240,8 @@ local function initResultUI()
     for i = 1, 10 do
         local trophy = trophyContainer:FindFirstChild("Trophy" .. i)
         assert(trophy ~= nil, "Trophy" .. i .. " not found in TrophyContainer")
-        if i == 10 then
-            assert(trophy:IsA("Frame"), "Trophy" .. i .. " must be an Frame")
-            table.insert(trophies, trophy:FindFirstChild("image"))
-        else
-            assert(trophy:IsA("ImageLabel"), "Trophy" .. i .. " must be an ImageLabel")
-            table.insert(trophies, trophy)
-        end
+        assert(trophy:IsA("Frame"), "Trophy" .. i .. " must be an Frame")
+        table.insert(trophies, trophy:FindFirstChild("Trophy" .. i))
     end
     log("Found ", #trophies, " trophylabels.")
 
@@ -196,9 +275,6 @@ Events.GameStateChanged.OnClientEvent:Connect(function(stateData)
         -- Ensure UI is initialized (might have been initialized above or previously)
         if not resultUIInitialized then initResultUI() end
         assert(resultScreen ~= nil, "ResultScreen is nil when trying to display results")
-
-        -- Show result UI
-        resultScreen.Enabled = true
 
         -- Check if we have results data
         if stateData.playerScores then
