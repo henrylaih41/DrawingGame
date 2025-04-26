@@ -42,6 +42,22 @@ local LOW_TROPHY_ASSET = "rbxassetid://70472161727933"
 local MID_TROPHY_ASSET = "rbxassetid://119966776084235"
 local HIGH_TROPHY_ASSET = "rbxassetid://124414140924737"
 
+-- Sound effect for trophy appearance
+local TROPHY_SOUND_ID = "rbxassetid://111277558339395"
+local HIGH_SCORE_SOUND_ID = "rbxassetid://79723856625266" -- Add a celebration sound for high scores
+local soundsFolder = ReplicatedStorage:FindFirstChild("Sounds")
+assert(soundsFolder ~= nil, "Sounds folder not found in ReplicatedStorage")
+
+local trophySound = Instance.new("Sound")
+trophySound.SoundId = TROPHY_SOUND_ID
+trophySound.Volume = 0.5
+trophySound.Parent = soundsFolder
+
+local highScoreSound = Instance.new("Sound")
+highScoreSound.SoundId = HIGH_SCORE_SOUND_ID
+highScoreSound.Volume = 0.7
+highScoreSound.Parent = soundsFolder
+
 -- Function to display an image from ImageData
 --- Clears the target canvas and draws the provided image data onto it, scaling to fit.
 --- @param targetCanvas CanvasDraw The CanvasDraw instance to draw on.
@@ -59,6 +75,32 @@ local function displayDrawingData(targetCanvas, imageData)
     local scaleY = targetCanvas.Resolution.Y / reconstructedImage.Height
     targetCanvas:DrawImage(reconstructedImage, Vector2.new(1, 1), Vector2.new(scaleX, scaleY))
     log("Drawing displayed on canvas")
+end
+
+-- Function to play trophy sound with pitch variation
+local function playTrophySound(pitch)
+    -- Clone the sound so multiple can play simultaneously
+    local sound = trophySound:Clone()
+    sound.Parent = workspace
+    sound.PlaybackSpeed = pitch or 1
+    sound:Play()
+    
+    -- Clean up sound after it finishes playing
+    sound.Ended:Connect(function()
+        sound:Destroy()
+    end)
+end
+
+-- Function to play high score celebration sound
+local function playHighScoreSound()
+    local sound = highScoreSound:Clone()
+    sound.Parent = workspace
+    sound:Play()
+    
+    -- Clean up sound after it finishes playing
+    sound.Ended:Connect(function()
+        sound:Destroy()
+    end)
 end
 
 -- Function to create a starburst effect
@@ -106,7 +148,7 @@ local function updateStarDisplay(score)
     assert(trophyContainer ~= nil, "Star container is nil")
     assert(#trophies == 10, "Expected 10 trophies, found " .. #trophies)
     log("Updating star display for score: ", score)
-    score = 10
+    score = 8
     
     -- First clean up any previous trophy overlays
     for i, trophyLabel in ipairs(trophies) do
@@ -134,6 +176,11 @@ local function updateStarDisplay(score)
                     else -- Score is 1-6
                         trophyAsset = LOW_TROPHY_ASSET -- Use BASIC trophy for scores 1-6
                     end
+                    
+                    -- Play sound with pitch variation based on trophy position
+                    -- Higher pitch for higher value trophies
+                    local pitch = 0.8 + (i * 0.05)
+                    playTrophySound(pitch)
                     
                     -- Create a new overlay ImageLabel that will be placed on top of the original
                     local overlay = Instance.new("ImageLabel")
@@ -166,6 +213,16 @@ local function updateStarDisplay(score)
                 end
             end)
         end
+    end
+    
+    -- Play a special celebration sound after all trophies have appeared if score is high
+    if score >= 8 then
+        -- Calculate delay based on the number of trophies (each takes 0.3s to appear)
+        -- Add extra delay for the starburst effects and final trophy to complete
+        local totalDelay = (score * 0.3) + 0.7
+        task.delay(totalDelay, function()
+            playHighScoreSound()
+        end)
     end
 end
 

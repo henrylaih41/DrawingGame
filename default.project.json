@@ -4,6 +4,9 @@
     "$className": "DataModel",
     "ReplicatedStorage": {
       "$className": "ReplicatedStorage",
+      "Sounds": {
+        "$className": "Folder"
+      },
       "Modules": {
         "$className": "Folder",
         "Canvas": {

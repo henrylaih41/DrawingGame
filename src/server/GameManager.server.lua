@@ -224,7 +224,9 @@ local function runDrawingPhase()
     end
 
     debugPrint("Drawing phase complete.")
-    task.wait(1) -- Short grace period for submissions
+    if not GameManager.skipDrawingTime then
+        task.wait(1) -- Short grace period for submissions
+    end
     
     return currentTheme
 end
@@ -246,8 +248,6 @@ local function runGradingPhase(currentTheme)
                 local result = nil
                 debugPrint("Submitting drawing for grading for player %s", p.Name)
                 result, errorMessage = BackendService:submitDrawingToBackendForGrading(p, imageData, currentTheme)
-                debugPrint("Result: %s", result)
-                debugPrint("ErrorMessage: %s", errorMessage)
 
                 if result and result.success then
                     debugPrint("Grading successful for %s", p.Name)

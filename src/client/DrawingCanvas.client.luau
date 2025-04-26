@@ -335,7 +335,10 @@ end
 local function submitDrawing()
     if not canvas then return end
     local ok, img = pcall(function() return canvas:CreateImageDataFromCanvas() end)
-    if ok and img then SubmitDrawingEvent:FireServer(img) end
+    if ok and img then 
+        currentGameState = "GRADING"
+        SubmitDrawingEvent:FireServer(img) 
+    end
 end
 
 local function setupSubmitButton(controls: Frame)
