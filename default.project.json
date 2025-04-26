@@ -20,8 +20,11 @@
         "Utils": {
           "$className": "Folder",
           "$path": "src/modules/utils"
+        },
+        "GameData": {
+          "$className": "Folder",
+          "$path": "src/modules/gameData"
         }
-        
       },
       "RemoteEvents": {
         "$className": "Folder"

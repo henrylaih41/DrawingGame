@@ -80,6 +80,7 @@ end
 local drawingScreen, timeLabel, canvasContainer, uiContainer, canvasFrame
 local brushIndicatorPencil, brushIndicatorEraser
 local canvas
+local submitNotification
 
 ------------------------------------------------------------------------
 -- 7️⃣  INDICATOR HELPERS
@@ -339,6 +340,13 @@ local function submitDrawing()
         currentGameState = "GRADING"
         SubmitDrawingEvent:FireServer(img) 
     end
+
+    submitNotification.Visible = true
+    
+    -- Hide notification after 3 seconds
+    task.delay(3, function()
+        submitNotification.Visible = false
+    end)
 end
 
 local function setupSubmitButton(controls: Frame)
@@ -354,7 +362,7 @@ end
 ------------------------------------------------------------------------
 -- 🔟  CANVAS INITIALISATION
 ------------------------------------------------------------------------
-local function initCanvas()
+local function initCanvas(theme: string)
     if canvasInitialized then return end
     canvasInitialized = true
 
@@ -368,10 +376,16 @@ local function initCanvas()
     drawingScreen   = PlayerGui:WaitForChild("DrawingScreen")
     timeLabel       = drawingScreen:WaitForChild("TimeLabel")
     canvasContainer = drawingScreen:WaitForChild("CanvasContainer")
+    canvasTopBar    = drawingScreen:WaitForChild("CanvasTopBar")
     uiContainer     = drawingScreen:WaitForChild("UIContainer")
     canvasFrame     = canvasContainer:WaitForChild("CanvasFrame")
+    submitNotification = drawingScreen:WaitForChild("SubmitNotification")
+
+    -- Hide notification by default
+    submitNotification.Visible = false
 
     CANVAS_BACKGROUND_COLOR = canvasFrame.BackgroundColor3
+    canvasTopBar.Theme.Text = theme
 
     local CanvasDraw = require(ReplicatedStorage.Modules.Canvas.CanvasDraw)
     local sz         = canvasFrame.AbsoluteSize
@@ -498,11 +512,12 @@ end
 ------------------------------------------------------------------------
 GameStateChangedEvent.OnClientEvent:Connect(function(stateData)
     local newState = stateData.state
+    local theme = stateData.theme
     local prev = currentGameState
     currentGameState = newState
 
     if newState == "DRAWING" then
-        if not canvasInitialized then initCanvas() end
+        if not canvasInitialized then initCanvas(theme) end
         drawingScreen.Enabled = true
     else
         if drawingScreen then drawingScreen.Enabled = false end

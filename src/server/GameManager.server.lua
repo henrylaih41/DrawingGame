@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 -- Modules
 local CanvasDraw = require(ReplicatedStorage.Modules.Canvas.CanvasDraw)
 local BackendService = require(ReplicatedStorage.Modules.Services.BackendService)
+local ThemeList = require(ReplicatedStorage.Modules.GameData.ThemeList)
 
 -- Constants
 local CONSTANTS = {
@@ -203,14 +204,13 @@ local function runCountdownPhase()
     end
 end
 
-local function runDrawingPhase()
+local function runDrawingPhase(currentTheme)
     GameManager.playerDrawings = {} -- Clear previous drawings
     GameManager.playerScores = {} -- Clear previous scores
     GameManager.skipDrawingTime = false -- Reset skip flag
     debugPrint("Cleared previous drawings and scores")
 
-    -- TODO: Get the actual theme for the round
-    local currentTheme = "Numbers" -- Placeholder
+    -- Theme is now passed as a parameter, no need to select it here
 
     for i = CONSTANTS.DRAWING_TIME, 0, -1 do
         -- Check if we should skip the remaining time
@@ -253,7 +253,7 @@ local function runGradingPhase(currentTheme)
                     debugPrint("Grading successful for %s", p.Name)
                     GameManager.playerScores[userId] = { 
                         drawing = imageData, 
-                        score = result.result.Score or "N/A", 
+                        score = result.result.Score or "5", 
                         feedback = result.result.Feedback
                     }
                 else
@@ -393,9 +393,14 @@ local function startGame()
     transitionToState(GameState.COUNTDOWN)
     runCountdownPhase()
     
+    -- Select theme before starting drawing phase
+    local themeIndex = math.random(1, #ThemeList)
+    local currentTheme = ThemeList[themeIndex]
+    debugPrint("Selected theme for this round: %s", currentTheme)
+    
     -- === DRAWING PHASE ===
-    transitionToState(GameState.DRAWING)
-    local currentTheme = runDrawingPhase()
+    transitionToState(GameState.DRAWING, {theme = currentTheme})
+    runDrawingPhase(currentTheme)
     
     -- === NEXT PHASE BASED ON GAME MODE ===
     local resultsData = nil
@@ -407,7 +412,7 @@ local function startGame()
         runGradingPhase(currentTheme)
         
         -- === RESULTS PHASE ===
-        transitionToState(GameState.RESULTS, {playerScores = GameManager.playerScores})
+        transitionToState(GameState.RESULTS, {playerScores = GameManager.playerScores, theme = currentTheme})
         debugPrint("Preparing single-player results.")
         task.wait(15)
         

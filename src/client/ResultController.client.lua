@@ -38,9 +38,12 @@ local feedbackLabel = nil
 local trophies = {} -- Table to hold star ImageLabels
 
 -- Asset IDs for stars (Replace with your actual asset IDs)
-local LOW_TROPHY_ASSET = "rbxassetid://70472161727933"
-local MID_TROPHY_ASSET = "rbxassetid://119966776084235"
-local HIGH_TROPHY_ASSET = "rbxassetid://124414140924737"
+-- local LOW_TROPHY_ASSET = "rbxassetid://70472161727933"
+-- local MID_TROPHY_ASSET = "rbxassetid://119966776084235"
+-- local HIGH_TROPHY_ASSET = "rbxassetid://124414140924737"
+local LOW_TROPHY_ASSET = "rbxassetid://109390850672610"
+local MID_TROPHY_ASSET = "rbxassetid://138398517489645"
+local HIGH_TROPHY_ASSET = "rbxassetid://80732171057769"
 
 -- Sound effect for trophy appearance
 local TROPHY_SOUND_ID = "rbxassetid://111277558339395"
@@ -148,7 +151,7 @@ local function updateStarDisplay(score)
     assert(trophyContainer ~= nil, "Star container is nil")
     assert(#trophies == 10, "Expected 10 trophies, found " .. #trophies)
     log("Updating star display for score: ", score)
-    score = 8
+    score = 10
     
     -- First clean up any previous trophy overlays
     for i, trophyLabel in ipairs(trophies) do
@@ -171,7 +174,7 @@ local function updateStarDisplay(score)
                     local trophyAsset
                     if i == 10 then
                         trophyAsset = HIGH_TROPHY_ASSET -- Special trophy for the 10th trophy at max score
-                    elseif i >= 7 then
+                    elseif i >= 8 then
                         trophyAsset = MID_TROPHY_ASSET -- Use NICE trophy for scores 7-9
                     else -- Score is 1-6
                         trophyAsset = LOW_TROPHY_ASSET -- Use BASIC trophy for scores 1-6
@@ -265,7 +268,7 @@ end
 --- Finds and initializes the necessary UI elements for the result screen,
 --- including the canvas, star container, feedback label, and star images.
 --- Creates the CanvasDraw instance. Prevents multiple initializations.
-local function initResultUI()
+local function initResultUI(theme: string)
     -- Prevent multiple initializations
     if resultUIInitialized then
         log("Result UI already initialized")
@@ -281,6 +284,7 @@ local function initResultUI()
     log("ResultScreen: ", resultScreen.Name)
 
     local topLevelContainer = resultScreen:WaitForChild("TopLevelContainer")
+    local canvasTopBar = topLevelContainer:WaitForChild("CanvasTopBar")
     local canvasContainer = topLevelContainer:WaitForChild("CanvasContainer")
     local canvasFrame = canvasContainer:WaitForChild("CanvasFrame")
     local trophyFrame = topLevelContainer:WaitForChild("TrophyFrame")
@@ -291,6 +295,9 @@ local function initResultUI()
     assert(trophyContainer ~= nil, "TrophyContainer not found in ResultScreen")
     assert(feedbackLabel ~= nil, "FeedbackLabel not found in ResultScreen")
     assert(feedbackLabel:IsA("TextLabel"), "FeedbackLabel must be a TextLabel")
+
+    -- Set the theme text
+    canvasTopBar.Theme.Text = theme
 
     -- Populate stars table
     trophies = {}
@@ -320,13 +327,14 @@ end
 --- @param stateData table Data containing the current game state and additional information.
 Events.GameStateChanged.OnClientEvent:Connect(function(stateData)
     assert(stateData ~= nil, "ResultController: stateData is nil")
+    local theme = stateData.theme
     log("ResultController: Game State Changed: ", stateData.state)
 
 
     if stateData.state == "RESULTS" then
         -- Ensure UI is initialized. Init upon the first call.
         if not resultUIInitialized then
-            initResultUI()
+            initResultUI(theme)
         end
         assert(resultUIInitialized, "ResultUI is not initialized")
         -- Ensure UI is initialized (might have been initialized above or previously)
