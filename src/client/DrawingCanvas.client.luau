@@ -19,6 +19,7 @@ local RunService        = game:GetService("RunService")
 local Color       = require(ReplicatedStorage.Modules.Canvas.ColorPicker)
 local DebugUtils  = require(ReplicatedStorage.Modules.Services.DebugUtils)
 local InputUtils  = require(ReplicatedStorage.Modules.Utils.InputUtils)
+local ButtonEffects = require(ReplicatedStorage.Modules.Utils.ButtonEffects)
 
 ------------------------------------------------------------------------
 -- 2️⃣  DEBUG LOG WRAPPER
@@ -77,7 +78,7 @@ end
 ------------------------------------------------------------------------
 -- 6️⃣  FORWARD DECLS (shared locals across functions)
 ------------------------------------------------------------------------
-local drawingScreen, timeLabel, canvasContainer, uiContainer, canvasFrame
+local drawingScreen, timeLabel, canvasContainer, canvasFrame, topLevelContainer, canvasTopBar
 local brushIndicatorPencil, brushIndicatorEraser
 local canvas
 local submitNotification
@@ -181,46 +182,6 @@ end
 ------------------------------------------------------------------------
 -- 9️⃣  UI BUTTON SETUP
 ------------------------------------------------------------------------
-local function applyButtonHoverEffects(button: GuiObject, onClick: (button: GuiObject) -> nil, customColors: {default: Color3?, hover: Color3?, press: Color3?}?)
-    customColors = customColors or {}
-    local defaultColor = customColors.default or button.BackgroundColor3
-    local hoverColor = customColors.hover or Color3.fromRGB(220, 220, 220)
-    local pressColor = customColors.press or Color3.fromRGB(180, 180, 180)
-    
-    local connections = {}
-    
-    -- Mouse input handling
-    table.insert(connections, button.MouseEnter:Connect(function()
-        button.BackgroundColor3 = hoverColor
-    end))
-    
-    table.insert(connections, button.MouseLeave:Connect(function()
-        button.BackgroundColor3 = defaultColor
-    end))
-    
-    table.insert(connections, button.MouseButton1Down:Connect(function()
-        button.BackgroundColor3 = pressColor
-    end))
-    
-    table.insert(connections, button.MouseButton1Up:Connect(function()
-        button.BackgroundColor3 = hoverColor
-    end))
-    
-    -- For both mouse and touch
-    if onClick then
-        table.insert(connections, button.MouseButton1Click:Connect(function()
-            onClick(button)
-        end))
-    end
-    
-    -- Return disconnect function for cleanup
-    return function()
-        for _, connection in ipairs(connections) do
-            connection:Disconnect()
-        end
-    end
-end
-
 local function updateModeButtonsAppearance(pencilButton, eraserButton)
     -- Reset both buttons
     pencilButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -269,7 +230,7 @@ end
 local function setupUndoButton(controls: Frame)
     local undoButton = controls:WaitForChild("UndoButton")
 
-    local cleanup = applyButtonHoverEffects(undoButton, function()
+    local cleanup = ButtonEffects.applyHoverEffects(undoButton, function()
         if #undoStack > 1 and canvas then               -- at least two states
             local current = table.remove(undoStack)     -- pop current
             table.insert(redoStack, current)            -- move → redo
@@ -287,7 +248,7 @@ end
 local function setupRedoButton(controls: Frame)
     local redoButton = controls:WaitForChild("RedoButton")
 
-    local cleanup = applyButtonHoverEffects(redoButton, function()
+    local cleanup = ButtonEffects.applyHoverEffects(redoButton, function()
         if #redoStack > 0 and canvas then
             local nextState = table.remove(redoStack)   -- pop redo frame
             table.insert(undoStack, nextState)          -- push → undo
@@ -322,7 +283,7 @@ end
 local function setupClearButton(controls: Frame)
     local clearButton = controls:WaitForChild("ClearButton")
     
-    local cleanup = applyButtonHoverEffects(clearButton, function()
+    local cleanup = ButtonEffects.applyHoverEffects(clearButton, function()
         if canvas then 
             -- Take snapshot before clearing
             takeCanvasSnapshot()
@@ -352,7 +313,7 @@ end
 local function setupSubmitButton(controls: Frame)
     local submitButton = controls:WaitForChild("SubmitButton")
     
-    local cleanup = applyButtonHoverEffects(submitButton, function()
+    local cleanup = ButtonEffects.applyHoverEffects(submitButton, function()
         submitDrawing()
     end)
     
@@ -374,12 +335,12 @@ local function initCanvas(theme: string)
     playerControls:Disable()
 
     drawingScreen   = PlayerGui:WaitForChild("DrawingScreen")
-    timeLabel       = drawingScreen:WaitForChild("TimeLabel")
-    canvasContainer = drawingScreen:WaitForChild("CanvasContainer")
-    canvasTopBar    = drawingScreen:WaitForChild("CanvasTopBar")
-    uiContainer     = drawingScreen:WaitForChild("UIContainer")
+    topLevelContainer = drawingScreen:WaitForChild("TopLevelContainer")
+    timeLabel       = topLevelContainer:WaitForChild("TimeLabel")
+    canvasContainer = topLevelContainer:WaitForChild("CanvasContainer")
+    canvasTopBar    = canvasContainer:WaitForChild("CanvasTopBar")
     canvasFrame     = canvasContainer:WaitForChild("CanvasFrame")
-    submitNotification = drawingScreen:WaitForChild("SubmitNotification")
+    submitNotification = topLevelContainer:WaitForChild("SubmitNotification")
 
     -- Hide notification by default
     submitNotification.Visible = false
@@ -401,7 +362,7 @@ local function initCanvas(theme: string)
     ------------------------------------------------------------------
     -- COLOR PICKER
     ------------------------------------------------------------------
-    local cp = Color.New(uiContainer)
+    local cp = Color.New(topLevelContainer)
     cp:SetColor(CURRENT_COLOR)
     cp.Updated:Connect(function(c)
         CURRENT_COLOR = c
@@ -411,7 +372,7 @@ local function initCanvas(theme: string)
     ------------------------------------------------------------------
     -- SLIDERS
     ------------------------------------------------------------------
-    local sliders = uiContainer:WaitForChild("ColorPickerContainer")
+    local sliders = topLevelContainer:WaitForChild("ColorPickerContainer")
     bindBrushSlider(sliders:WaitForChild("BrushSizeSlider"),
         function() return PENCIL_BRUSH_SIZE end,
         function(v) PENCIL_BRUSH_SIZE = v end)
@@ -423,7 +384,7 @@ local function initCanvas(theme: string)
     ------------------------------------------------------------------
     -- CONTROL BUTTONS
     ------------------------------------------------------------------
-    local controls = uiContainer:WaitForChild("Controls")
+    local controls = topLevelContainer:WaitForChild("Controls")
     setupPencilAndEraserButtons(controls)
     setupClearButton(controls)
     setupSubmitButton(controls)
@@ -517,8 +478,10 @@ GameStateChangedEvent.OnClientEvent:Connect(function(stateData)
     currentGameState = newState
 
     if newState == "DRAWING" then
+        log("Drawing phase started")
         if not canvasInitialized then initCanvas(theme) end
         drawingScreen.Enabled = true
+        log("Drawing phase enabled")
     else
         if drawingScreen then drawingScreen.Enabled = false end
         if newState == "VOTING" and prev == "DRAWING" then submitDrawing() end

@@ -21,7 +21,7 @@ local CONSTANTS = {
 
 -- Game state definitions
 local GameState = {
-    LOBBY = "LOBBY",
+    MAIN_MENU = "MAIN_MENU",
     COUNTDOWN = "COUNTDOWN",
     DRAWING = "DRAWING",
     GRADING = "GRADING",
@@ -37,7 +37,6 @@ local GameMode = {
 -- Remote events
 local Events = {
     GameStateChanged = nil,
-    UpdateLobbyPlayers = nil,
     PlayerReady = nil,
     StartGame = nil,
     GameCountdown = nil,
@@ -49,11 +48,9 @@ local Events = {
 
 -- Game state tracking
 local GameManager = {
-    currentState = GameState.LOBBY,
+    currentState = GameState.MAIN_MENU,
     currentGameMode = GameMode.SINGLE_PLAYER,
-    lobbyPlayers = {},
-    hostPlayer = nil,
-    readyPlayers = {},
+    activePlayers = {},
     playerDrawings = {},
     playerVotes = {},
     voteResults = {},
@@ -66,7 +63,6 @@ local function initializeEvents()
     
     -- Get all required events with WaitForChild
     Events.GameStateChanged = EventsFolder:WaitForChild("GameStateChanged")
-    Events.UpdateLobbyPlayers = EventsFolder:WaitForChild("UpdateLobbyPlayers")
     Events.PlayerReady = EventsFolder:WaitForChild("PlayerReady")
     Events.StartGame = EventsFolder:WaitForChild("StartGame")
     Events.GameCountdown = EventsFolder:WaitForChild("GameCountdown")
@@ -108,17 +104,9 @@ local function broadcastGameState(stateData)
         }
     end
     
-    for _, player in ipairs(GameManager.lobbyPlayers) do
+    for _, player in ipairs(GameManager.activePlayers) do
         Events.GameStateChanged:FireClient(player, stateData)
     end
-end
-
-local function updateLobbyPlayers()
-    Events.UpdateLobbyPlayers:FireAllClients(
-        GameManager.lobbyPlayers, 
-        GameManager.hostPlayer, 
-        GameManager.readyPlayers
-    )
 end
 
 local function transitionToState(newState, additionalData)
@@ -130,77 +118,41 @@ local function transitionToState(newState, additionalData)
     stateData.gameMode = GameManager.currentGameMode
     
     broadcastGameState(stateData)
-
-    -- State-specific initialization
-    if newState == GameState.LOBBY then
-        -- Reset ready status when returning to lobby
-        for userId, _ in pairs(GameManager.readyPlayers) do
-            GameManager.readyPlayers[userId] = false
-        end
-        debugPrint("Reset all ready statuses for LOBBY")
-        updateLobbyPlayers()
-    end
 end
 
 -- Player Management
 local function handlePlayerJoined(player)
-    debugPrint("Player joined: %s", player.Name)
-    -- If this is the first player, they become the host
-    if #GameManager.lobbyPlayers == 0 then
-        GameManager.hostPlayer = player
-        debugPrint("Set host player to: %s", player.Name)
-    end
-    
-    table.insert(GameManager.lobbyPlayers, player)
-    GameManager.readyPlayers[player.UserId] = false
-    
-    -- Update all clients with the new player list
-    updateLobbyPlayers()
+    table.insert(GameManager.activePlayers, player)
     
     -- Tell the new player the current game state
     debugPrint("Sending current game state to new player: %s", GameManager.currentState)
-    Events.GameStateChanged:FireClient(player, GameManager.currentState)
+    Events.GameStateChanged:FireClient(player, {
+        state = GameManager.currentState,
+        gameMode = GameManager.currentGameMode
+    })
 end
 
 local function handlePlayerLeft(player)
-    debugPrint("Player leaving: %s", player.Name)
-    -- Remove player from the lobby list
-    for i, p in ipairs(GameManager.lobbyPlayers) do
+    -- Remove player from active players list
+    for i, p in ipairs(GameManager.activePlayers) do
         if p == player then
-            table.remove(GameManager.lobbyPlayers, i)
-            debugPrint("Removed player from lobby list")
+            table.remove(GameManager.activePlayers, i)
             break
         end
     end
     
-    -- Clear ready status
-    GameManager.readyPlayers[player.UserId] = nil
-    debugPrint("Cleared ready status for player")
-    
-    -- If the host left, assign a new host
-    if GameManager.hostPlayer == player and #GameManager.lobbyPlayers > 0 then
-        GameManager.hostPlayer = GameManager.lobbyPlayers[1]
-        debugPrint("Host left, new host is: %s", GameManager.hostPlayer.Name)
+    -- Clear player data if needed
+    if GameManager.playerDrawings[player.UserId] then
+        GameManager.playerDrawings[player.UserId] = nil
     end
     
-    -- Update all clients
-    updateLobbyPlayers()
-end
-
-local function processExistingPlayers() 
-    debugPrint("Processing existing players when script starts")
-    for _, player in ipairs(Players:GetPlayers()) do
-        handlePlayerJoined(player)
-    end
-    debugPrint("Done processing existing players")
-end
-
--- Game Phases
-local function runCountdownPhase()
-    for i = CONSTANTS.COUNTDOWN_TIME, 1, -1 do
-        debugPrint("Countdown: %d", i)
-        Events.GameCountdown:FireAllClients(i, GameState.COUNTDOWN)
-        task.wait(1)
+    -- If no players remain, reset the game
+    if #GameManager.activePlayers == 0 then
+        GameManager.currentState = GameState.MAIN_MENU
+        GameManager.playerDrawings = {}
+        GameManager.playerScores = {}
+        GameManager.voteResults = {}
+        GameManager.skipDrawingTime = false
     end
 end
 
@@ -232,12 +184,12 @@ local function runDrawingPhase(currentTheme)
 end
 
 local function runGradingPhase(currentTheme)
-    local playersToGrade = #GameManager.lobbyPlayers
+    local playersToGrade = #GameManager.activePlayers
     local playersGraded = 0
     local allGradingCompleteSignal = Instance.new("BindableEvent")
 
     -- Iterate and submit drawings for grading
-    for _, p in ipairs(GameManager.lobbyPlayers) do
+    for _, p in ipairs(GameManager.activePlayers) do
         local userId = p.UserId
         local imageData = GameManager.playerDrawings[userId]
 
@@ -296,7 +248,7 @@ local function runVotingPhase()
             continue
         end
         
-        for _, p in ipairs(GameManager.lobbyPlayers) do
+        for _, p in ipairs(GameManager.activePlayers) do
             if p.UserId == userId then
                 playerExists = true
                 break
@@ -316,7 +268,7 @@ local function runVotingPhase()
     -- Send drawings to all clients if there are any drawings
     if #drawingsForVoting > 0 then
         debugPrint("Sending %d drawings to clients for voting", #drawingsForVoting)
-        for _, p in ipairs(GameManager.lobbyPlayers) do
+        for _, p in ipairs(GameManager.activePlayers) do
             Events.DrawingsReceived:FireClient(p, drawingsForVoting)
         end
     else
@@ -350,7 +302,7 @@ local function getMultiplayerResults()
         local votedPlayer = Players:GetPlayerByUserId(tonumber(votedId) or 0)
         
         if votedPlayer then
-            for _, p in ipairs(GameManager.lobbyPlayers) do
+            for _, p in ipairs(GameManager.activePlayers) do
                 if p == votedPlayer then
                     playerExists = true
                     break
@@ -389,9 +341,11 @@ end
 
 -- Game Flow
 local function startGame()
-    -- === COUNTDOWN PHASE ===
-    transitionToState(GameState.COUNTDOWN)
-    runCountdownPhase()
+    -- Reset game state
+    GameManager.playerDrawings = {}
+    GameManager.playerScores = {}
+    GameManager.voteResults = {}
+    GameManager.skipDrawingTime = false
     
     -- Select theme before starting drawing phase
     local themeIndex = math.random(1, #ThemeList)
@@ -425,66 +379,12 @@ local function startGame()
         -- === RESULTS PHASE ===
         transitionToState(GameState.RESULTS)
         resultsData = getMultiplayerResults()
+        task.wait(15) -- Give time to see results
     end
     
-    -- === RETURN TO LOBBY ===
-    debugPrint("Returning to LOBBY.")
-    transitionToState(GameState.LOBBY)
-end
-
--- Event Handlers
-local function handleStartGameRequest(player)
-    debugPrint("Received start game request from player: %s", player.Name)
-    if player ~= GameManager.hostPlayer or GameManager.currentState ~= GameState.LOBBY then
-        debugPrint("Start game request denied (not host or not in lobby)")
-        return
-    end
-
-    -- Check readiness
-    local allReady = true
-    local readyCount = 0
-    local totalPlayers = #GameManager.lobbyPlayers
-
-    for p_userId, isReady in pairs(GameManager.readyPlayers) do
-        -- Ensure the player is still in the lobby
-        local playerInLobby = false
-        for _, lobby_p in ipairs(GameManager.lobbyPlayers) do
-            if lobby_p.UserId == p_userId then
-                playerInLobby = true
-                break
-            end
-        end
-
-        if playerInLobby then
-            if isReady then
-                readyCount = readyCount + 1
-            else
-                -- If anyone isn't ready (and it's not just the host alone), prevent start
-                if totalPlayers > 1 then 
-                    allReady = false
-                    debugPrint("Player %s is not ready.", p_userId)
-                    break
-                end
-            end
-        end
-    end
-
-    -- Start game if conditions met
-    if readyCount >= 1 and (allReady or totalPlayers == 1) then
-        debugPrint("Game starting...")
-        startGame()
-    else
-        debugPrint("Start game conditions not met (Ready: %d/%d, AllReady: %s)", 
-            readyCount, totalPlayers, tostring(allReady))
-    end
-end
-
-local function handleReadyStatusChange(player, isReady)
-    debugPrint("Player %s ready status changed to: %s", player.Name, tostring(isReady))
-    if GameManager.readyPlayers[player.UserId] ~= nil then
-        GameManager.readyPlayers[player.UserId] = isReady
-        updateLobbyPlayers()
-    end
+    -- === RETURN TO MAIN MENU ===
+    debugPrint("Returning to main menu.")
+    transitionToState(GameState.MAIN_MENU)
 end
 
 local function handleDrawingSubmission(player, imageData)
@@ -500,7 +400,7 @@ local function handleDrawingSubmission(player, imageData)
         
         -- Check if all players have submitted drawings
         local allSubmitted = true
-        for _, p in ipairs(GameManager.lobbyPlayers) do
+        for _, p in ipairs(GameManager.activePlayers) do
             if not GameManager.playerDrawings[p.UserId] then
                 allSubmitted = false
                 break
@@ -542,6 +442,42 @@ local function handleVoteSubmission(player, votedPlayerId)
     debugPrint("Player %s voted for %s", player.Name, votedId)
 end
 
+-- Handle start game request from client
+local function handleStartGame(player, requestedGameMode)
+    if GameManager.currentState ~= GameState.MAIN_MENU then
+        debugPrint("Ignoring start game request - game already in progress")
+        return
+    end
+    
+    debugPrint("Starting game requested by %s in mode: %s", player.Name, requestedGameMode)
+    
+    -- Set the game mode based on client request
+    if requestedGameMode == "SinglePlayer" then
+        GameManager.currentGameMode = GameMode.SINGLE_PLAYER
+    elseif requestedGameMode == "MultiPlayer" then
+        GameManager.currentGameMode = GameMode.MULTIPLAYER
+    else
+        -- Default to single player if invalid mode
+        GameManager.currentGameMode = GameMode.SINGLE_PLAYER
+    end
+    
+    -- Ensure requesting player is in active players
+    local playerInGame = false
+    for _, p in ipairs(GameManager.activePlayers) do
+        if p == player then
+            playerInGame = true
+            break
+        end
+    end
+    
+    if not playerInGame then
+        table.insert(GameManager.activePlayers, player)
+    end
+    
+    -- Start the game
+    task.spawn(startGame)
+end
+
 -- Initialize
 local function init()
     initializeEvents()
@@ -549,13 +485,9 @@ local function init()
     -- Connect event handlers
     Players.PlayerAdded:Connect(handlePlayerJoined)
     Players.PlayerRemoving:Connect(handlePlayerLeft)
-    Events.PlayerReady.OnServerEvent:Connect(handleReadyStatusChange)
-    Events.StartGame.OnServerEvent:Connect(handleStartGameRequest)
+    Events.StartGame.OnServerEvent:Connect(handleStartGame)
     Events.SubmitDrawing.OnServerEvent:Connect(handleDrawingSubmission)
     Events.SubmitVote.OnServerEvent:Connect(handleVoteSubmission)
-    
-    -- Process any players already in game
-    processExistingPlayers()
     
     debugPrint("GameManager initialized")
 end

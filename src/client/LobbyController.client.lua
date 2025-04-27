@@ -24,7 +24,7 @@ local countdownLabel = lobbyUI:WaitForChild("CountdownLabel")
 -- Variables to track state
 local isReady = false
 local isHost = false
-local currentGameState = "LOBBY"
+local currentGameState = "MAIN_MENU"
 
 -- Function to update the lobby UI based on received data
 local function updateLobbyUI(playersList, hostPlayer, readyPlayers)
@@ -161,28 +161,3 @@ end)
 GameCountdownEvent.OnClientEvent:Connect(function(count)
     countdownLabel.Text = "Game starting in " .. count .. "..."
 end)
-
--- Initialize lobby UI
-print("Initializing lobby UI")
-print("lobbyUI type: ScreenGUI")
-lobbyUI.Enabled = true  -- Using Enabled instead of Visible for ScreenGUI
-countdownLabel.Visible = false
-readyButton.Text = "Ready"
-
--- Add a debug function to check UI visibility
-local function checkUIVisibility()
-    print("---- UI Visibility Check ----")
-    print("lobbyUI.Enabled =", lobbyUI.Enabled)
-    print("playerListFrame.Visible =", playerListFrame.Visible)
-    print("playerListFrame absolute position:", playerListFrame.AbsolutePosition)
-    print("playerListFrame absolute size:", playerListFrame.AbsoluteSize)
-    print("playerListFrame children count:", #playerListFrame:GetChildren())
-    for _, child in pairs(playerListFrame:GetChildren()) do
-        if child:IsA("Frame") then
-            print("  - Player entry:", child.Name, "Visible:", child.Visible)
-        end
-    end
-end
-
--- Call the check function after a short delay
-task.delay(3, checkUIVisibility) 
