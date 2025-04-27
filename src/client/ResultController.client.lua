@@ -289,7 +289,7 @@ local function initResultUI()
     local canvasFrame = canvasContainer:WaitForChild("CanvasFrame")
     local trophyFrame = topLevelContainer:WaitForChild("TrophyFrame")
 
-    canvasTopBar = topLevelContainer:WaitForChild("CanvasTopBar")
+    canvasTopBar = canvasContainer:WaitForChild("CanvasTopBar")
     -- Get references to result-specific UI elements
     trophyContainer = trophyFrame:WaitForChild("TrophyContainer")
     feedbackLabel = topLevelContainer:WaitForChild("FeedbackLabel")
