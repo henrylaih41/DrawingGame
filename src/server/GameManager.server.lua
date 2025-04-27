@@ -368,7 +368,7 @@ local function startGame()
         -- === RESULTS PHASE ===
         transitionToState(GameState.RESULTS, {playerScores = GameManager.playerScores, theme = currentTheme})
         debugPrint("Preparing single-player results.")
-        task.wait(15)
+        task.wait(5)
         
     elseif GameManager.currentGameMode == GameMode.MULTIPLAYER then
         -- === VOTING PHASE (Multiplayer) ===

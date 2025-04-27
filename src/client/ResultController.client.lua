@@ -33,6 +33,7 @@ local Events = ReplicatedStorage:WaitForChild("Events")
 local resultScreen = nil
 local resultUIInitialized = false
 local canvas = nil
+local canvasTopBar = nil
 local trophyContainer = nil
 local feedbackLabel = nil
 local trophies = {} -- Table to hold star ImageLabels
@@ -151,7 +152,7 @@ local function updateStarDisplay(score)
     assert(trophyContainer ~= nil, "Star container is nil")
     assert(#trophies == 10, "Expected 10 trophies, found " .. #trophies)
     log("Updating star display for score: ", score)
-    score = 10
+    -- score = 10
     
     -- First clean up any previous trophy overlays
     for i, trophyLabel in ipairs(trophies) do
@@ -268,7 +269,7 @@ end
 --- Finds and initializes the necessary UI elements for the result screen,
 --- including the canvas, star container, feedback label, and star images.
 --- Creates the CanvasDraw instance. Prevents multiple initializations.
-local function initResultUI(theme: string)
+local function initResultUI()
     -- Prevent multiple initializations
     if resultUIInitialized then
         log("Result UI already initialized")
@@ -284,20 +285,17 @@ local function initResultUI(theme: string)
     log("ResultScreen: ", resultScreen.Name)
 
     local topLevelContainer = resultScreen:WaitForChild("TopLevelContainer")
-    local canvasTopBar = topLevelContainer:WaitForChild("CanvasTopBar")
     local canvasContainer = topLevelContainer:WaitForChild("CanvasContainer")
     local canvasFrame = canvasContainer:WaitForChild("CanvasFrame")
     local trophyFrame = topLevelContainer:WaitForChild("TrophyFrame")
 
+    canvasTopBar = topLevelContainer:WaitForChild("CanvasTopBar")
     -- Get references to result-specific UI elements
     trophyContainer = trophyFrame:WaitForChild("TrophyContainer")
     feedbackLabel = topLevelContainer:WaitForChild("FeedbackLabel")
     assert(trophyContainer ~= nil, "TrophyContainer not found in ResultScreen")
     assert(feedbackLabel ~= nil, "FeedbackLabel not found in ResultScreen")
     assert(feedbackLabel:IsA("TextLabel"), "FeedbackLabel must be a TextLabel")
-
-    -- Set the theme text
-    canvasTopBar.Theme.Text = theme
 
     -- Populate stars table
     trophies = {}
@@ -334,8 +332,10 @@ Events.GameStateChanged.OnClientEvent:Connect(function(stateData)
     if stateData.state == "RESULTS" then
         -- Ensure UI is initialized. Init upon the first call.
         if not resultUIInitialized then
-            initResultUI(theme)
+            initResultUI()
         end
+        -- Set the theme text
+        canvasTopBar.Theme.Text = theme
         assert(resultUIInitialized, "ResultUI is not initialized")
         -- Ensure UI is initialized (might have been initialized above or previously)
         if not resultUIInitialized then initResultUI() end

@@ -323,7 +323,7 @@ end
 ------------------------------------------------------------------------
 -- 🔟  CANVAS INITIALISATION
 ------------------------------------------------------------------------
-local function initCanvas(theme: string)
+local function initCanvas()
     if canvasInitialized then return end
     canvasInitialized = true
 
@@ -346,7 +346,6 @@ local function initCanvas(theme: string)
     submitNotification.Visible = false
 
     CANVAS_BACKGROUND_COLOR = canvasFrame.BackgroundColor3
-    canvasTopBar.Theme.Text = theme
 
     local CanvasDraw = require(ReplicatedStorage.Modules.Canvas.CanvasDraw)
     local sz         = canvasFrame.AbsoluteSize
@@ -461,11 +460,6 @@ local function initCanvas(theme: string)
             prevX, prevY = nil, nil
         end
     end)
-
-    refreshIndicatorSizes()
-    
-    -- Take initial snapshot of empty canvas
-    takeCanvasSnapshot()
 end
 
 ------------------------------------------------------------------------
@@ -479,7 +473,13 @@ GameStateChangedEvent.OnClientEvent:Connect(function(stateData)
 
     if newState == "DRAWING" then
         log("Drawing phase started")
-        if not canvasInitialized then initCanvas(theme) end
+        if not canvasInitialized then initCanvas() end
+        canvasTopBar.Theme.Text = theme
+        canvas:Clear(CANVAS_BACKGROUND_COLOR)
+        refreshIndicatorSizes()
+        takeCanvasSnapshot()
+        table.clear(undoStack)
+        table.clear(redoStack)
         drawingScreen.Enabled = true
         log("Drawing phase enabled")
     else
