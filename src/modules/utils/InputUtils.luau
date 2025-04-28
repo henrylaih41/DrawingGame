@@ -1,7 +1,12 @@
 local UIS = game:GetService("UserInputService")
-
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local DebugUtils  = require(ReplicatedStorage.Modules.Services.DebugUtils)
 local InputUtils = {}
 
+local DebugFlag = true
+local function log(...)
+    if DebugFlag then DebugUtils.print("DrawingCanvas:", ...) end
+end
 -- Normalise a screen‑space point → Vector2, minus top‑bar inset.
 -- Note: This function currently doesn't account for the top-bar inset.
 -- Consider adding GuiService:GetGuiInset() if needed for ScreenGuis.
@@ -15,38 +20,37 @@ end
 --  • dragButton : GuiObject that starts the drag
 --  • onMove(fn) : (Vector2 viewportPos) → ()
 function InputUtils.bindDrag(dragButton: GuiObject, onMove)
-	assert(typeof(dragButton) == "Instance" and dragButton:IsA("GuiObject"), "InputUtils.bindDrag expects dragButton to be a GuiObject")
-	assert(typeof(onMove) == "function", "InputUtils.bindDrag expects onMove to be a function")
+    assert(typeof(dragButton) == "Instance" and dragButton:IsA("GuiObject"), "...")
+    assert(typeof(onMove) == "function", "...")
 
-	local connection = dragButton.InputBegan:Connect(function(input: InputObject)
-		if input.UserInputType == Enum.UserInputType.MouseButton1
-		or input.UserInputType == Enum.UserInputType.Touch then
+    local dragging = false                 -- works for every device
 
-			local dragInput = input  -- store so we only follow *this* finger/mouse
+    local beginCn = dragButton.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+           or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            onMove(InputUtils.toViewportPos(input.Position))
+        end
+    end)
 
-			-- do an initial update immediately
-			onMove(InputUtils.toViewportPos(input.Position))
+    local moveCn = UIS.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement
+                         or input.UserInputType == Enum.UserInputType.Touch) then
+            onMove(InputUtils.toViewportPos(input.Position))
+        end
+    end)
 
-			-- follow the pointer while it moves
-			local moveCn, endCn
-			moveCn = UIS.InputChanged:Connect(function(changed)
-				if changed == dragInput then
-					onMove(InputUtils.toViewportPos(changed.Position))
-				end
-			end)
+    local endCn = UIS.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+           or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
 
-			-- stop when that pointer ends
-			endCn = UIS.InputEnded:Connect(function(ended)
-				if ended == dragInput then
-					if moveCn then moveCn:Disconnect() end
-					if endCn then endCn:Disconnect() end
-				end
-			end)
-		end
-	end)
-	-- Return the connection so it can be disconnected later if needed
-	return connection
+    -- let caller clean up all three connections with one call
+    return function() beginCn:Disconnect(); moveCn:Disconnect(); endCn:Disconnect() end
 end
+
 
 
 return InputUtils 
