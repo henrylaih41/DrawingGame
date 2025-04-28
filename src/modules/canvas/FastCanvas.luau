@@ -16,8 +16,16 @@
 ]]
 
 local AssetService = game:GetService("AssetService")
-
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local DebugUtils  = require(ReplicatedStorage.Modules.Services.DebugUtils)
 local FastCanvas = {}
+
+local DebugFlag = true
+local function log(...)
+    if DebugFlag then DebugUtils.print("DrawingCanvas:", ...) end
+end
+
+
 
 type ParentType = GuiObject | MeshPart | Decal | Texture
 

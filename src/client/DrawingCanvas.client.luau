@@ -62,6 +62,7 @@ local drawingTimeLeft  = 0
 
 -- Track UI event connections for cleanup
 local uiConnections = {}
+local inputConnections = {} -- Add this new table for input connections
 
 -- History stacks for undo/redo
 local undoStack = {}
@@ -80,7 +81,7 @@ end
 ------------------------------------------------------------------------
 local drawingScreen, timeLabel, canvasContainer, canvasFrame, topLevelContainer, canvasTopBar
 local brushIndicatorPencil, brushIndicatorEraser
-local canvas
+local canvas, cp
 local submitNotification
 
 ------------------------------------------------------------------------
@@ -298,7 +299,6 @@ local function submitDrawing()
     if not canvas then return end
     local ok, img = pcall(function() return canvas:CreateImageDataFromCanvas() end)
     if ok and img then 
-        currentGameState = "GRADING"
         SubmitDrawingEvent:FireServer(img) 
     end
 
@@ -323,10 +323,7 @@ end
 ------------------------------------------------------------------------
 -- 🔟  CANVAS INITIALISATION
 ------------------------------------------------------------------------
-local function initCanvas()
-    if canvasInitialized then return end
-    canvasInitialized = true
-
+local function initUI() 
     -- Disable Roblox mobile move/jump UI
     if not playerControls then
         local pModule = require(LocalPlayer:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule"))
@@ -341,7 +338,12 @@ local function initCanvas()
     canvasTopBar    = canvasContainer:WaitForChild("CanvasTopBar")
     canvasFrame     = canvasContainer:WaitForChild("CanvasFrame")
     submitNotification = topLevelContainer:WaitForChild("SubmitNotification")
+end
 
+
+local function initCanvas()
+    if canvasInitialized then return end
+    canvasInitialized = true
     -- Hide notification by default
     submitNotification.Visible = false
 
@@ -368,6 +370,7 @@ local function initCanvas()
     end
     
     canvas = CanvasDraw.new(canvasFrame, Vector2.new(canvasWidth, canvasHeight))
+    log("Canvas ID: ", canvas.Id)
     canvas:Clear(CANVAS_BACKGROUND_COLOR)
     canvas.GridEnabled, canvas.AutoRender = false, true
 
@@ -379,7 +382,7 @@ local function initCanvas()
     ------------------------------------------------------------------
     -- COLOR PICKER
     ------------------------------------------------------------------
-    local cp = Color.New(topLevelContainer)
+    cp = Color.New(topLevelContainer)
     cp:SetColor(CURRENT_COLOR)
     cp.Updated:Connect(function(c)
         CURRENT_COLOR = c
@@ -446,7 +449,8 @@ local function initCanvas()
         prevX, prevY = x, y
     end
 
-    UserInputService.InputBegan:Connect(function(i)
+    -- Store input connections for cleanup
+    table.insert(inputConnections, UserInputService.InputBegan:Connect(function(i)
         if currentGameState=="DRAWING" and (i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch) then
             local pos = Vector2.new(i.Position.X, i.Position.Y)
             local inset = drawingScreen.IgnoreGuiInset and Vector2.new(0,0) or GuiService:GetGuiInset()
@@ -456,20 +460,21 @@ local function initCanvas()
             if not (pos.X < cPos.X or pos.X > cPos.X+cSize.X or pos.Y < cPos.Y or pos.Y > cPos.Y+cSize.Y) then
                 IS_DRAWING = true
             end
+            log("Drawing input began")
             handleDrawing(i)
         end
-    end)
+    end))
 
-    UserInputService.InputChanged:Connect(function(i)
+    table.insert(inputConnections, UserInputService.InputChanged:Connect(function(i)
         if IS_DRAWING and 
             (i.UserInputType==Enum.UserInputType.MouseMovement or
              i.UserInputType==Enum.UserInputType.Touch) and
             currentGameState=="DRAWING" then
             handleDrawing(i)
         end
-    end)
+    end))
 
-    UserInputService.InputEnded:Connect(function(i)
+    table.insert(inputConnections, UserInputService.InputEnded:Connect(function(i)
         if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then
             if IS_DRAWING then
                 log("Taking snapshot input ended")
@@ -480,9 +485,21 @@ local function initCanvas()
             showActiveIndicator(false, Vector2.zero)
             prevX, prevY = nil, nil
         end
-    end)
+    end))
 end
 
+local function cleanupConnections()
+    for _, cleanup in ipairs(uiConnections) do
+        cleanup()
+    end
+    table.clear(uiConnections)
+    
+    -- Clean up input connections
+    for _, connection in ipairs(inputConnections) do
+        connection:Disconnect()
+    end
+    table.clear(inputConnections)
+end
 ------------------------------------------------------------------------
 -- 1️⃣1️⃣  GAME STATE & COUNTDOWN HANDLERS
 ------------------------------------------------------------------------
@@ -496,28 +513,55 @@ GameStateChangedEvent.OnClientEvent:Connect(function(stateData)
         log("Drawing phase started")
         if not canvasInitialized then initCanvas() end
         canvasTopBar.Theme.Text = theme
-        canvas:Clear(CANVAS_BACKGROUND_COLOR)
-        refreshIndicatorSizes()
         takeCanvasSnapshot()
-        table.clear(undoStack)
-        table.clear(redoStack)
         drawingScreen.Enabled = true
         log("Drawing phase enabled")
     else
+        log("Drawing Canvas recieved event:" .. newState)
         if drawingScreen then drawingScreen.Enabled = false end
         if newState == "VOTING" and prev == "DRAWING" then submitDrawing() end
-        if newState == "LOBBY" and canvas then 
-            canvas:Clear(CANVAS_BACKGROUND_COLOR)
-            -- Clean up connections and history when returning to lobby
-            if prev == "VOTING" then
-                cleanupConnections()
-                table.clear(undoStack)
-                table.clear(redoStack)
+        log("prev:" .. prev)
+        if prev == "DRAWING" then
+            log("Cleaning up drawing phase")
+            -- Clean up when leaving drawing phase
+            if canvas then
+                log("Destroying canvas " .. canvas.Id)
+                canvas:Destroy()
+                canvas = nil
             end
-        end
+            
+            -- Clean up brush indicators
+            if brushIndicatorPencil then
+                brushIndicatorPencil:Destroy()
+                brushIndicatorPencil = nil
+            end
+            
+            if brushIndicatorEraser then
+                brushIndicatorEraser:Destroy()
+                brushIndicatorEraser = nil
+            end
 
-        -- Re‑enable mobile controls when leaving drawing phase
-        if playerControls then playerControls:Enable() end
+            if cp then
+                cp:Destroy()
+                cp = nil
+            end
+            
+            -- Reset state variables
+            IS_DRAWING = false
+            canvasInitialized = false
+            cleanupConnections()
+            
+            -- Re-enable player controls
+            if playerControls then
+                playerControls:Enable()
+            end
+            
+            -- Clear history stacks
+            table.clear(undoStack)
+            table.clear(redoStack)
+            
+            log("Drawing phase cleanup complete")
+        end
     end
 end)
 
@@ -532,9 +576,5 @@ GameCountdownEvent.OnClientEvent:Connect(function(sec, phase)
     end
 end)
 
-local function cleanupConnections()
-    for _, cleanup in ipairs(uiConnections) do
-        cleanup()
-    end
-    table.clear(uiConnections)
-end
+
+initUI()

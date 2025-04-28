@@ -258,18 +258,13 @@ function Color:Destroy()
 	end
 	
 	if self.Connections.wheelDrag then
-		self.Connections.wheelDrag:Disconnect()
+		self.Connections.wheelDrag()
 		self.Connections.wheelDrag = nil
 	end
 	
 	if self.Connections.valueDrag then
-		self.Connections.valueDrag:Disconnect()
+		self.Connections.valueDrag()
 		self.Connections.valueDrag = nil
-	end
-			
-	if self.Instance then
-		self.Instance:Destroy()
-		self.Instance = nil
 	end
 end
 

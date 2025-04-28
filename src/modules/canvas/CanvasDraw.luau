@@ -395,7 +395,7 @@ function CanvasDraw.new(Parent: ParentType, Resolution: Vector2?, CanvasColour: 
 		GridColour = Color3.new(1, 1, 1),
 		AutoRenderFpsLimit = 0,
 		AlphaBlendingMode = 0,
-		
+		Id = HttpService:GenerateGUID(false),
 		-- Read only
 		Resolution = Vector2New(100, 100),
 
