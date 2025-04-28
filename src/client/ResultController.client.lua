@@ -148,7 +148,8 @@ end
 --- Handles potential issues with finding star ImageLabels.
 --- @param score number The score (0-10) determining the number of filled stars.
 local function updateStarDisplay(score)
-    assert(type(score) == "number" and score >= 0 and score <= 10, "Score must be a number between 0 and 10" .. score)
+    log("Updating star display for score: ", score)
+    assert(type(score) == "number" and score >= 0 and score <= 10, "Score must be a number between 0 and 10 " .. score)
     assert(trophyContainer ~= nil, "Star container is nil")
     assert(#trophies == 10, "Expected 10 trophies, found " .. #trophies)
     log("Updating star display for score: ", score)

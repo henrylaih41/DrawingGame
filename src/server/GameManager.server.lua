@@ -212,8 +212,8 @@ local function runGradingPhase(currentTheme)
                     debugPrint("Grading failed for %s: %s", p.Name, errorMessage)
                     GameManager.playerScores[userId] = { 
                         drawing = imageData, 
-                        score = "Error", 
-                        feedback = "Failed to grade drawing." 
+                        score = 5, 
+                        feedback = "Opps! Something went wrong. Sorry about that. Please try again later." 
                     }
                 end
 

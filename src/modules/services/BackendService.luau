@@ -17,7 +17,8 @@ local function debugPrint(message, ...)
 end
 
 -- Configuration
-BackendService.BaseUrl = "http://localhost:3000"
+BackendService.BaseUrl = "https://drawing-backend.vercel.app"
+-- BackendService.BaseUrl = "http://localhost:3000"
 BackendService.Endpoints = {
     OPENAI = "/api/openai"
 }
@@ -32,13 +33,17 @@ BackendService.DefaultOptions = {
 }
 
 -- Function to send a request to the OpenAI endpoint
-function BackendService:SendOpenAIRequest(imageBase64, prompt)
+function BackendService:SendOpenAIRequest(imageBase64, prompt, theme, playerId)
     assert(imageBase64, "Missing imageBase64 parameter")
     assert(prompt, "Missing prompt parameter")
     
     local requestBody = {
         image = imageBase64,
-        prompt = prompt
+        prompt = prompt,
+        metadata = {
+            playerId = playerId,
+            theme = theme  -- Move theme into metadata
+        }
     }
     
     return self:Post(self.Endpoints.OPENAI, requestBody)
@@ -139,7 +144,7 @@ function BackendService:submitDrawingToBackendForGrading(player, imageData, them
     end
 
     local responseData, error =
-        BackendService:SendOpenAIRequest(compressedImageData, prompt)
+        BackendService:SendOpenAIRequest(compressedImageData, prompt, theme, player.UserId)
 
     if not responseData then
         warn("submitDrawingToBackendForGrading failed to get response data for player: " .. player.Name)

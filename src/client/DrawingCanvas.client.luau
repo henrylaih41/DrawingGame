@@ -348,8 +348,26 @@ local function initCanvas()
     CANVAS_BACKGROUND_COLOR = canvasFrame.BackgroundColor3
 
     local CanvasDraw = require(ReplicatedStorage.Modules.Canvas.CanvasDraw)
-    local sz         = canvasFrame.AbsoluteSize
-    canvas = CanvasDraw.new(canvasFrame, Vector2.new(math.ceil(sz.X), math.ceil(sz.Y)))
+    local sz = canvasFrame.AbsoluteSize
+    local MAX_CANVAS_DIMENSION = 1024
+    
+    -- Scale the canvas dimensions if they exceed the maximum allowed size
+    local canvasWidth, canvasHeight = math.ceil(sz.X), math.ceil(sz.Y)
+    local scaleFactor = 1
+
+    log("Canvas width: ", canvasWidth, "Canvas height: ", canvasHeight)
+    
+    if canvasWidth > MAX_CANVAS_DIMENSION or canvasHeight > MAX_CANVAS_DIMENSION then
+        local widthFactor = MAX_CANVAS_DIMENSION / canvasWidth
+        local heightFactor = MAX_CANVAS_DIMENSION / canvasHeight
+        scaleFactor = math.min(widthFactor, heightFactor)
+        
+        canvasWidth = math.floor(canvasWidth * scaleFactor)
+        canvasHeight = math.floor(canvasHeight * scaleFactor)
+        log("Canvas size exceeded maximum dimensions. Scaling by factor:", scaleFactor)
+    end
+    
+    canvas = CanvasDraw.new(canvasFrame, Vector2.new(canvasWidth, canvasHeight))
     canvas:Clear(CANVAS_BACKGROUND_COLOR)
     canvas.GridEnabled, canvas.AutoRender = false, true
 
@@ -410,7 +428,10 @@ local function initCanvas()
 
         local relX = (pos.X - cPos.X)/cSize.X
         local relY = (pos.Y - cPos.Y)/cSize.Y
-        local x, y = math.round(relX*cSize.X), math.round(relY*cSize.Y)
+        
+        -- Apply scaling to match the scaled canvas dimensions
+        local x = math.round(relX * canvasWidth)
+        local y = math.round(relY * canvasHeight)
 
         local col  = (DRAWING_MODE=="PENCIL") and CURRENT_COLOR or CANVAS_BACKGROUND_COLOR
         local size = getActiveBrushSize()
