@@ -31,6 +31,7 @@ local Events = ReplicatedStorage:WaitForChild("Events")
 
 -- Result display variables
 local resultScreen = nil
+local topLevelContainer = nil
 local resultUIInitialized = false
 local canvas = nil
 local canvasTopBar = nil
@@ -255,7 +256,7 @@ local function displayResults(playerScore)
     displayDrawingData(canvas, playerScore.drawing)
 
     -- Show result UI once the image is loaded.
-    resultScreen.Enabled = true
+    topLevelContainer.Visible = true
 
     -- Update the star rating
     updateStarDisplay(playerScore.score)
@@ -281,11 +282,10 @@ local function initResultUI()
     log("Initializing Result UI")
 
     -- Get result screen
-    resultScreen = PlayerGui:WaitForChild("ResultScreen") -- Renamed from VotingScreen
+    resultScreen = PlayerGui:WaitForChild("ResultScreen") -- Renamed from VotingScreenA
+    topLevelContainer = resultScreen:WaitForChild("TopLevelContainer")
     assert(resultScreen ~= nil, "ResultScreen not found in PlayerGui")
-    log("ResultScreen: ", resultScreen.Name)
 
-    local topLevelContainer = resultScreen:WaitForChild("TopLevelContainer")
     local canvasContainer = topLevelContainer:WaitForChild("CanvasContainer")
     local canvasFrame = canvasContainer:WaitForChild("CanvasFrame")
     local trophyFrame = topLevelContainer:WaitForChild("TrophyFrame")
@@ -361,9 +361,9 @@ Events.GameStateChanged.OnClientEvent:Connect(function(stateData)
         end
     else
         -- Hide UI for other states (e.g., LOBBY, DRAWING)
-        if resultScreen then
-            resultScreen.Enabled = false
-            log("ResultScreen disabled")
+        if topLevelContainer then
+            topLevelContainer.Visible = false
+            log("ResultScreen topLevelContainer hidden")
         end
         if canvas then canvas:Clear() end
     end

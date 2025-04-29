@@ -200,6 +200,7 @@ GameStateChangedEvent.OnClientEvent:Connect(function(newState)
         
         -- Show voting UI
         if votingScreen then
+            -- TODO: Use Visible instead of Enabled for ScreenGUI
             votingScreen.Enabled = true
             
             -- Reset vote button
@@ -214,6 +215,7 @@ GameStateChangedEvent.OnClientEvent:Connect(function(newState)
     else
         -- Hide voting UI for other states
         if votingScreen then
+            -- TODO: Use Visible instead of Enabled for ScreenGUI
             votingScreen.Enabled = false
         end
     end

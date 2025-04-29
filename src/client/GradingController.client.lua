@@ -13,6 +13,7 @@ local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local Events = ReplicatedStorage:WaitForChild("Events")
 local GameStateChanged = Events:WaitForChild("GameStateChanged")
 local GradingScreen = PlayerGui:WaitForChild("GradingScreen")
+local topLevelContainer = GradingScreen:WaitForChild("TopLevelContainer")
 
 -- Constants
 local GameState = {
@@ -28,18 +29,16 @@ local GameState = {
 local function handleGameStateChanged(stateData)
     local state = stateData.state
     if state == GameState.GRADING then
-        GradingScreen.Enabled= true
+        topLevelContainer.Visible = true
     else
-        GradingScreen.Enabled = false
+        topLevelContainer.Visible = false
     end
 end
 
 -- Initialize
 local function init()
     -- Set initial visibility
-local GradingScreen = PlayerGui:WaitForChild("GradingScreen")
-    GradingScreen.Enabled = false
-    
+    topLevelContainer.Visible = false
     -- Connect to game state changes
     GameStateChanged.OnClientEvent:Connect(handleGameStateChanged)
     
