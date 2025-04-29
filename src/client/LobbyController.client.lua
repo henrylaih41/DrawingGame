@@ -146,6 +146,7 @@ GameStateChangedEvent.OnClientEvent:Connect(function(stateData)
     
     -- Update UI based on game state
     if newState == "LOBBY" then
+        -- TODO: Use Visible instead of Enabled for ScreenGUI
         lobbyUI.Enabled = true  -- Using Enabled for ScreenGUI
         isReady = false
         readyButton.Text = "Ready"
@@ -153,6 +154,7 @@ GameStateChangedEvent.OnClientEvent:Connect(function(stateData)
     elseif newState == "COUNTDOWN" then
         countdownLabel.Visible = true
     else
+        -- TODO: Use Visible instead of Enabled for ScreenGUI
         lobbyUI.Enabled = false  -- Using Enabled for ScreenGUI
     end
 end)

@@ -311,8 +311,10 @@ local UserInputService = game:GetService("UserInputService")
 local AssetService = game:GetService("AssetService")
 local HttpService = game:GetService("HttpService")
 local GuiService = game:GetService("GuiService")
-
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 -- Modules
+
+local Compression = require(ReplicatedStorage.Modules.Services.Zlib)
 local FastCanvas = require(script.Parent:WaitForChild("FastCanvas")) -- Credits to BoatBomber
 local StringCompressor = require(script.Parent:WaitForChild("StringCompressor")) -- Credits to 1waffle1 and BoatBomber
 local FontsFolder = script.Parent:WaitForChild("Fonts")
@@ -3051,10 +3053,10 @@ function CanvasDraw.to_base64(data)
     end)..({ '', '==', '=' })[#data%3+1])
 end
 
-function CanvasDraw.ConvertBufferToRawBase64(inputBuffer)
+function CanvasDraw.ConvertBufferToZlibCompressedBase64(inputBuffer)
     -- Validate input
     if typeof(inputBuffer) ~= "buffer" then
-        warn("ConvertBufferToRawBase64: Input must be a buffer, received type:", typeof(inputBuffer))
+        warn("ConvertBufferToZlibCompressedBase64: Input must be a buffer, received type:", typeof(inputBuffer))
         return nil
     end
 
@@ -3071,11 +3073,11 @@ function CanvasDraw.ConvertBufferToRawBase64(inputBuffer)
     -- Warning: For very large buffers (hundreds of MB), this step might consume
     -- significant memory or time.
     local rawDataString = buffer.readstring(inputBuffer, 0, bufferSize)
+	local compressedString = Compression.Deflate.Compress(rawDataString, { level = 6 })
 
-    -- Use HttpService to encode the raw byte string into Base64
-    local base64String = CanvasDraw.to_base64(rawDataString)
+    local base64CompressedString = CanvasDraw.to_base64(compressedString)
 
-    return base64String
+    return base64CompressedString
 end
 
 -- We customize the serialization of the buffer and send it to the backend for OpenAI API call.
@@ -3084,7 +3086,7 @@ function CanvasDraw.CompressImageDataCustom(ImageData)
 	local Width, Height = ImageData.Width, ImageData.Height
 
 	-- Compress the pixel data
-	local CompressedPixels = CanvasDraw.ConvertBufferToRawBase64(PixelBuffer)
+	local CompressedPixels = CanvasDraw.ConvertBufferToZlibCompressedBase64(PixelBuffer)
 
 	-- Create the data object
 	local CompressedData = {}

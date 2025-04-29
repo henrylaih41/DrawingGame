@@ -6,6 +6,7 @@ local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CanvasDraw = require(ReplicatedStorage.Modules.Canvas.CanvasDraw)
 local PromptService = require(ReplicatedStorage.Modules.Services.PromptService)
+local Compression = require(ReplicatedStorage.Modules.Services.Zlib)
 local BackendService = {}
 local DEBUG_ENABLED = true
 

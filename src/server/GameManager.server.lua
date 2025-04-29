@@ -16,7 +16,8 @@ local CONSTANTS = {
     COUNTDOWN_TIME = 1,
     DRAWING_TIME = 500, -- 3 minutes
     VOTING_TIME = 30, -- 30 seconds for voting
-    DEBUG_ENABLED = true
+    DEBUG_ENABLED = true,
+    RESULT_PHASE_WAIT_TIME = 20
 }
 
 -- Game state definitions
@@ -368,7 +369,7 @@ local function startGame()
         -- === RESULTS PHASE ===
         transitionToState(GameState.RESULTS, {playerScores = GameManager.playerScores, theme = currentTheme})
         debugPrint("Preparing single-player results.")
-        task.wait(5)
+        task.wait(CONSTANTS.RESULT_PHASE_WAIT_TIME)
         
     elseif GameManager.currentGameMode == GameMode.MULTIPLAYER then
         -- === VOTING PHASE (Multiplayer) ===

@@ -36,7 +36,9 @@ local resultUIInitialized = false
 local canvas = nil
 local canvasTopBar = nil
 local trophyContainer = nil
+local feedbackContainer = nil
 local feedbackLabel = nil
+local feedbackButton = nil
 local trophies = {} -- Table to hold star ImageLabels
 
 -- Asset IDs for stars (Replace with your actual asset IDs)
@@ -288,15 +290,31 @@ local function initResultUI()
 
     local canvasContainer = topLevelContainer:WaitForChild("CanvasContainer")
     local canvasFrame = canvasContainer:WaitForChild("CanvasFrame")
+
     local trophyFrame = topLevelContainer:WaitForChild("TrophyFrame")
 
     canvasTopBar = canvasContainer:WaitForChild("CanvasTopBar")
     -- Get references to result-specific UI elements
     trophyContainer = trophyFrame:WaitForChild("TrophyContainer")
-    feedbackLabel = topLevelContainer:WaitForChild("FeedbackLabel")
+
+    local bench = trophyFrame:WaitForChild("Bench")
+    local buttons = bench:WaitForChild("Buttons")
+    feedbackContainer = canvasFrame:WaitForChild("FeedbackContainer")
+    feedbackLabel = feedbackContainer:WaitForChild("FeedbackLabel")
+    feedbackButton = buttons:WaitForChild("FeedbackButton")
     assert(trophyContainer ~= nil, "TrophyContainer not found in ResultScreen")
     assert(feedbackLabel ~= nil, "FeedbackLabel not found in ResultScreen")
     assert(feedbackLabel:IsA("TextLabel"), "FeedbackLabel must be a TextLabel")
+    
+    -- Add click handler for feedback button
+    feedbackButton.MouseButton1Click:Connect(function()
+        log("Feedback button clicked" .. tostring(feedbackContainer.Visible))
+        -- Toggle the visibility of the feedback container
+        feedbackContainer.Visible = not feedbackContainer.Visible
+    end)
+    
+    -- Initially hide the feedback container until button is clicked
+    feedbackContainer.Visible = false
 
     -- Populate stars table
     trophies = {}
