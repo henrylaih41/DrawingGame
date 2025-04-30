@@ -25,6 +25,7 @@ local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local CanvasDraw = require(ReplicatedStorage.Modules.Canvas.CanvasDraw)
 local ImageDataConstructor = require(ReplicatedStorage.Modules.Canvas.ImageDataConstructor)
+local CanvasDisplay = require(ReplicatedStorage.Modules.Canvas.CanvasDisplay)
 
 -- Remote events
 local Events = ReplicatedStorage:WaitForChild("Events")
@@ -255,7 +256,7 @@ local function displayResults(playerScore)
     log("Displaying results...")
 
     -- Display the winning drawing
-    displayDrawingData(canvas, playerScore.drawing)
+    CanvasDisplay.displayDrawingData(canvas, playerScore.drawing)
 
     -- Show result UI once the image is loaded.
     topLevelContainer.Visible = true
@@ -299,6 +300,7 @@ local function initResultUI()
 
     local bench = trophyFrame:WaitForChild("Bench")
     local buttons = bench:WaitForChild("Buttons")
+    local bestScoreContainer = topLevelContainer:WaitForChild("BestScoreContainer")
     feedbackContainer = canvasFrame:WaitForChild("FeedbackContainer")
     feedbackLabel = feedbackContainer:WaitForChild("FeedbackLabel")
     feedbackButton = buttons:WaitForChild("FeedbackButton")
@@ -313,6 +315,12 @@ local function initResultUI()
         log("Feedback button clicked" .. tostring(feedbackContainer.Visible))
         -- Toggle the visibility of the feedback container
         feedbackContainer.Visible = not feedbackContainer.Visible
+    end)
+
+    bestScoreButton.MouseButton1Click:Connect(function()
+        log("Best score button clicked" .. tostring(bestScoreContainer.Visible))
+        -- Toggle the visibility of the feedback container
+        bestScoreContainer.Visible = not bestScoreContainer.Visible
     end)
 
     menuButton.MouseButton1Click:Connect(function()
