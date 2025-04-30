@@ -59,6 +59,7 @@ local IS_DRAWING       = false
 local canvasInitialized= false
 local currentGameState = "LOBBY"
 local drawingTimeLeft  = 0
+local timerRotateScript = nil
 
 -- Track UI event connections for cleanup
 local uiConnections = {}
@@ -341,6 +342,7 @@ local function initUI()
     timeLabel       = canvasTopBar:WaitForChild("Timer"):WaitForChild("Frame"):WaitForChild("TimeLabel")
     canvasFrame     = canvasContainer:WaitForChild("CanvasFrame")
     submitNotification = topLevelContainer:WaitForChild("SubmitNotification")
+    timerRotateScript = _G.TimerRotateScriptModule
 end
 
 
@@ -509,11 +511,17 @@ GameStateChangedEvent.OnClientEvent:Connect(function(stateData)
     if newState == "DRAWING" then
         log("Drawing phase started")
         if not canvasInitialized then initCanvas() end
+        if timerRotateScript then
+            timerRotateScript.start()
+        end
         canvasTopBar.Theme.Text = theme
         takeCanvasSnapshot()
         topLevelContainer.Visible = true
         log("Drawing phase enabled")
     else
+        if timerRotateScript then
+            timerRotateScript.stop()
+        end
         log("Drawing Canvas received event:" .. newState)
         if topLevelContainer then topLevelContainer.Visible = false end
         

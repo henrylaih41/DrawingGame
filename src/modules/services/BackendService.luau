@@ -9,11 +9,20 @@ local PromptService = require(ReplicatedStorage.Modules.Services.PromptService)
 local Compression = require(ReplicatedStorage.Modules.Services.Zlib)
 local BackendService = {}
 local DEBUG_ENABLED = true
+local DataStoreService = game:GetService("DataStoreService")
+
+-- Create a DataStore for storing player drawings
+local DrawingsDataStore = DataStoreService:GetDataStore("PlayerBestDrawings")
+
+-- Helper function to generate consistent DataStore keys
+local function generateDrawingKey(playerId, theme)
+    return string.format("%d_%s", playerId, theme)
+end
 
 -- Debug print function that only outputs when debugging is enabled
 local function debugPrint(message, ...)
     if DEBUG_ENABLED then
-        print(message)
+        print(string.format(message, ...))
     end
 end
 
@@ -152,11 +161,67 @@ function BackendService:submitDrawingToBackendForGrading(player, imageData, them
         return nil, "Failed to get response data"
     else
         debugPrint("submitDrawingToBackendForGrading received response data for player: " .. player.Name)
-        debugPrint(responseData)
+        print(responseData)
     end
 
-    return responseData, error
+    return responseData, error, compressedImageData
 end
 
+-- Function to get a player's drawing for a specific theme
+function BackendService:getDrawingForTheme(player, theme)
+    assert(player, "Missing player parameter")
+    assert(theme, "Missing theme parameter")
+    
+    -- Create a unique key for this player and theme combination
+    local key = generateDrawingKey(player.UserId, theme)
+    
+    -- Attempt to get the drawing data from the DataStore
+    local success, result = pcall(function()
+        return DrawingsDataStore:GetAsync(key)
+    end)
+    
+    if success and result then
+        debugPrint("Retrieved drawing for player %s, theme %s", player.Name, theme)
+        return result, nil
+    elseif success then
+        -- No data found but operation succeeded
+        debugPrint("No drawing found for player %s, theme %s", player.Name, theme)
+        return nil, "No drawing found"
+    else
+        -- Operation failed
+        warn("BackendService: Failed to retrieve drawing - " .. tostring(result))
+        return nil, "DataStore error: " .. tostring(result)
+    end
+end
+
+-- Function to save a player's drawing for a specific theme
+function BackendService:saveDrawingForTheme(player, theme, drawingData)
+    assert(player, "Missing player parameter")
+    assert(theme, "Missing theme parameter")
+    assert(drawingData, "Missing drawingData parameter")
+    assert(drawingData.imageData, "Drawing data missing imageData field")
+    assert(drawingData.score, "Drawing data missing score field")
+    
+    -- Create a unique key for this player and theme combination
+    local key = generateDrawingKey(player.UserId, theme)
+    
+    -- Ensure playerId is included in the data
+    drawingData.playerId = player.UserId
+    
+    -- Attempt to save the drawing data to the DataStore
+    local success, result = pcall(function()
+        DrawingsDataStore:SetAsync(key, drawingData)
+        return true
+    end)
+    
+    if success then
+        debugPrint("Successfully saved drawing for player %s, theme %s with score %s", 
+            player.Name, theme, tostring(drawingData.score))
+        return true, nil
+    else
+        warn("BackendService: Failed to save drawing - " .. tostring(result))
+        return false, "DataStore error: " .. tostring(result)
+    end
+end
 
 return BackendService 

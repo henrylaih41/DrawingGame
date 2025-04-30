@@ -39,7 +39,6 @@ local trophyContainer = nil
 local feedbackContainer = nil
 local feedbackLabel = nil
 local feedbackButton, menuButton, bestScoreButton = nil, nil, nil
-local timerRotateScript = nil
 local trophies = {} -- Table to hold star ImageLabels
 
 -- Asset IDs for stars (Replace with your actual asset IDs)
@@ -295,7 +294,6 @@ local function initResultUI()
     local trophyFrame = topLevelContainer:WaitForChild("TrophyFrame")
 
     canvasTopBar = canvasContainer:WaitForChild("CanvasTopBar")
-    timerRotateScript = canvasTopBar:WaitForChild("Timer"):WaitForChild("TimerImage"):WaitForChild("RotateScript")
     -- Get references to result-specific UI elements
     trophyContainer = trophyFrame:WaitForChild("TrophyContainer")
 
@@ -363,7 +361,6 @@ Events.GameStateChanged.OnClientEvent:Connect(function(stateData)
         if not resultUIInitialized then
             initResultUI()
         end
-        timerRotateScript.start()
         -- Set the theme text
         canvasTopBar.Theme.Text = theme
         assert(resultUIInitialized, "ResultUI is not initialized")
@@ -394,7 +391,7 @@ Events.GameStateChanged.OnClientEvent:Connect(function(stateData)
             topLevelContainer.Visible = false
             log("ResultScreen topLevelContainer hidden")
         end
-        timerRotateScript.stop()
+
         if canvas then canvas:Clear() end
     end
 end)

@@ -185,6 +185,48 @@ local function runDrawingPhase(currentTheme)
     return currentTheme
 end
 
+local function storeHighestScoringDrawing(player, theme, imageData, score, feedback)
+    -- Check if there's an existing drawing for this theme
+    local existingData, errorMessage = BackendService:getDrawingForTheme(player, theme)
+    
+    local shouldSaveDrawing = false
+    
+    if not existingData or errorMessage then
+        -- No existing drawing found, save this one
+        debugPrint("No existing drawing found for theme '%s'. Saving new drawing.", theme)
+        shouldSaveDrawing = true
+    else
+        -- Compare scores to see if we should update
+        local existingScore = tonumber(existingData.score) or 0
+        if score > existingScore then
+            debugPrint("New drawing score (%d) is higher than existing score (%d) for theme '%s'. Updating.", 
+                score, existingScore, theme)
+            shouldSaveDrawing = true
+        else
+            debugPrint("Existing drawing has higher or equal score (%d vs %d) for theme '%s'. Keeping existing drawing.", 
+                existingScore, score, theme)
+        end
+    end
+    
+    -- Save the drawing if needed
+    if shouldSaveDrawing then
+        local drawingData = {
+            imageData = imageData,
+            score = score,
+            timestamp = os.time(),
+            theme = theme,
+            playerId = player.UserId
+        }
+        
+        local success, error = BackendService:saveDrawingForTheme(player, theme, drawingData)
+        if success then
+            debugPrint("Successfully saved drawing for theme '%s'", theme)
+        else
+            debugPrint("Failed to save drawing for theme '%s': %s", theme, error)
+        end
+    end
+end
+
 local function runGradingPhase(currentTheme)
     local playersToGrade = #GameManager.activePlayers
     local playersGraded = 0
@@ -201,7 +243,8 @@ local function runGradingPhase(currentTheme)
                 local errorMessage = false
                 local result = nil
                 debugPrint("Submitting drawing for grading for player %s", p.Name)
-                result, errorMessage = BackendService:submitDrawingToBackendForGrading(p, imageData, currentTheme)
+                local compressedImageData = nil
+                result, errorMessage, compressedImageData = BackendService:submitDrawingToBackendForGrading(p, imageData, currentTheme)
 
                 if result and result.success then
                     debugPrint("Grading successful for %s", p.Name)
@@ -210,6 +253,12 @@ local function runGradingPhase(currentTheme)
                         score = result.result.Score or "5", 
                         feedback = result.result.Feedback
                     }
+                    
+                    -- Store best drawing for this theme in datastore
+                    task.spawn(function()
+                        local scoreValue = tonumber(result.result.Score) or 5
+                        storeHighestScoringDrawing(p, currentTheme, compressedImageData, scoreValue, result.result.Feedback)
+                    end)
                 else
                     debugPrint("Grading failed for %s: %s", p.Name, errorMessage)
                     GameManager.playerScores[userId] = { 
