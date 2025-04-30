@@ -14,10 +14,9 @@ local ThemeList = require(ReplicatedStorage.Modules.GameData.ThemeList)
 local CONSTANTS = {
     MAX_PLAYERS = 8,
     COUNTDOWN_TIME = 1,
-    DRAWING_TIME = 600, -- 3 minutes
+    DRAWING_TIME = 600,
     VOTING_TIME = 30, -- 30 seconds for voting
-    DEBUG_ENABLED = true,
-    RESULT_PHASE_WAIT_TIME = 20
+    DEBUG_ENABLED = true
 }
 
 -- Game state definitions
@@ -44,7 +43,8 @@ local Events = {
     SubmitDrawing = nil,
     DrawingsReceived = nil,
     SubmitVote = nil,
-    ShowResults = nil
+    ShowResults = nil,
+    ReturnToMainMenu = nil
 }
 
 -- Game state tracking
@@ -71,6 +71,7 @@ local function initializeEvents()
     Events.DrawingsReceived = EventsFolder:WaitForChild("DrawingsReceived")
     Events.SubmitVote = EventsFolder:WaitForChild("SubmitVote")
     Events.ShowResults = EventsFolder:WaitForChild("ShowResults")
+    Events.ReturnToMainMenu = EventsFolder:WaitForChild("ReturnToMainMenu")
 end
 
 -- Utility Functions
@@ -358,8 +359,6 @@ local function startGame()
     runDrawingPhase(currentTheme)
     
     -- === NEXT PHASE BASED ON GAME MODE ===
-    local resultsData = nil
-    
     if GameManager.currentGameMode == GameMode.SINGLE_PLAYER then
         -- === GRADING PHASE (Single Player) ===
         transitionToState(GameState.GRADING)
@@ -368,8 +367,28 @@ local function startGame()
         
         -- === RESULTS PHASE ===
         transitionToState(GameState.RESULTS, {playerScores = GameManager.playerScores, theme = currentTheme})
-        debugPrint("Preparing single-player results.")
-        task.wait(CONSTANTS.RESULT_PHASE_WAIT_TIME)
+        debugPrint("Displaying single-player results. Waiting for player to click menu button.")
+        
+        -- Create variables to track when to continue
+        local returnToMenuRequested = false
+        local connection
+        
+        -- Listen for ReturnToMainMenu event
+        connection = Events.ReturnToMainMenu.OnServerEvent:Connect(function(player)
+            if table.find(GameManager.activePlayers, player) then
+                debugPrint("Player %s clicked to return to main menu", player.Name)
+                returnToMenuRequested = true
+            end
+        end)
+        
+        while not returnToMenuRequested do
+            task.wait(0.5) -- Check every half second to avoid busy waiting
+        end
+        
+        -- Clean up connection
+        if connection then
+            connection:Disconnect()
+        end
         
     elseif GameManager.currentGameMode == GameMode.MULTIPLAYER then
         -- === VOTING PHASE (Multiplayer) ===

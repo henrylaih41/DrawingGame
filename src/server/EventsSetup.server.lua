@@ -26,5 +26,6 @@ createEvent("SubmitDrawing")
 createEvent("DrawingsReceived")
 createEvent("SubmitVote")
 createEvent("ShowResults")
+createEvent("ReturnToMainMenu")
 
 print("Events setup complete") 

@@ -38,7 +38,8 @@ local canvasTopBar = nil
 local trophyContainer = nil
 local feedbackContainer = nil
 local feedbackLabel = nil
-local feedbackButton = nil
+local feedbackButton, menuButton, bestScoreButton = nil, nil, nil
+local timerRotateScript = nil
 local trophies = {} -- Table to hold star ImageLabels
 
 -- Asset IDs for stars (Replace with your actual asset IDs)
@@ -294,6 +295,7 @@ local function initResultUI()
     local trophyFrame = topLevelContainer:WaitForChild("TrophyFrame")
 
     canvasTopBar = canvasContainer:WaitForChild("CanvasTopBar")
+    timerRotateScript = canvasTopBar:WaitForChild("Timer"):WaitForChild("TimerImage"):WaitForChild("RotateScript")
     -- Get references to result-specific UI elements
     trophyContainer = trophyFrame:WaitForChild("TrophyContainer")
 
@@ -302,6 +304,8 @@ local function initResultUI()
     feedbackContainer = canvasFrame:WaitForChild("FeedbackContainer")
     feedbackLabel = feedbackContainer:WaitForChild("FeedbackLabel")
     feedbackButton = buttons:WaitForChild("FeedbackButton")
+    menuButton = buttons:WaitForChild("MenuButton")
+    bestScoreButton = buttons:WaitForChild("BestScoreButton")
     assert(trophyContainer ~= nil, "TrophyContainer not found in ResultScreen")
     assert(feedbackLabel ~= nil, "FeedbackLabel not found in ResultScreen")
     assert(feedbackLabel:IsA("TextLabel"), "FeedbackLabel must be a TextLabel")
@@ -311,6 +315,12 @@ local function initResultUI()
         log("Feedback button clicked" .. tostring(feedbackContainer.Visible))
         -- Toggle the visibility of the feedback container
         feedbackContainer.Visible = not feedbackContainer.Visible
+    end)
+
+    menuButton.MouseButton1Click:Connect(function()
+        log("Menu button clicked - returning to main menu")
+        -- Send the event to server
+        Events.ReturnToMainMenu:FireServer()
     end)
     
     -- Initially hide the feedback container until button is clicked
@@ -353,6 +363,7 @@ Events.GameStateChanged.OnClientEvent:Connect(function(stateData)
         if not resultUIInitialized then
             initResultUI()
         end
+        timerRotateScript.start()
         -- Set the theme text
         canvasTopBar.Theme.Text = theme
         assert(resultUIInitialized, "ResultUI is not initialized")
@@ -383,6 +394,7 @@ Events.GameStateChanged.OnClientEvent:Connect(function(stateData)
             topLevelContainer.Visible = false
             log("ResultScreen topLevelContainer hidden")
         end
+        timerRotateScript.stop()
         if canvas then canvas:Clear() end
     end
 end)
