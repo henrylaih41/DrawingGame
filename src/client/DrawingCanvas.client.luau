@@ -336,9 +336,9 @@ local function initUI()
 
     drawingScreen   = PlayerGui:WaitForChild("DrawingScreen")
     topLevelContainer = drawingScreen:WaitForChild("TopLevelContainer")
-    timeLabel       = topLevelContainer:WaitForChild("TimeLabel")
     canvasContainer = topLevelContainer:WaitForChild("CanvasContainer")
     canvasTopBar    = canvasContainer:WaitForChild("CanvasTopBar")
+    timeLabel       = canvasTopBar:WaitForChild("Timer"):WaitForChild("Frame"):WaitForChild("TimeLabel")
     canvasFrame     = canvasContainer:WaitForChild("CanvasFrame")
     submitNotification = topLevelContainer:WaitForChild("SubmitNotification")
 end
@@ -565,14 +565,12 @@ end)
 
 GameCountdownEvent.OnClientEvent:Connect(function(sec, phase)
     if phase ~= "DRAWING" then return end
-    drawingTimeLeft = sec
     if sec<=0 and currentGameState=="DRAWING" then submitDrawing() end
     if timeLabel then
-        local m, s = math.floor(sec/60), sec%60
-        timeLabel.Text = string.format("Time Remaining: %d:%02d", m,s)
-        timeLabel.TextColor3 = (sec<=30) and Color3.fromRGB(255,50,50) or Color3.fromRGB(0,0,0)
+        local m, s = math.floor(sec / 60), sec % 60
+        timeLabel.Text = string.format("%02d:%02d", m,s)
+        timeLabel.TextColor3 = (sec<=60) and Color3.fromRGB(255,50,50) or Color3.fromRGB(0,0,0)
     end
 end)
-
 
 initUI()
