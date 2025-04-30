@@ -43,12 +43,22 @@ BackendService.DefaultOptions = {
 }
 
 -- Function to send a request to the OpenAI endpoint
-function BackendService:SendOpenAIRequest(imageBase64, prompt, theme, playerId)
-    assert(imageBase64, "Missing imageBase64 parameter")
+function BackendService:SendOpenAIRequest(compressedImageData, prompt, theme, playerId)
+    assert(compressedImageData, "Missing compressedImageData parameter")
     assert(prompt, "Missing prompt parameter")
+    assert(theme, "Missing theme parameter")
+    assert(playerId, "Missing playerId parameter")
+
+    -- Schema for the image data understood by the server API.
+    local imageDataForServer = {
+        Pixels = compressedImageData.ImageBuffer,
+        Width = compressedImageData.Width,
+        Height = compressedImageData.Height
+    }
+
     
     local requestBody = {
-        image = imageBase64,
+        image = imageDataForServer,
         prompt = prompt,
         metadata = {
             playerId = playerId,
@@ -195,6 +205,14 @@ function BackendService:getDrawingForTheme(player, theme)
 end
 
 -- Function to save a player's drawing for a specific theme
+-- drawingData schema 
+-- {
+--     imageData = ImageData, compressed image data returned by CompressImageDataCustom.
+--     score = number,
+--     timestamp = number,
+--     theme = string,
+--     playerId = number
+-- }
 function BackendService:saveDrawingForTheme(player, theme, drawingData)
     assert(player, "Missing player parameter")
     assert(theme, "Missing theme parameter")

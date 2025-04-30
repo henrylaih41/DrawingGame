@@ -185,6 +185,7 @@ local function runDrawingPhase(currentTheme)
     return currentTheme
 end
 
+-- imageData is a compressed image data returned by CompressImageDataCustom.
 local function storeHighestScoringDrawing(player, theme, imageData, score, feedback)
     -- Check if there's an existing drawing for this theme
     local existingData, errorMessage = BackendService:getDrawingForTheme(player, theme)
@@ -257,6 +258,10 @@ local function runGradingPhase(currentTheme)
                     -- Store best drawing for this theme in datastore
                     task.spawn(function()
                         local scoreValue = tonumber(result.result.Score) or 5
+                        -- TODO, we can optimizer here by returning the best drawing image data.
+                        -- This way we can avoid the getDrawingForTheme call later.
+                        -- We need to be careful since this function is called using a task spawn.
+                        -- We either have to make this blocking or use some synchronization mechanism.
                         storeHighestScoringDrawing(p, currentTheme, compressedImageData, scoreValue, result.result.Feedback)
                     end)
                 else
@@ -413,9 +418,27 @@ local function startGame()
         transitionToState(GameState.GRADING)
         debugPrint("Starting GRADING phase for single player.")
         runGradingPhase(currentTheme)
+        debugPrint("Getting best score for theme %s", currentTheme)
+        local player = GameManager.activePlayers[1]
+        assert(player, "No player found in active players")
+        local existingData, errorMessage = BackendService:getDrawingForTheme(player, currentTheme)
+        if errorMessage then
+            warn("Error getting best score for theme %s: %s", currentTheme, errorMessage)
+        end
+
+        local bestScoreData = existingData
+        local imageData = CanvasDraw.DecompressImageDataCustom(bestScoreData.imageData)
         
+        print("Decompressed image data")
+        print(imageData)
+        local bestScore = {
+            drawing = imageData,
+            score = bestScoreData.score,
+            feedback = bestScoreData.feedback
+        }
+
         -- === RESULTS PHASE ===
-        transitionToState(GameState.RESULTS, {playerScores = GameManager.playerScores, theme = currentTheme})
+        transitionToState(GameState.RESULTS, {bestScore = bestScore, playerScores = GameManager.playerScores, theme = currentTheme})
         debugPrint("Displaying single-player results. Waiting for player to click menu button.")
         
         -- Create variables to track when to continue

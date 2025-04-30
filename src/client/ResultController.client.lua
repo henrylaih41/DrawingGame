@@ -6,8 +6,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local DebugFlag = true
 local DebugUtils = require(ReplicatedStorage.Modules.Services.DebugUtils)
-local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
 
 -- Debug logging function using DebugUtils
 --- Logs a message to the console if DebugFlag is enabled.
@@ -24,7 +22,6 @@ log("Script started")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local CanvasDraw = require(ReplicatedStorage.Modules.Canvas.CanvasDraw)
-local ImageDataConstructor = require(ReplicatedStorage.Modules.Canvas.ImageDataConstructor)
 local CanvasDisplay = require(ReplicatedStorage.Modules.Canvas.CanvasDisplay)
 
 -- Remote events
@@ -34,206 +31,15 @@ local Events = ReplicatedStorage:WaitForChild("Events")
 local resultScreen = nil
 local topLevelContainer = nil
 local resultUIInitialized = false
-local canvas = nil
-local canvasTopBar = nil
-local trophyContainer = nil
+local resultCanvas = nil
+local bestScoreCanvas = nil
+local resultCanvasTopBar = nil
+local resultTrophyContainer = nil
+local bestScoreTrophyContainer = nil
 local feedbackContainer = nil
 local feedbackLabel = nil
 local feedbackButton, menuButton, bestScoreButton = nil, nil, nil
-local trophies = {} -- Table to hold star ImageLabels
 
--- Asset IDs for stars (Replace with your actual asset IDs)
--- local LOW_TROPHY_ASSET = "rbxassetid://70472161727933"
--- local MID_TROPHY_ASSET = "rbxassetid://119966776084235"
--- local HIGH_TROPHY_ASSET = "rbxassetid://124414140924737"
-local LOW_TROPHY_ASSET = "rbxassetid://109390850672610"
-local MID_TROPHY_ASSET = "rbxassetid://138398517489645"
-local HIGH_TROPHY_ASSET = "rbxassetid://80732171057769"
-
--- Sound effect for trophy appearance
-local TROPHY_SOUND_ID = "rbxassetid://111277558339395"
-local HIGH_SCORE_SOUND_ID = "rbxassetid://79723856625266" -- Add a celebration sound for high scores
-local soundsFolder = ReplicatedStorage:FindFirstChild("Sounds")
-assert(soundsFolder ~= nil, "Sounds folder not found in ReplicatedStorage")
-
-local trophySound = Instance.new("Sound")
-trophySound.SoundId = TROPHY_SOUND_ID
-trophySound.Volume = 0.5
-trophySound.Parent = soundsFolder
-
-local highScoreSound = Instance.new("Sound")
-highScoreSound.SoundId = HIGH_SCORE_SOUND_ID
-highScoreSound.Volume = 0.7
-highScoreSound.Parent = soundsFolder
-
--- Function to display an image from ImageData
---- Clears the target canvas and draws the provided image data onto it, scaling to fit.
---- @param targetCanvas CanvasDraw The CanvasDraw instance to draw on.
---- @param imageData table The image data containing Width, Height, and ImageBuffer.
-local function displayDrawingData(targetCanvas, imageData)
-    assert(targetCanvas ~= nil, "Canvas is nil")
-    assert(imageData ~= nil, "ImageData is nil")
-    assert(imageData.Width ~= nil and imageData.Height ~= nil and imageData.ImageBuffer ~= nil, "Invalid ImageData structure")
-
-    -- Clear any existing content
-    targetCanvas:Clear()
-    local reconstructedImage =
-        ImageDataConstructor.new(imageData.Width, imageData.Height, imageData.ImageBuffer)
-    local scaleX = targetCanvas.Resolution.X / reconstructedImage.Width
-    local scaleY = targetCanvas.Resolution.Y / reconstructedImage.Height
-    targetCanvas:DrawImage(reconstructedImage, Vector2.new(1, 1), Vector2.new(scaleX, scaleY))
-    log("Drawing displayed on canvas")
-end
-
--- Function to play trophy sound with pitch variation
-local function playTrophySound(pitch)
-    -- Clone the sound so multiple can play simultaneously
-    local sound = trophySound:Clone()
-    sound.Parent = workspace
-    sound.PlaybackSpeed = pitch or 1
-    sound:Play()
-    
-    -- Clean up sound after it finishes playing
-    sound.Ended:Connect(function()
-        sound:Destroy()
-    end)
-end
-
--- Function to play high score celebration sound
-local function playHighScoreSound()
-    local sound = highScoreSound:Clone()
-    sound.Parent = workspace
-    sound:Play()
-    
-    -- Clean up sound after it finishes playing
-    sound.Ended:Connect(function()
-        sound:Destroy()
-    end)
-end
-
--- Function to create a starburst effect
-local function createStarburstEffect(parent)
-    for i = 1, 8 do
-        local spark = Instance.new("Frame")
-        spark.BorderSizePixel = 0
-        spark.BackgroundColor3 = Color3.fromRGB(255, 255, 150) -- Yellow spark
-        spark.Size = UDim2.new(0, 2, 0, 10)
-        spark.AnchorPoint = Vector2.new(0.5, 0.5)
-        spark.Position = UDim2.new(0.5, 0, 0.5, 0)
-        spark.Rotation = i * 45 -- Evenly spaced around
-        spark.ZIndex = 10 -- Ensure it appears above the trophy
-        spark.Parent = parent
-        
-        -- Create glow effect
-        local uiGradient = Instance.new("UIGradient")
-        uiGradient.Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 200, 50))
-        })
-        uiGradient.Parent = spark
-        
-        -- Animate the spark outward
-        local tweenInfo = TweenInfo.new(0.7, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-        local tween = TweenService:Create(spark, tweenInfo, {
-            Size = UDim2.new(0, 2, 0, 40),
-            BackgroundTransparency = 1
-        })
-        tween:Play()
-        
-        -- Clean up after animation
-        tween.Completed:Connect(function()
-            spark:Destroy()
-        end)
-    end
-end
-
--- Function to update the star display based on score
---- Updates the star images (empty/filled) based on the provided score.
---- Handles potential issues with finding star ImageLabels.
---- @param score number The score (0-10) determining the number of filled stars.
-local function updateStarDisplay(score)
-    log("Updating star display for score: ", score)
-    assert(type(score) == "number" and score >= 0 and score <= 10, "Score must be a number between 0 and 10 " .. score)
-    assert(trophyContainer ~= nil, "Star container is nil")
-    assert(#trophies == 10, "Expected 10 trophies, found " .. #trophies)
-    log("Updating star display for score: ", score)
-    -- score = 10
-    
-    -- First clean up any previous trophy overlays
-    for i, trophyLabel in ipairs(trophies) do
-        local existingOverlay = trophyLabel:FindFirstChild("TrophyOverlay")
-        if existingOverlay then
-            existingOverlay:Destroy()
-        end
-    end
-    
-    trophyContainer.Visible = true -- Ensure container is visible
-    
-    task.wait(1)
-    -- Animate trophies sequentially
-    for i = 1, score do
-        if i <= #trophies then
-            task.delay((i - 1) * 0.3, function()
-                local trophy = trophies[i]
-                if trophy then
-                    -- Determine which trophy asset to use
-                    local trophyAsset
-                    if i == 10 then
-                        trophyAsset = HIGH_TROPHY_ASSET -- Special trophy for the 10th trophy at max score
-                    elseif i >= 8 then
-                        trophyAsset = MID_TROPHY_ASSET -- Use NICE trophy for scores 7-9
-                    else -- Score is 1-6
-                        trophyAsset = LOW_TROPHY_ASSET -- Use BASIC trophy for scores 1-6
-                    end
-                    
-                    -- Play sound with pitch variation based on trophy position
-                    -- Higher pitch for higher value trophies
-                    local pitch = 0.8 + (i * 0.05)
-                    playTrophySound(pitch)
-                    
-                    -- Create a new overlay ImageLabel that will be placed on top of the original
-                    local overlay = Instance.new("ImageLabel")
-                    overlay.Name = "TrophyOverlay"
-                    overlay.Image = trophyAsset
-                    overlay.BackgroundTransparency = 1
-                    overlay.Size = UDim2.new(1, 0, 1, 0)
-                    overlay.AnchorPoint = Vector2.new(0.5, 0.5)
-                    overlay.Position = UDim2.new(0.5, 0, 0.5, 0)
-                    overlay.ZIndex = trophy.ZIndex + 1 -- Ensure it appears above the original trophy
-                    
-                    -- Create UIScale for scaling animation
-                    local uiScale = Instance.new("UIScale")
-                    uiScale.Scale = 0 -- Start from zero scale
-                    uiScale.Parent = overlay
-                    
-                    -- Add the overlay to the trophy
-                    overlay.Parent = trophy
-                    
-                    -- Animation for appearing with a bounce effect using UIScale
-                    local tweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
-                    local tween = TweenService:Create(uiScale, tweenInfo, {Scale = 1})
-                    tween:Play()
-                    
-                    task.delay(0.5, function()
-                        task.delay(0.2, function()
-                            createStarburstEffect(overlay)
-                        end)
-                    end)
-                end
-            end)
-        end
-    end
-    
-    -- Play a special celebration sound after all trophies have appeared if score is high
-    if score >= 8 then
-        -- Calculate delay based on the number of trophies (each takes 0.3s to appear)
-        -- Add extra delay for the starburst effects and final trophy to complete
-        local totalDelay = (score * 0.3) + 0.7
-        task.delay(totalDelay, function()
-            playHighScoreSound()
-        end)
-    end
-end
 
 -- Function to display the final results
 --- Displays the results for a specific player.
@@ -244,29 +50,36 @@ end
 ---    score = number,      -- The score (0-10) to display as stars.
 ---    feedback = string    -- The feedback text to display.
 --- }
-local function displayResults(playerScore)
+local function displayResults(playerScore, bestScore, theme)
     assert(playerScore ~= nil, "Result data is nil")
     assert(playerScore.drawing ~= nil, "Result drawing is nil")
     assert(playerScore.score ~= nil, "Result score is nil")
     assert(playerScore.feedback ~= nil, "Result feedback is nil")
-    assert(canvas ~= nil, "Canvas is nil for displaying results")
+    assert(resultCanvas ~= nil, "Result Canvas is nil for displaying results")
     assert(feedbackLabel ~= nil, "Feedback label is nil")
-    assert(trophyContainer ~= nil, "Star container is nil")
+    assert(resultTrophyContainer ~= nil, "Star container is nil")
 
     log("Displaying results...")
 
     -- Display the winning drawing
-    CanvasDisplay.displayDrawingData(canvas, playerScore.drawing)
+    CanvasDisplay.displayDrawingData(resultCanvas, playerScore.drawing)
+
+    -- Update the star rating
+    CanvasDisplay.updateStarDisplay(resultTrophyContainer, playerScore.score, true)
 
     -- Show result UI once the image is loaded.
     topLevelContainer.Visible = true
 
-    -- Update the star rating
-    updateStarDisplay(playerScore.score)
-
     -- Update the feedback text
     feedbackLabel.Text = playerScore.feedback
     feedbackLabel.Visible = true -- Ensure feedback label is visible
+    
+    -- local bestScore = BackendService.getDrawingForTheme(LocalPlayer, theme)
+    -- local imageData = CanvasDraw.DecompressImageDataCustom(bestScore.imageData)
+    -- -- Update the best score canvas
+    CanvasDisplay.displayDrawingData(bestScoreCanvas, bestScore.drawing)
+    log("Best score" .. bestScore.score)
+    CanvasDisplay.updateStarDisplay(bestScoreTrophyContainer, bestScore.score, false)
 end
 
 
@@ -290,23 +103,25 @@ local function initResultUI()
     assert(resultScreen ~= nil, "ResultScreen not found in PlayerGui")
 
     local canvasContainer = topLevelContainer:WaitForChild("CanvasContainer")
-    local canvasFrame = canvasContainer:WaitForChild("CanvasFrame")
+    local bestScoreContainer = topLevelContainer:WaitForChild("BestScoreContainer")
+    local resultCanvasFrame = canvasContainer:WaitForChild("CanvasFrame")
+    local bestScoreCanvasFrame = bestScoreContainer:WaitForChild("CanvasFrame")
 
     local trophyFrame = topLevelContainer:WaitForChild("TrophyFrame")
-
-    canvasTopBar = canvasContainer:WaitForChild("CanvasTopBar")
+    local bestScoreTrophyFrame = bestScoreContainer:WaitForChild("TrophyFrame")
+    resultCanvasTopBar = canvasContainer:WaitForChild("CanvasTopBar")
     -- Get references to result-specific UI elements
-    trophyContainer = trophyFrame:WaitForChild("TrophyContainer")
+    resultTrophyContainer = trophyFrame:WaitForChild("TrophyContainer")
+    bestScoreTrophyContainer = bestScoreTrophyFrame:WaitForChild("TrophyContainer")
 
     local bench = trophyFrame:WaitForChild("Bench")
     local buttons = bench:WaitForChild("Buttons")
-    local bestScoreContainer = topLevelContainer:WaitForChild("BestScoreContainer")
-    feedbackContainer = canvasFrame:WaitForChild("FeedbackContainer")
+    feedbackContainer = resultCanvasFrame:WaitForChild("FeedbackContainer")
     feedbackLabel = feedbackContainer:WaitForChild("FeedbackLabel")
     feedbackButton = buttons:WaitForChild("FeedbackButton")
     menuButton = buttons:WaitForChild("MenuButton")
     bestScoreButton = buttons:WaitForChild("BestScoreButton")
-    assert(trophyContainer ~= nil, "TrophyContainer not found in ResultScreen")
+    assert(resultTrophyContainer ~= nil, "TrophyContainer not found in ResultScreen")
     assert(feedbackLabel ~= nil, "FeedbackLabel not found in ResultScreen")
     assert(feedbackLabel:IsA("TextLabel"), "FeedbackLabel must be a TextLabel")
     
@@ -332,24 +147,22 @@ local function initResultUI()
     -- Initially hide the feedback container until button is clicked
     feedbackContainer.Visible = false
 
-    -- Populate stars table
-    trophies = {}
-    for i = 1, 10 do
-        local trophy = trophyContainer:FindFirstChild("Trophy" .. i)
-        assert(trophy ~= nil, "Trophy" .. i .. " not found in TrophyContainer")
-        assert(trophy:IsA("Frame"), "Trophy" .. i .. " must be an Frame")
-        table.insert(trophies, trophy:FindFirstChild("Trophy" .. i))
-    end
-    log("Found ", #trophies, " trophylabels.")
-
     -- Create a canvas for the drawing display
-    if not canvas then -- Create canvas only if it doesn't exist
-         canvas = CanvasDraw.new(canvasFrame, Vector2.new(math.ceil(canvasFrame.AbsoluteSize.X), math.ceil(canvasFrame.AbsoluteSize.Y)))
+    if not resultCanvas then -- Create canvas only if it doesn't exist
+         resultCanvas = CanvasDraw.new(resultCanvasFrame, Vector2.new(math.ceil(resultCanvasFrame.AbsoluteSize.X), math.ceil(resultCanvasFrame.AbsoluteSize.Y)))
          log("Canvas: Created")
     else
          log("Canvas: Already exists")
     end
-    assert(canvas ~= nil, "Failed to create or find canvas")
+
+    if not bestScoreCanvas then
+        bestScoreCanvas = CanvasDraw.new(bestScoreCanvasFrame, Vector2.new(math.ceil(bestScoreCanvasFrame.AbsoluteSize.X), math.ceil(bestScoreCanvasFrame.AbsoluteSize.Y)))
+        log("Best Score Canvas: Created")
+    else
+        log("Best Score Canvas: Already exists")
+    end
+    
+    assert(resultCanvas ~= nil, "Failed to create or find canvas")
     log("Result UI initialized successfully")
 end
 
@@ -370,7 +183,7 @@ Events.GameStateChanged.OnClientEvent:Connect(function(stateData)
             initResultUI()
         end
         -- Set the theme text
-        canvasTopBar.Theme.Text = theme
+        resultCanvasTopBar.Theme.Text = theme
         assert(resultUIInitialized, "ResultUI is not initialized")
         -- Ensure UI is initialized (might have been initialized above or previously)
         if not resultUIInitialized then initResultUI() end
@@ -380,7 +193,7 @@ Events.GameStateChanged.OnClientEvent:Connect(function(stateData)
         if stateData.playerScores then
             -- Store the results data
             -- Display the results for current player
-            displayResults(stateData.playerScores[tostring(LocalPlayer.UserId)])
+            displayResults(stateData.playerScores[tostring(LocalPlayer.UserId)], stateData.bestScore, theme)
         else
             warn("ResultController: Received RESULTS state but no resultsData was provided.")
             -- Display error message or hide elements
@@ -390,8 +203,8 @@ Events.GameStateChanged.OnClientEvent:Connect(function(stateData)
             else
                 warn("ResultController: FeedbackLabel not found to display error.")
             end
-            if trophyContainer then trophyContainer.Visible = false end
-            if canvas then canvas:Clear() end
+            if resultTrophyContainer then resultTrophyContainer.Visible = false end
+            if resultCanvas then resultCanvas:Clear() end
         end
     else
         -- Hide UI for other states (e.g., LOBBY, DRAWING)
@@ -400,7 +213,7 @@ Events.GameStateChanged.OnClientEvent:Connect(function(stateData)
             log("ResultScreen topLevelContainer hidden")
         end
 
-        if canvas then canvas:Clear() end
+        if resultCanvas then resultCanvas:Clear() end
     end
 end)
 

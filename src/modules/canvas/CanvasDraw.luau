@@ -2,7 +2,7 @@
 
 --[[
 	================== CanvasDraw ===================
-	
+
 	Created by: Ethanthegrand (@Ethanthegrand14)
 	
 	Last updated: 26/02/2025
@@ -3023,21 +3023,21 @@ end
 
 
 -- Compresses and converts an ImageData object into a smaller datastore compatible object
-function CanvasDraw.CompressImageData(ImageData)
-	local PixelBuffer = ImageData.ImageBuffer
-	local Width, Height = ImageData.Width, ImageData.Height
+-- function CanvasDraw.CompressImageData(ImageData)
+-- 	local PixelBuffer = ImageData.ImageBuffer
+-- 	local Width, Height = ImageData.Width, ImageData.Height
 
-	-- Compress the pixel data
-	local CompressedPixels = HttpService:JSONEncode(PixelBuffer)
+-- 	-- Compress the pixel data
+-- 	local CompressedPixels = HttpService:JSONEncode(PixelBuffer)
 
-	-- Create the data object
-	local CompressedData = {}
-	CompressedData.Pixels = CompressedPixels
-	CompressedData.Width = Width
-	CompressedData.Height = Height
+-- 	-- Create the data object
+-- 	local CompressedData = {}
+-- 	CompressedData.Pixels = CompressedPixels
+-- 	CompressedData.Width = Width
+-- 	CompressedData.Height = Height
 
-	return CompressedData
-end
+-- 	return CompressedData
+-- end
 
 function CanvasDraw.to_base64(data)
     local b = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
@@ -3051,6 +3051,22 @@ function CanvasDraw.to_base64(data)
         for i=1,6 do c=c+(x:sub(i,i)=='1' and 2^(6-i) or 0) end
         return b:sub(c+1,c+1)
     end)..({ '', '==', '=' })[#data%3+1])
+end
+
+function CanvasDraw.from_base64(data)
+    local b = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+    data = string.gsub(data, '[^'..b..'=]', '')
+    return (data:gsub('.', function(x)
+        if (x == '=') then return '' end
+        local r,f='',(b:find(x)-1)
+        for i=6,1,-1 do r=r..(f%2^i-f%2^(i-1)>0 and '1' or '0') end
+        return r;
+    end):gsub('%d%d%d?%d?%d?%d?%d?%d?', function(x)
+        if (#x ~= 8) then return '' end
+        local c=0
+        for i=1,8 do c=c+(x:sub(i,i)=='1' and 2^(8-i) or 0) end
+        return string.char(c)
+    end))
 end
 
 function CanvasDraw.ConvertBufferToZlibCompressedBase64(inputBuffer)
@@ -3080,6 +3096,26 @@ function CanvasDraw.ConvertBufferToZlibCompressedBase64(inputBuffer)
     return base64CompressedString
 end
 
+function CanvasDraw.ConvertZlibCompressedBase64ToBuffer(base64CompressedString)
+    -- Validate input
+    if typeof(base64CompressedString) ~= "string" then
+        warn("ConvertZlibCompressedBase64ToBuffer: Input must be a string, received type:", typeof(base64CompressedString))
+        return nil
+    end
+
+	local compressedString = CanvasDraw.from_base64(base64CompressedString)
+
+	local rawDataString = Compression.Deflate.Decompress(compressedString)
+
+	local bufferSize = #rawDataString
+
+	local outputBuffer = buffer.create(bufferSize)
+
+	buffer.writestring(outputBuffer, 0, rawDataString, bufferSize)
+
+	return outputBuffer
+end
+
 -- We customize the serialization of the buffer and send it to the backend for OpenAI API call.
 function CanvasDraw.CompressImageDataCustom(ImageData)
 	local PixelBuffer = ImageData.ImageBuffer
@@ -3090,7 +3126,24 @@ function CanvasDraw.CompressImageDataCustom(ImageData)
 
 	-- Create the data object
 	local CompressedData = {}
-	CompressedData.Pixels = CompressedPixels
+	CompressedData.ImageBuffer = CompressedPixels
+	CompressedData.Width = Width
+	CompressedData.Height = Height
+
+	return CompressedData
+end
+
+-- We customize the serialization of the buffer and send it to the backend for OpenAI API call.
+function CanvasDraw.DecompressImageDataCustom(ImageData)
+	local compressedPixelBuffer = ImageData.Pixels
+	local Width, Height = ImageData.Width, ImageData.Height
+
+	-- Compress the pixel data
+	local decompressedPixels = CanvasDraw.ConvertZlibCompressedBase64ToBuffer(compressedPixelBuffer)
+
+	-- Create the data object
+	local CompressedData = {}
+	CompressedData.ImageBuffer = decompressedPixels 
 	CompressedData.Width = Width
 	CompressedData.Height = Height
 
