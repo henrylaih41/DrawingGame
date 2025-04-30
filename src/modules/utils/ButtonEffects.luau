@@ -50,4 +50,31 @@ function ButtonEffects.applyHoverEffects(button, onClick, customColors)
     end
 end
 
+function ButtonEffects.applyButtonPressEffect(button, pressImage)
+    -- Store original properties
+    local originalImage = button.Image
+
+    -- Create press effect
+    local function onButtonDown()
+        button.Image = pressImage
+    end
+    
+    -- Restore original appearance
+    local function onButtonUp()
+        button.Image = originalImage
+    end
+    
+    -- Connect events
+    local mouseDownConnection = button.MouseButton1Down:Connect(onButtonDown)
+    local mouseUpConnection = button.MouseButton1Up:Connect(onButtonUp)
+    local mouseLeaveConnection = button.MouseLeave:Connect(onButtonUp)
+    
+    -- Return cleanup function
+    return function()
+        mouseDownConnection:Disconnect()
+        mouseUpConnection:Disconnect()
+        mouseLeaveConnection:Disconnect()
+    end
+end
+
 return ButtonEffects 

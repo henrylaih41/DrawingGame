@@ -60,6 +60,8 @@ SinglePlayerButton.MouseButton1Click:Connect(onSinglePlayerClicked)
 -- Apply button effects
 local cleanupFunctions = {}
 table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(SinglePlayerButton, onSinglePlayerClicked))
+-- Need to get a better press image
+-- table.insert(cleanupFunctions, ButtonEffects.applyButtonPressEffect(SinglePlayerButton, "rbxassetid://140453037167378"))
 
 -- Connect game state event
 GameStateChangedEvent.OnClientEvent:Connect(onGameStateChanged)
