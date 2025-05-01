@@ -4,6 +4,9 @@ local Utils = Modules:WaitForChild("Utils")
 local ButtonEffects = require(Utils:WaitForChild("ButtonEffects"))
 local Players= game:GetService("Players")
 local ThemeList = require(ReplicatedStorage.Modules.GameData.ThemeList)
+local BackendService = require(ReplicatedStorage.Modules.Services.BackendService)
+local CanvasDraw = require(ReplicatedStorage.Modules.Canvas.CanvasDraw)
+local CanvasDisplay = require(ReplicatedStorage.Modules.Canvas.CanvasDisplay)
 
 -- Get references to UI elements
 local PlayerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
@@ -59,7 +62,7 @@ local function setupBestScoresScrollFrame()
     --  so usable width          = 1 - totalPadding
     local cellWidthScale    = (1 - paddingScale * (itemsPerRow + 1)) / itemsPerRow
 
-    -- Derive an aspect ratio from the template so the height isn’t zero
+    -- Derive an aspect ratio from the template so the height isn't zero
     local aspect            = 1                              -- fallback aspect
     if template.Size.X.Offset ~= 0 and template.Size.Y.Offset ~= 0 then
         aspect = template.Size.Y.Offset / template.Size.X.Offset
@@ -90,8 +93,28 @@ local function setupBestScoresScrollFrame()
         if label then
             label.Text = theme
         end
+        
+        -- Fetch the best drawing for this theme
+        local localPlayer = Players.LocalPlayer
+        local drawingData = BackendService:getDrawingForTheme(localPlayer, theme)
+        
+        -- Update the container with drawing data if available
+        if drawingData then
+            -- 1. Fetch the containerFrames and other UI elements
+            local canvasFrame = container:FindFirstChild("CanvasFrame")
+            local trophyContainer = container:FindFirstChild("TrophyFrame"):FindFirstChild("TrophyContainer")
+            
+            -- 2. Initialize the canvas class 
+            local canvas = CanvasDraw.new(canvasFrame, Vector2.new(math.ceil(canvasFrame.AbsoluteSize.X), math.ceil(canvasFrame.AbsoluteSize.Y)))
+            
+            -- 3. Display the drawing
+            CanvasDisplay.displayDrawingData(canvas, drawingData.drawing)
+            
+            -- 4. Update the star rating
+            CanvasDisplay.updateStarDisplay(trophyContainer, drawingData.score, false)
+        end
 
-        -- Optional: keep the template’s aspect in case someone resizes later
+        -- Optional: keep the template's aspect in case someone resizes later
         local arConstraint = Instance.new("UIAspectRatioConstraint")
         arConstraint.AspectRatio = aspect
         arConstraint.Parent      = container
