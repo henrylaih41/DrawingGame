@@ -13,6 +13,7 @@ local ThemeList = {
     "Occupations",
     "Numbers",
     "Shapes",
+    "Flowers",
     
     -- More specific themes
     "Ocean Creatures",
