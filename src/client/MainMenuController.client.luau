@@ -36,6 +36,7 @@ local GameState = {
 
 -- Store received drawings data
 local bestDrawingsData = {}
+local cleanupFunctions = {}
 
 -- Function to set up the Best-Scores scrolling frame completely in SCALE units
 local function setupBestScoresScrollFrame()
@@ -53,7 +54,39 @@ local function setupBestScoresScrollFrame()
     scoreScrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y -- canvas grows for us
 
     scoreScrollFrame.Parent           = BestScores              -- << your frame >>
-
+    
+    --------------------------------------------------
+    -- Add Close Button
+    --------------------------------------------------
+    local closeButton = Instance.new("TextButton")
+    closeButton.Name = "CloseButton"
+    closeButton.Size = UDim2.new(0.1, 0, 0.1, 0)
+    closeButton.Position = UDim2.new(0.95, 0, 0.05, 0)
+    closeButton.AnchorPoint = Vector2.new(1, 0)
+    closeButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    closeButton.BorderSizePixel = 0
+    closeButton.Text = "X"
+    closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    closeButton.TextScaled = true
+    closeButton.Font = Enum.Font.GothamBold
+    closeButton.ZIndex = 10
+    
+    -- Add corner rounding to the button
+    local cornerRounding = Instance.new("UICorner")
+    cornerRounding.CornerRadius = UDim.new(0.5, 0)
+    cornerRounding.Parent = closeButton
+    
+    closeButton.MouseButton1Click:Connect(function()
+        BestScores.Visible = false
+    end)
+    
+    closeButton.Parent = BestScores -- Parent to the BestScores frame, not the scroll frame
+    
+    -- Add hover effect to the close button
+    table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(closeButton, function()
+        BestScores.Visible = false
+    end))
+    
     --------------------------------------------------
     -- 2.  Layout maths (all in scale)
     --------------------------------------------------
@@ -182,7 +215,6 @@ local function onGameStateChanged(stateData)
 end
 
 -- Apply button effects and on click events
-local cleanupFunctions = {}
 table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(SinglePlayerButton, onSinglePlayerClicked))
 table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(BestScoresButton, onBestScoresClicked))
 -- Need to get a better press image

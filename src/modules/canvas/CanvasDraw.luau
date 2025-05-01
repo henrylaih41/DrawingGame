@@ -3135,7 +3135,9 @@ end
 
 -- We customize the serialization of the buffer and send it to the backend for OpenAI API call.
 function CanvasDraw.DecompressImageDataCustom(ImageData)
-	local compressedPixelBuffer = ImageData.Pixels
+	-- Pixels is the old way of storing the image data.
+	-- ImageBuffer is the new way of storing the image data.
+	local compressedPixelBuffer = ImageData.ImageBuffer or ImageData.Pixels
 	local Width, Height = ImageData.Width, ImageData.Height
 
 	-- Compress the pixel data
