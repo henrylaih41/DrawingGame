@@ -4,7 +4,6 @@ local Utils = Modules:WaitForChild("Utils")
 local ButtonEffects = require(Utils:WaitForChild("ButtonEffects"))
 local Players= game:GetService("Players")
 local ThemeList = require(ReplicatedStorage.Modules.GameData.ThemeList)
-local BackendService = require(ReplicatedStorage.Modules.Services.BackendService)
 local CanvasDraw = require(ReplicatedStorage.Modules.Canvas.CanvasDraw)
 local CanvasDisplay = require(ReplicatedStorage.Modules.Canvas.CanvasDisplay)
 
@@ -22,6 +21,8 @@ local BestScoreContainer = ReplicatedStorage:WaitForChild("UI"):WaitForChild("Be
 local Events = ReplicatedStorage:WaitForChild("Events")
 local StartGameEvent = Events:WaitForChild("StartGame")
 local GameStateChangedEvent = Events:WaitForChild("GameStateChanged")
+local RequestBestDrawingsEvent = Events:WaitForChild("RequestBestDrawings")
+local ReceiveBestDrawingsEvent = Events:WaitForChild("ReceiveBestDrawings")
 
 -- Game state constants
 local GameState = {
@@ -32,6 +33,9 @@ local GameState = {
     VOTING = "VOTING",
     RESULTS = "RESULTS"
 }
+
+-- Store received drawings data
+local bestDrawingsData = {}
 
 -- Function to set up the Best-Scores scrolling frame completely in SCALE units
 local function setupBestScoresScrollFrame()
@@ -93,26 +97,6 @@ local function setupBestScoresScrollFrame()
         if label then
             label.Text = theme
         end
-        
-        -- Fetch the best drawing for this theme
-        local localPlayer = Players.LocalPlayer
-        local drawingData = BackendService:getDrawingForTheme(localPlayer, theme)
-        
-        -- Update the container with drawing data if available
-        if drawingData then
-            -- 1. Fetch the containerFrames and other UI elements
-            local canvasFrame = container:FindFirstChild("CanvasFrame")
-            local trophyContainer = container:FindFirstChild("TrophyFrame"):FindFirstChild("TrophyContainer")
-            
-            -- 2. Initialize the canvas class 
-            local canvas = CanvasDraw.new(canvasFrame, Vector2.new(math.ceil(canvasFrame.AbsoluteSize.X), math.ceil(canvasFrame.AbsoluteSize.Y)))
-            
-            -- 3. Display the drawing
-            CanvasDisplay.displayDrawingData(canvas, drawingData.drawing)
-            
-            -- 4. Update the star rating
-            CanvasDisplay.updateStarDisplay(trophyContainer, drawingData.score, false)
-        end
 
         -- Optional: keep the template's aspect in case someone resizes later
         local arConstraint = Instance.new("UIAspectRatioConstraint")
@@ -120,11 +104,47 @@ local function setupBestScoresScrollFrame()
         arConstraint.Parent      = container
 
         container.Parent = scoreScrollFrame      -- grid handles positioning
+        
+        task.wait(0.1)
+
+        -- Get drawing data from our cached bestDrawingsData instead of directly from BackendService
+        local drawingData = bestDrawingsData[theme]
+        
+        -- Update the container with drawing data if available
+        if drawingData then
+            -- 1. Fetch the containerFrames and other UI elements
+            local canvasFrame = container:FindFirstChild("CanvasFrame")
+            local trophyContainer = container:FindFirstChild("TrophyFrame"):FindFirstChild("TrophyContainer")
+            
+            if (drawingData.imageData) then
+                print(canvasFrame.AbsoluteSize)
+                -- 2. Initialize the canvas class 
+                local canvas = CanvasDraw.new(canvasFrame, Vector2.new(math.ceil(canvasFrame.AbsoluteSize.X), math.ceil(canvasFrame.AbsoluteSize.Y)))
+                -- 3. Display the drawing
+                CanvasDisplay.displayDrawingData(canvas, drawingData.imageData)
+                -- 4. Update the star rating
+                CanvasDisplay.updateStarDisplay(trophyContainer, drawingData.score, false)
+            end
+        end
     end
 
     return scoreScrollFrame
 end
 
+-- Add this function to request best drawings from server
+local function requestBestDrawings()
+    print("Requesting best drawings from server")
+    RequestBestDrawingsEvent:FireServer()
+end
+
+-- Set up event handler for receiving the drawings
+ReceiveBestDrawingsEvent.OnClientEvent:Connect(function(drawings)
+    print("Received best drawings data")
+    bestDrawingsData = drawings or {}
+    print(bestDrawingsData)
+    
+    setupBestScoresScrollFrame()
+end)
 
 -- Function to handle BestScores button click
 local function onBestScoresClicked()
@@ -178,8 +198,9 @@ local function initialize()
     local playerControls = pModule:GetControls()
     playerControls:Disable()
     
-    -- Set up the best scores scroll frame
-    setupBestScoresScrollFrame()
+    -- Request best drawings data from server
+    requestBestDrawings()
+    
     
     -- Initially hide the BestScores frame until button is clicked
     BestScores.Visible = false

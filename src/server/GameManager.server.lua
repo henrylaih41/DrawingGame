@@ -44,7 +44,9 @@ local Events = {
     DrawingsReceived = nil,
     SubmitVote = nil,
     ShowResults = nil,
-    ReturnToMainMenu = nil
+    ReturnToMainMenu = nil,
+    RequestBestDrawings = nil,
+    ReceiveBestDrawings = nil
 }
 
 -- Game state tracking
@@ -72,6 +74,8 @@ local function initializeEvents()
     Events.SubmitVote = EventsFolder:WaitForChild("SubmitVote")
     Events.ShowResults = EventsFolder:WaitForChild("ShowResults")
     Events.ReturnToMainMenu = EventsFolder:WaitForChild("ReturnToMainMenu")
+    Events.RequestBestDrawings = EventsFolder:WaitForChild("RequestBestDrawings")
+    Events.ReceiveBestDrawings = EventsFolder:WaitForChild("ReceiveBestDrawings")
 end
 
 -- Utility Functions
@@ -580,6 +584,36 @@ local function init()
     Events.StartGame.OnServerEvent:Connect(handleStartGame)
     Events.SubmitDrawing.OnServerEvent:Connect(handleDrawingSubmission)
     Events.SubmitVote.OnServerEvent:Connect(handleVoteSubmission)
+    Events.RequestBestDrawings.OnServerEvent:Connect(function(player)
+        debugPrint("Player %s requested best drawings", player.Name)
+        
+        -- Create a table to store the best drawing data for each theme
+        local bestDrawings = {}
+        -- For each theme, get the player's best drawing
+        for _, theme in ipairs(ThemeList) do
+            -- Use BackendService to fetch the drawing
+            local bestScoreData = BackendService:getDrawingForTheme(player, theme)
+
+            if bestScoreData then
+                local imageData = CanvasDraw.DecompressImageDataCustom(bestScoreData.imageData)
+
+                local drawingData = {
+                    imageData = imageData,
+                    score = bestScoreData.score,
+                    feedback = bestScoreData.feedback
+                }
+            
+                bestDrawings[theme] = drawingData
+                debugPrint("Found best drawing for theme '%s' with score %d", theme, drawingData.score or 0)
+            else
+                debugPrint("No drawing found for theme '%s'", theme)
+            end
+        end
+        
+        -- Send the data back to the requesting client
+        Events.ReceiveBestDrawings:FireClient(player, bestDrawings)
+        debugPrint("Sent best drawings data to %s for %d themes", player.Name, #ThemeList)
+    end)
     
     debugPrint("GameManager initialized")
 end
