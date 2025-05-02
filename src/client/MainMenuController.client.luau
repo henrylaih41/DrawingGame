@@ -41,27 +41,35 @@ local cleanupFunctions = {}
 -- Function to set up the Best-Scores scrolling frame completely in SCALE units
 local function setupBestScoresScrollFrame()
     --------------------------------------------------
-    -- 1.  Basic scrolling frame
+    -- 1. Create top bar for title and close button
     --------------------------------------------------
-    local scoreScrollFrame            = Instance.new("ScrollingFrame")
-    scoreScrollFrame.Name             = "ScoreScrollFrame"
-    scoreScrollFrame.Size             = UDim2.new(1, 0, 1, 0)
-    scoreScrollFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    scoreScrollFrame.BackgroundTransparency = 0.5
-    scoreScrollFrame.BorderSizePixel  = 0
-    scoreScrollFrame.ScrollBarThickness = 6
-    scoreScrollFrame.ScrollingDirection = Enum.ScrollingDirection.Y
-    scoreScrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y -- canvas grows for us
-
-    scoreScrollFrame.Parent           = BestScores              -- << your frame >>
+    local topBar = Instance.new("Frame")
+    topBar.Name = "TopBar"
+    topBar.Size = UDim2.new(1, 0, 0.1, 0)
+    topBar.Position = UDim2.new(0, 0, 0, 0)
+    topBar.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    topBar.BorderSizePixel = 0
+    topBar.ZIndex = 10
+    topBar.Parent = BestScores
     
-    --------------------------------------------------
-    -- Add Close Button
-    --------------------------------------------------
+    -- Add title to top bar
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.Name = "TitleLabel"
+    titleLabel.Size = UDim2.new(0.8, 0, 0.8, 0)
+    titleLabel.Position = UDim2.new(0.1, 0, 0.1, 0)
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    titleLabel.Text = "Best Drawings"
+    titleLabel.TextScaled = true
+    titleLabel.Font = Enum.Font.GothamBold
+    titleLabel.ZIndex = 11
+    titleLabel.Parent = topBar
+    
+    -- Add close button to top bar
     local closeButton = Instance.new("TextButton")
     closeButton.Name = "CloseButton"
-    closeButton.Size = UDim2.new(0.1, 0, 0.1, 0)
-    closeButton.Position = UDim2.new(0.95, 0, 0.05, 0)
+    closeButton.Size = UDim2.new(0.08, 0, 0.8, 0)
+    closeButton.Position = UDim2.new(0.95, 0, 0.1, 0)
     closeButton.AnchorPoint = Vector2.new(1, 0)
     closeButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
     closeButton.BorderSizePixel = 0
@@ -69,7 +77,7 @@ local function setupBestScoresScrollFrame()
     closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     closeButton.TextScaled = true
     closeButton.Font = Enum.Font.GothamBold
-    closeButton.ZIndex = 10
+    closeButton.ZIndex = 11
     
     -- Add corner rounding to the button
     local cornerRounding = Instance.new("UICorner")
@@ -80,7 +88,7 @@ local function setupBestScoresScrollFrame()
         BestScores.Visible = false
     end)
     
-    closeButton.Parent = BestScores -- Parent to the BestScores frame, not the scroll frame
+    closeButton.Parent = topBar
     
     -- Add hover effect to the close button
     table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(closeButton, function()
@@ -88,7 +96,23 @@ local function setupBestScoresScrollFrame()
     end))
     
     --------------------------------------------------
-    -- 2.  Layout maths (all in scale)
+    -- 2.  Basic scrolling frame (now positioned below top bar)
+    --------------------------------------------------
+    local scoreScrollFrame = Instance.new("ScrollingFrame")
+    scoreScrollFrame.Name = "ScoreScrollFrame"
+    scoreScrollFrame.Size = UDim2.new(1, 0, 0.9, 0)
+    scoreScrollFrame.Position = UDim2.new(0, 0, 0.1, 0)
+    scoreScrollFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    scoreScrollFrame.BackgroundTransparency = 0.5
+    scoreScrollFrame.BorderSizePixel = 0
+    scoreScrollFrame.ScrollBarThickness = 6
+    scoreScrollFrame.ScrollingDirection = Enum.ScrollingDirection.Y
+    scoreScrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y -- canvas grows for us
+
+    scoreScrollFrame.Parent = BestScores
+    
+    --------------------------------------------------
+    -- 3.  Layout maths (all in scale)
     --------------------------------------------------
     local template          = BestScoreContainer            -- keep original
     local itemsPerRow       = 3
@@ -109,7 +133,7 @@ local function setupBestScoresScrollFrame()
     local cellHeightScale   = cellWidthScale * aspect        -- non-zero!
 
     --------------------------------------------------
-    -- 3.  Grid layout that uses ONLY scale
+    -- 4.  Grid layout that uses ONLY scale
     --------------------------------------------------
     local grid                  = Instance.new("UIGridLayout")
     grid.FillDirection          = Enum.FillDirection.Horizontal
@@ -120,7 +144,7 @@ local function setupBestScoresScrollFrame()
     grid.Parent                 = scoreScrollFrame
 
     --------------------------------------------------
-    -- 4.  Populate the grid
+    -- 5.  Populate the grid
     --------------------------------------------------
     for i, theme in ipairs(ThemeList) do
         local container = template:Clone()
