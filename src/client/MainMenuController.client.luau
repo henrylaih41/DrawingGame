@@ -37,7 +37,7 @@ local GameState = {
 -- Store received drawings data
 local bestDrawingsData = {}
 local cleanupFunctions = {}
-
+local bestScoresCanvasContainerByTheme = {}
 -- Function to set up the Best-Scores scrolling frame completely in SCALE units
 local function setupBestScoresUI()
     --------------------------------------------------
@@ -149,70 +149,61 @@ local function setupBestScoresUI()
     for i, theme in ipairs(ThemeList) do
         local container = template:Clone()
         container.Name  = ("ThemeContainer_%s"):format(theme)
+        -- Set the parent so we initialize this container faster.
+        container.Parent = scoreScrollFrame
 
         local label = container:FindFirstChild("TopBar"):FindFirstChild("BestScoreTitle")
         if label then
             label.Text = theme
         end
 
-        -- Optional: keep the template's aspect in case someone resizes later
-        local arConstraint = Instance.new("UIAspectRatioConstraint")
-        arConstraint.AspectRatio = aspect
-        arConstraint.Parent      = container
+        -- local arConstraint = Instance.new("UIAspectRatioConstraint")
+        -- arConstraint.AspectRatio = aspect
+        -- arConstraint.Parent      = container
 
-        container.Parent = scoreScrollFrame      -- grid handles positioning
+        -- Wait for the container to be fully created
+        while container.AbsoluteSize.X == 0 do
+            task.wait(0.1)
+        end
+
+        local canvasFrame = container:FindFirstChild("CanvasFrame")
+        local canvas = CanvasDraw.new(canvasFrame, Vector2.new(math.ceil(canvasFrame.AbsoluteSize.X), math.ceil(canvasFrame.AbsoluteSize.Y)))
+        bestScoresCanvasContainerByTheme[theme] = {container = container, canvas = canvas}
     end
 
     return scoreScrollFrame
 end
 
--- Separate function to update the drawings displays when data is received
-local function updateDrawingDisplays()
-    print("Updating drawings displays with received data")
-    
-    -- Get the scroll frame
-    local scoreScrollFrame = BestScores:FindFirstChild("ScoreScrollFrame")
-    if not scoreScrollFrame then
-        warn("ScoreScrollFrame not found when trying to update drawings")
-        return
+local function updateDrawingDisplayForTheme(drawingData, theme)
+    local container = bestScoresCanvasContainerByTheme[theme].container
+    local canvas = bestScoresCanvasContainerByTheme[theme].canvas
+
+    -- Update the container with drawing data if available
+    if drawingData and drawingData.imageData then
+        -- 1. Fetch the containerFrames and other UI elements
+        local trophyContainer = container:FindFirstChild("TrophyFrame"):FindFirstChild("TrophyContainer")
+        -- 2. Display the drawing
+        CanvasDisplay.displayDrawingData(canvas, drawingData.imageData)
+        -- 3. Update the star rating
+        CanvasDisplay.updateStarDisplay(trophyContainer, drawingData.score, false)
     end
-    
+end
+
+-- Separate function to update the drawings displays when data is received
+local function updateDrawingDisplaysForAllThemes()
     -- Update each theme container with its drawing data
     for i, theme in ipairs(ThemeList) do
-        local containerName = ("ThemeContainer_%s"):format(theme)
-        local container = scoreScrollFrame:FindFirstChild(containerName)
-        
-        if container then
-            -- Get drawing data from our cached bestDrawingsData
-            local drawingData = bestDrawingsData[theme]
-            
-            -- Update the container with drawing data if available
-            if drawingData and drawingData.imageData then
-                -- 1. Fetch the containerFrames and other UI elements
-                local canvasFrame = container:FindFirstChild("CanvasFrame")
-                local trophyContainer = container:FindFirstChild("TrophyFrame"):FindFirstChild("TrophyContainer")
-                
-                -- 2. Initialize the canvas class and display the drawing
-                local canvas = CanvasDraw.new(canvasFrame, Vector2.new(math.ceil(canvasFrame.AbsoluteSize.X), math.ceil(canvasFrame.AbsoluteSize.Y)))
-                CanvasDisplay.displayDrawingData(canvas, drawingData.imageData)
-                
-                -- 3. Update the star rating
-                CanvasDisplay.updateStarDisplay(trophyContainer, drawingData.score, false)
-            end
-        else
-            warn("Container for theme", theme, "not found")
-        end
+        -- Get drawing data from our cached bestDrawingsData
+        local drawingData = bestDrawingsData[theme]
+        updateDrawingDisplayForTheme(drawingData, theme)
     end
 end
 
 -- Set up event handler for receiving the drawings
 ReceiveBestDrawingsEvent.OnClientEvent:Connect(function(drawings)
-    print("Received best drawings data")
     bestDrawingsData = drawings or {}
-    print(bestDrawingsData)
-    
     -- Update the displays with the new data
-    updateDrawingDisplays()
+    updateDrawingDisplaysForAllThemes()
 end)
 
 -- Add this function to request best drawings from server
