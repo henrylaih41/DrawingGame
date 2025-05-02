@@ -12,7 +12,7 @@ local ThemeList = require(ReplicatedStorage.Modules.GameData.ThemeList)
 
 -- Constants
 local CONSTANTS = {
-    MAX_PLAYERS = 8,
+    MAX_PLAYERS = 1,
     COUNTDOWN_TIME = 1,
     DRAWING_TIME = 600,
     VOTING_TIME = 30, -- 30 seconds for voting
@@ -35,20 +35,7 @@ local GameMode = {
 }
 
 -- Remote events
-local Events = {
-    GameStateChanged = nil,
-    PlayerReady = nil,
-    StartGame = nil,
-    GameCountdown = nil,
-    SubmitDrawing = nil,
-    DrawingsReceived = nil,
-    SubmitVote = nil,
-    ShowResults = nil,
-    ReturnToMainMenu = nil,
-    RequestBestDrawings = nil,
-    ReceiveBestDrawings = nil,
-    ReceiveNewBestDrawing = nil
-}
+local Events = ReplicatedStorage:WaitForChild("Events")
 
 -- Game state tracking
 local GameManager = {
@@ -60,25 +47,6 @@ local GameManager = {
     voteResults = {},
     playerScores = {}
 }
-
--- Initialize events
-local function initializeEvents()
-    local EventsFolder = ReplicatedStorage:WaitForChild("Events")
-    
-    -- Get all required events with WaitForChild
-    Events.GameStateChanged = EventsFolder:WaitForChild("GameStateChanged")
-    Events.PlayerReady = EventsFolder:WaitForChild("PlayerReady")
-    Events.StartGame = EventsFolder:WaitForChild("StartGame")
-    Events.GameCountdown = EventsFolder:WaitForChild("GameCountdown")
-    Events.SubmitDrawing = EventsFolder:WaitForChild("SubmitDrawing")
-    Events.DrawingsReceived = EventsFolder:WaitForChild("DrawingsReceived")
-    Events.SubmitVote = EventsFolder:WaitForChild("SubmitVote")
-    Events.ShowResults = EventsFolder:WaitForChild("ShowResults")
-    Events.ReturnToMainMenu = EventsFolder:WaitForChild("ReturnToMainMenu")
-    Events.RequestBestDrawings = EventsFolder:WaitForChild("RequestBestDrawings")
-    Events.ReceiveBestDrawings = EventsFolder:WaitForChild("ReceiveBestDrawings")
-    Events.ReceiveNewBestDrawing = EventsFolder:WaitForChild("ReceiveNewBestDrawing")
-end
 
 -- Utility Functions
 local function debugPrint(message, ...)
@@ -590,8 +558,6 @@ end
 
 -- Initialize
 local function init()
-    initializeEvents()
-    
     -- Connect event handlers
     Players.PlayerAdded:Connect(handlePlayerJoined)
     Players.PlayerRemoving:Connect(handlePlayerLeft)

@@ -158,9 +158,9 @@ local function setupBestScoresUI()
             label.Text = theme
         end
 
-        -- local arConstraint = Instance.new("UIAspectRatioConstraint")
-        -- arConstraint.AspectRatio = aspect
-        -- arConstraint.Parent      = container
+        local arConstraint = Instance.new("UIAspectRatioConstraint")
+        arConstraint.AspectRatio = aspect
+        arConstraint.Parent      = container
 
         -- Wait for the container to be fully created
         while container.AbsoluteSize.X == 0 do

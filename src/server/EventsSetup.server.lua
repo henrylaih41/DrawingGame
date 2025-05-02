@@ -3,7 +3,9 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Events = ReplicatedStorage:WaitForChild("Events")
+-- Create Events folder
+local Events = Instance.new("Folder")
+Events.Name = "Events"
 
 -- Function to create an event if it doesn't exist
 local function createEvent(name)
@@ -31,4 +33,6 @@ createEvent("RequestBestDrawings")
 createEvent("ReceiveBestDrawings")
 createEvent("ReceiveNewBestDrawing")
 
+-- Set the parent of the Events folder
+Events.Parent = ReplicatedStorage
 print("Events setup complete") 
