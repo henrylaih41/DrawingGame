@@ -24,7 +24,7 @@ local ButtonEffects = require(ReplicatedStorage.Modules.Utils.ButtonEffects)
 ------------------------------------------------------------------------
 -- 2️⃣  DEBUG LOG WRAPPER
 ------------------------------------------------------------------------
-local DebugFlag = true
+local DebugFlag = false
 local function log(...)
     if DebugFlag then DebugUtils.print("DrawingCanvas:", ...) end
 end

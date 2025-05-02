@@ -425,21 +425,26 @@ local function startGame()
         debugPrint("Getting best score for theme %s", currentTheme)
         local player = GameManager.activePlayers[1]
         assert(player, "No player found in active players")
-        local existingData, errorMessage = BackendService:getDrawingForTheme(player, currentTheme)
-        if errorMessage then
-            warn("Error getting best score for theme %s: %s", currentTheme, errorMessage)
-        end
+        local bestScoreData, errorMessage = BackendService:getDrawingForTheme(player, currentTheme)
+        local bestScore = nil   
 
-        local bestScoreData = existingData
-        local imageData = CanvasDraw.DecompressImageDataCustom(bestScoreData.imageData)
-        
-        print("Decompressed image data")
-        print(imageData)
-        local bestScore = {
-            drawing = imageData,
-            score = bestScoreData.score,
-            feedback = bestScoreData.feedback
-        }
+        if not bestScoreData then
+            if errorMessage then
+                warn("Error getting best score for theme %s: %s", currentTheme, errorMessage)
+            end
+            bestScore = {
+                drawing = nil,
+                score = 0,
+                feedback = "No drawing found"
+            }
+        else 
+            local imageData = CanvasDraw.DecompressImageDataCustom(bestScoreData.imageData)
+            bestScore = {
+                drawing = imageData,
+                score = bestScoreData.score,
+                feedback = bestScoreData.feedback
+            }
+        end
 
         -- === RESULTS PHASE ===
         transitionToState(GameState.RESULTS, {bestScore = bestScore, playerScores = GameManager.playerScores, theme = currentTheme})

@@ -6,7 +6,7 @@ local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CanvasDraw = require(ReplicatedStorage.Modules.Canvas.CanvasDraw)
 local PromptService = require(ReplicatedStorage.Modules.Services.PromptService)
-local Compression = require(ReplicatedStorage.Modules.Services.Zlib)
+local SchemaValidator = require(ReplicatedStorage.Modules.Utils.SchemaValidator)
 local BackendService = {}
 local DEBUG_ENABLED = true
 local DataStoreService = game:GetService("DataStoreService")
@@ -14,7 +14,6 @@ local DataStoreService = game:GetService("DataStoreService")
 -- Create a DataStore for storing player drawings
 local DrawingsDataStore = DataStoreService:GetDataStore("PlayerBestDrawings")
 
--- Helper function to generate consistent DataStore keys
 local function generateDrawingKey(playerId, theme)
     return string.format("%d_%s", playerId, theme)
 end
@@ -41,6 +40,21 @@ BackendService.DefaultOptions = {
         ["Content-Type"] = "application/json"
     }
 }
+
+-- Define schema for drawing data
+local drawingDataSchema = SchemaValidator.createSchema({
+    imageData = { type = "table", required = true },
+    score = { type = "number", required = true },
+    timestamp = { type = "number", required = true },
+    theme = { type = "string", required = true },
+    playerId = { type = "number", required = true }
+})
+
+local imageDataSchema = SchemaValidator.createSchema({
+    ImageBuffer = { type = "string", required = true },
+    Width = { type = "number", required = true },
+    Height = { type = "number", required = true }
+})
 
 -- Function to send a request to the OpenAI endpoint
 function BackendService:SendOpenAIRequest(compressedImageData, prompt, theme, playerId)
@@ -187,11 +201,27 @@ function BackendService:getDrawingForTheme(player, theme)
     
     -- Attempt to get the drawing data from the DataStore
     local success, result = pcall(function()
-        return DrawingsDataStore:GetAsync(key)
+        local drawingData = DrawingsDataStore:GetAsync(key)
+        
+        -- Update size statistics if data was returned
+        if drawingData then
+            local dataSize = #HttpService:JSONEncode(drawingData)
+            debugPrint("Read %d bytes from DataStore for key: %s", dataSize, key)
+        end
+        
+        -- Validate the data if it exists
+        if drawingData then
+            local isValid, errorMessage = drawingDataSchema:validate(drawingData)
+            assert(isValid, "Invalid drawing data: " .. errorMessage)
+            isValid, errorMessage = imageDataSchema:validate(drawingData.imageData)
+            assert(isValid, "Invalid image data: " .. errorMessage)
+        end
+        return drawingData
     end)
     
     if success and result then
         debugPrint("Retrieved drawing for player %s, theme %s", player.Name, theme)
+        
         return result, nil
     elseif success then
         -- No data found but operation succeeded
@@ -204,21 +234,17 @@ function BackendService:getDrawingForTheme(player, theme)
     end
 end
 
--- Function to save a player's drawing for a specific theme
--- drawingData schema 
--- {
---     imageData = ImageData, compressed image data returned by CompressImageDataCustom.
---     score = number,
---     timestamp = number,
---     theme = string,
---     playerId = number
--- }
 function BackendService:saveDrawingForTheme(player, theme, drawingData)
     assert(player, "Missing player parameter")
     assert(theme, "Missing theme parameter")
     assert(drawingData, "Missing drawingData parameter")
-    assert(drawingData.imageData, "Drawing data missing imageData field")
-    assert(drawingData.score, "Drawing data missing score field")
+    
+    -- Validate the drawing data against our schema
+    local isValid, errorMessage = drawingDataSchema:validate(drawingData)
+    assert(isValid, "Invalid drawing data: " .. errorMessage)
+
+    isValid, errorMessage = imageDataSchema:validate(drawingData.imageData)
+    assert(isValid, "Invalid image data: " .. errorMessage)
     
     -- Create a unique key for this player and theme combination
     local key = generateDrawingKey(player.UserId, theme)
@@ -228,6 +254,9 @@ function BackendService:saveDrawingForTheme(player, theme, drawingData)
     
     -- Attempt to save the drawing data to the DataStore
     local success, result = pcall(function()
+        -- Calculate data size
+        local dataSize = #HttpService:JSONEncode(drawingData)
+        debugPrint("Writing %d bytes to DataStore for key: %s", dataSize, key)
         DrawingsDataStore:SetAsync(key, drawingData)
         return true
     end)
@@ -235,6 +264,7 @@ function BackendService:saveDrawingForTheme(player, theme, drawingData)
     if success then
         debugPrint("Successfully saved drawing for player %s, theme %s with score %s", 
             player.Name, theme, tostring(drawingData.score))
+            
         return true, nil
     else
         warn("BackendService: Failed to save drawing - " .. tostring(result))

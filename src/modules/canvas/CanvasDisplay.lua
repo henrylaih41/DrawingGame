@@ -112,6 +112,17 @@ function CanvasDisplay.displayDrawingData(targetCanvas, imageData)
     targetCanvas:DrawImage(reconstructedImage, Vector2.new(1, 1), Vector2.new(scaleX, scaleY))
 end
 
+function CanvasDisplay.clearStarDisplay(trophyContainer)
+    assert(trophyContainer ~= nil, "Trophy container is nil")
+    for i = 1, 10 do
+        local trophy = trophyContainer:WaitForChild("Trophy" .. i)
+        assert(trophy ~= nil, "Trophy" .. i .. " not found in TrophyContainer")
+        local overlay = trophy:WaitForChild("show")
+        local uiScale = overlay.UIScale
+        uiScale.Scale = 0
+    end
+end
+
 --- Function to update the star display based on score
 --- Updates the star images (empty/filled) based on the provided score.
 --- Handles potential issues with finding star ImageLabels.

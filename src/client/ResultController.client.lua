@@ -74,12 +74,16 @@ local function displayResults(playerScore, bestScore, theme)
     feedbackLabel.Text = playerScore.feedback
     feedbackLabel.Visible = true -- Ensure feedback label is visible
     
-    -- local bestScore = BackendService.getDrawingForTheme(LocalPlayer, theme)
-    -- local imageData = CanvasDraw.DecompressImageDataCustom(bestScore.imageData)
-    -- -- Update the best score canvas
-    CanvasDisplay.displayDrawingData(bestScoreCanvas, bestScore.drawing)
-    log("Best score" .. bestScore.score)
-    CanvasDisplay.updateStarDisplay(bestScoreTrophyContainer, bestScore.score, false)
+    -- Display the best score if it exists
+    if bestScore.drawing then
+        -- -- Update the best score canvas
+        CanvasDisplay.displayDrawingData(bestScoreCanvas, bestScore.drawing)
+        log("Best score" .. bestScore.score)
+        CanvasDisplay.updateStarDisplay(bestScoreTrophyContainer, bestScore.score, false)
+    else 
+        bestScoreCanvas:Clear()
+        CanvasDisplay.clearStarDisplay(bestScoreTrophyContainer)
+    end
 end
 
 

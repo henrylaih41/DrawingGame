@@ -3021,24 +3021,6 @@ function CanvasDraw.CreateSaveObjectFromPixels(PixelArray: {number}, Width: numb
 	return NewSaveObject
 end
 
-
--- Compresses and converts an ImageData object into a smaller datastore compatible object
--- function CanvasDraw.CompressImageData(ImageData)
--- 	local PixelBuffer = ImageData.ImageBuffer
--- 	local Width, Height = ImageData.Width, ImageData.Height
-
--- 	-- Compress the pixel data
--- 	local CompressedPixels = HttpService:JSONEncode(PixelBuffer)
-
--- 	-- Create the data object
--- 	local CompressedData = {}
--- 	CompressedData.Pixels = CompressedPixels
--- 	CompressedData.Width = Width
--- 	CompressedData.Height = Height
-
--- 	return CompressedData
--- end
-
 function CanvasDraw.to_base64(data)
     local b = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
     return ((data:gsub('.', function(x) 
@@ -3135,9 +3117,8 @@ end
 
 -- We customize the serialization of the buffer and send it to the backend for OpenAI API call.
 function CanvasDraw.DecompressImageDataCustom(ImageData)
-	-- Pixels is the old way of storing the image data.
 	-- ImageBuffer is the new way of storing the image data.
-	local compressedPixelBuffer = ImageData.ImageBuffer or ImageData.Pixels
+	local compressedPixelBuffer = ImageData.ImageBuffer
 	local Width, Height = ImageData.Width, ImageData.Height
 
 	-- Compress the pixel data
@@ -3150,14 +3131,6 @@ function CanvasDraw.DecompressImageDataCustom(ImageData)
 	CompressedData.Height = Height
 
 	return CompressedData
-end
-
--- Creates and returns an ImageData object from CompressedImageData
-function CanvasDraw.DecompressImageData(CompressedImageData)
-	local PixelArray = HttpService:JSONDecode(CompressedImageData.Pixels)
-	local Width, Height = CompressedImageData.Width, CompressedImageData.Height
-
-	return ImageDataConstructor.new(Width, Height, PixelArray)
 end
 
 --== DEPRECATED FUNCTIONS/METHODS/EVENTS ==--
