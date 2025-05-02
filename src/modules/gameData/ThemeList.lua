@@ -9,23 +9,23 @@ local ThemeList = {
     "Sports",
     "Nature",
     "Buildings",
-    -- "Emotions",
-    -- "Occupations",
-    -- "Numbers",
-    -- "Shapes",
+    "Emotions",
+    "Occupations",
+    "Numbers",
+    "Shapes",
     "Flowers",
     
     -- -- More specific themes
-    -- "Ocean Creatures",
-    -- "Fantasy Characters",
-    -- "Superheroes",
-    -- "Musical Instruments",
-    -- "Space Objects",
-    -- "Weather Phenomena",
-    -- "Mythical Creatures",
-    -- "Household Items",
-    -- "Technology",
-    -- "Cartoon Characters"
+    "Ocean Creatures",
+    "Fantasy Characters",
+    "Superheroes",
+    "Musical Instruments",
+    "Space Objects",
+    "Weather Phenomena",
+    "Mythical Creatures",
+    "Household Items",
+    "Technology",
+    "Cartoon Characters"
 }
 
 return ThemeList 

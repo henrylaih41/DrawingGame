@@ -117,7 +117,7 @@ local function setupBestScoresUI()
     --------------------------------------------------
     local template          = BestScoreContainer            -- keep original
     local itemsPerRow       = 3
-    local paddingScale      = 0.02                          -- 2 % gap on both axes
+    local paddingScale      = 0.01                          -- 2 % gap on both axes
 
     -- Width in scale for each cell after padding is removed.
     --  total horizontal padding = (itemsPerRow + 1) * paddingScale
@@ -131,7 +131,8 @@ local function setupBestScoresUI()
     elseif template.Size.X.Scale ~= 0 then
         aspect = template.Size.Y.Scale  / template.Size.X.Scale
     end
-    local cellHeightScale   = cellWidthScale * aspect        -- non-zero!
+
+    local cellHeightOffset = cellWidthScale * scoreScrollFrame.AbsoluteSize.X
 
     --------------------------------------------------
     -- 4.  Grid layout that uses ONLY scale
@@ -140,7 +141,7 @@ local function setupBestScoresUI()
     grid.FillDirection          = Enum.FillDirection.Horizontal
     grid.SortOrder              = Enum.SortOrder.LayoutOrder
     grid.CellPadding            = UDim2.new(paddingScale, 0, paddingScale, 0)
-    grid.CellSize               = UDim2.new(cellWidthScale, 0, cellHeightScale, 0)
+    grid.CellSize               = UDim2.new(cellWidthScale, 0, 0, cellHeightOffset)
     grid.HorizontalAlignment    = Enum.HorizontalAlignment.Center
     grid.Parent                 = scoreScrollFrame
 
