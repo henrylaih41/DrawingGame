@@ -4,27 +4,17 @@
 local ThemeList = {
     -- Basic categories
     "Animals",
-    -- "Vehicles",
-    -- "Food",
+    "Food",
     "Sports",
     "Nature",
     "Buildings",
     "Emotions",
-    "Occupations",
-    "Numbers",
     "Shapes",
     "Flowers",
-    
-    -- -- More specific themes
-    "Ocean Creatures",
-    "Fantasy Characters",
+    "Pizza Planet",
+    "Rocket Cat",
     "Superheroes",
-    "Musical Instruments",
-    "Space Objects",
-    "Weather Phenomena",
     "Mythical Creatures",
-    "Household Items",
-    "Technology",
     "Cartoon Characters"
 }
 

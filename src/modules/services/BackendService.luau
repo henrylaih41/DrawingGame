@@ -11,11 +11,12 @@ local BackendService = {}
 local DEBUG_ENABLED = true
 local DataStoreService = game:GetService("DataStoreService")
 
--- Create a DataStore for storing player drawings
-local DrawingsDataStore = DataStoreService:GetDataStore("PlayerBestDrawings")
+-- Create DataStores
+local PlayerBestDrawingsStore = DataStoreService:GetDataStore("PlayerBestDrawings")
+local PlayersDataStore = DataStoreService:GetDataStore("PlayersData")
 
-local function generateDrawingKey(playerId, theme)
-    return string.format("%d_%s", playerId, theme)
+local function generateDrawingKey(playerId, theme_uuid)
+    return string.format("%d_%s", playerId, theme_uuid)
 end
 
 -- Debug print function that only outputs when debugging is enabled
@@ -42,7 +43,7 @@ BackendService.DefaultOptions = {
 }
 
 -- Define schema for drawing data
-local drawingDataSchema = SchemaValidator.createSchema({
+local playerBestDrawingSchema = SchemaValidator.createSchema({
     imageData = { type = "table", required = true },
     score = { type = "number", required = true },
     timestamp = { type = "number", required = true },
@@ -54,6 +55,15 @@ local imageDataSchema = SchemaValidator.createSchema({
     ImageBuffer = { type = "string", required = true },
     Width = { type = "number", required = true },
     Height = { type = "number", required = true }
+})
+
+-- Define schema for player data
+local playerDataSchema = SchemaValidator.createSchema({
+    Name = { type = "string", required = true },
+    TotalPlayCount = { type = "number", required = true },
+    TotalPoints = { type = "number", required = true },
+    Energy = { type = "number", required = true },
+    coins = { type = "number", required = true }
 })
 
 -- Function to send a request to the OpenAI endpoint
@@ -201,7 +211,7 @@ function BackendService:getDrawingForTheme(player, theme)
     
     -- Attempt to get the drawing data from the DataStore
     local success, result = pcall(function()
-        local drawingData = DrawingsDataStore:GetAsync(key)
+        local drawingData = PlayerBestDrawingsStore:GetAsync(key)
         
         -- Update size statistics if data was returned
         if drawingData then
@@ -211,7 +221,7 @@ function BackendService:getDrawingForTheme(player, theme)
         
         -- Validate the data if it exists
         if drawingData then
-            local isValid, errorMessage = drawingDataSchema:validate(drawingData)
+            local isValid, errorMessage = playerBestDrawingSchema:validate(drawingData)
             assert(isValid, "Invalid drawing data: " .. errorMessage)
             isValid, errorMessage = imageDataSchema:validate(drawingData.imageData)
             assert(isValid, "Invalid image data: " .. errorMessage)
@@ -240,7 +250,7 @@ function BackendService:saveDrawingForTheme(player, theme, drawingData)
     assert(drawingData, "Missing drawingData parameter")
     
     -- Validate the drawing data against our schema
-    local isValid, errorMessage = drawingDataSchema:validate(drawingData)
+    local isValid, errorMessage = playerBestDrawingSchema:validate(drawingData)
     assert(isValid, "Invalid drawing data: " .. errorMessage)
 
     isValid, errorMessage = imageDataSchema:validate(drawingData.imageData)
@@ -257,7 +267,7 @@ function BackendService:saveDrawingForTheme(player, theme, drawingData)
         -- Calculate data size
         local dataSize = #HttpService:JSONEncode(drawingData)
         debugPrint("Writing %d bytes to DataStore for key: %s", dataSize, key)
-        DrawingsDataStore:SetAsync(key, drawingData)
+        PlayerBestDrawingsStore:SetAsync(key, drawingData)
         return true
     end)
     
@@ -268,6 +278,69 @@ function BackendService:saveDrawingForTheme(player, theme, drawingData)
         return true, nil
     else
         warn("BackendService: Failed to save drawing - " .. tostring(result))
+        return false, "DataStore error: " .. tostring(result)
+    end
+end
+
+-- Function to get a player's profile
+function BackendService:getPlayer(player)
+    assert(player, "Missing player parameter")
+    
+    local key = "Player_" .. player.UserId
+    
+    -- Attempt to get the player data from the DataStore
+    local success, result = pcall(function()
+        local playerData = PlayersDataStore:GetAsync(key)
+        
+        if playerData then
+            -- Validate the data if it exists
+            local isValid, errorMessage = playerDataSchema:validate(playerData)
+            assert(isValid, "Invalid player data: " .. errorMessage)
+        end
+        
+        return playerData
+    end)
+    
+    if success and result then
+        debugPrint("Retrieved player profile for %s", player.Name)
+        return result, nil
+    elseif success then
+        -- No data found but operation succeeded, initialize player
+        debugPrint("No player profile found for %s, creating new profile", player.Name)
+        local newProfile = self:initializePlayerProfile(player)
+        return newProfile, nil
+    else
+        -- Operation failed
+        warn("BackendService: Failed to retrieve player profile - " .. tostring(result))
+        return nil, "DataStore error: " .. tostring(result)
+    end
+end
+
+-- Function to save a player's profile
+function BackendService:setPlayer(player, playerData)
+    assert(player, "Missing player parameter")
+    assert(playerData, "Missing playerData parameter")
+    
+    -- Validate the player data against our schema
+    local isValid, errorMessage = playerDataSchema:validate(playerData)
+    assert(isValid, "Invalid player data: " .. errorMessage)
+    
+    local key = "Player_" .. player.UserId
+    
+    -- Attempt to save the player data to the DataStore
+    local success, result = pcall(function()
+        -- Calculate data size
+        local dataSize = #HttpService:JSONEncode(playerData)
+        debugPrint("Writing %d bytes to PlayersDataStore for key: %s", dataSize, key)
+        PlayersDataStore:SetAsync(key, playerData)
+        return true
+    end)
+    
+    if success then
+        debugPrint("Successfully saved player profile for %s", player.Name)
+        return true, nil
+    else
+        warn("BackendService: Failed to save player profile - " .. tostring(result))
         return false, "DataStore error: " .. tostring(result)
     end
 end

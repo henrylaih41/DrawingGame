@@ -32,6 +32,7 @@ createEvent("ReturnToMainMenu")
 createEvent("RequestBestDrawings")
 createEvent("ReceiveBestDrawings")
 createEvent("ReceiveNewBestDrawing")
+createEvent("PlayerDataUpdated")
 
 -- Set the parent of the Events folder
 Events.Parent = ReplicatedStorage

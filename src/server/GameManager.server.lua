@@ -45,7 +45,8 @@ local GameManager = {
     playerDrawings = {},
     playerVotes = {},
     voteResults = {},
-    playerScores = {}
+    playerScores = {},
+    playerData = {} -- Table to store player data
 }
 
 -- Utility Functions
@@ -99,16 +100,75 @@ end
 -- Player Management
 local function handlePlayerJoined(player)
     table.insert(GameManager.activePlayers, player)
+
+    -- Get player data from BackendService
+    -- If player is new, this will automatically create a profile
+    local playerData, error = BackendService:getPlayer(player)
+    
+    if not playerData then
+        warn("Failed to get player data for " .. player.Name .. ": " .. tostring(error))
+        -- Create a default player data as fallback if there was an error
+        playerData = {
+            Name = player.Name,
+            TotalPlayCount = 0,
+            TotalPoints = 0,
+            Energy = 10,
+            coins = 0
+        }
+    end
+    
+    -- Store player data in GameManager
+    GameManager.playerData[player.UserId] = playerData
+    debugPrint("Stored player data for " .. player.Name)
     
     -- Tell the new player the current game state
     debugPrint("Sending current game state to new player: %s", GameManager.currentState)
     Events.GameStateChanged:FireClient(player, {
         state = GameManager.currentState,
-        gameMode = GameManager.currentGameMode
+        gameMode = GameManager.currentGameMode,
+        playerData = playerData -- Include player data in the state update
     })
 end
 
+-- Helper function to save player data to backend
+local function savePlayerData(player)
+    local userId = player.UserId
+    local playerData = GameManager.playerData[userId]
+    
+    if playerData then
+        debugPrint("Saving player data for " .. player.Name)
+        local success, error = BackendService:setPlayer(player, playerData)
+        
+        if not success then
+            warn("Failed to save player data for " .. player.Name .. ": " .. tostring(error))
+        else
+            debugPrint("Successfully saved player data for " .. player.Name)
+        end
+    else
+        debugPrint("No player data to save for " .. player.Name)
+    end
+end
+
+-- Function to update player data during gameplay
+local function updatePlayerData(player, dataUpdates)
+    local userId = player.UserId
+    local playerData = GameManager.playerData[userId]
+    
+    if playerData and dataUpdates then
+        for key, value in pairs(dataUpdates) do
+            playerData[key] = value
+        end
+        debugPrint("Updated player data for " .. player.Name)
+        
+        -- Notify client of updated player data
+        Events.PlayerDataUpdated:FireClient(player, playerData)
+    end
+end
+
 local function handlePlayerLeft(player)
+    -- Save player data before removing
+    savePlayerData(player)
+    
     -- Remove player from active players list
     for i, p in ipairs(GameManager.activePlayers) do
         if p == player then
@@ -117,7 +177,12 @@ local function handlePlayerLeft(player)
         end
     end
     
-    -- Clear player data if needed
+    -- Clear player data from memory
+    if GameManager.playerData[player.UserId] then
+        GameManager.playerData[player.UserId] = nil
+    end
+    
+    -- Clear player drawings if needed
     if GameManager.playerDrawings[player.UserId] then
         GameManager.playerDrawings[player.UserId] = nil
     end
@@ -129,6 +194,7 @@ local function handlePlayerLeft(player)
         GameManager.playerScores = {}
         GameManager.voteResults = {}
         GameManager.skipDrawingTime = false
+        -- Don't clear playerData here as we've already saved and cleared individual entries
     end
 end
 
@@ -269,6 +335,26 @@ local function runGradingPhase(currentTheme)
         debugPrint("Grading tasks complete.")
     end
     allGradingCompleteSignal:Destroy()
+
+    -- After grading is complete, update player stats
+    for userId, scoreData in pairs(GameManager.playerScores) do
+        for _, p in ipairs(GameManager.activePlayers) do
+            if p.UserId == userId then
+                local score = tonumber(scoreData.score) or 0
+                
+                -- Update player stats
+                local dataUpdates = {
+                    TotalPlayCount = (GameManager.playerData[userId].TotalPlayCount or 0) + 1,
+                    TotalPoints = (GameManager.playerData[userId].TotalPoints or 0) + score,
+                    -- Decrease energy by 1 for each play
+                    Energy = math.max(0, (GameManager.playerData[userId].Energy or 0) - 1)
+                }
+                
+                updatePlayerData(p, dataUpdates)
+                break
+            end
+        end
+    end
 end
 
 local function runVotingPhase()
@@ -593,6 +679,13 @@ local function init()
         -- Send the data back to the requesting client
         Events.ReceiveBestDrawings:FireClient(player, bestDrawings)
         debugPrint("Sent best drawings data to %s for %d themes", player.Name, #ThemeList)
+    end)
+    
+    -- Add handler for updating player data from client (e.g., for purchases)
+    Events.UpdatePlayerData.OnServerEvent:Connect(function(player, dataUpdates)
+        updatePlayerData(player, dataUpdates)
+        -- Save immediately for important updates
+        savePlayerData(player)
     end)
     
     debugPrint("GameManager initialized")
