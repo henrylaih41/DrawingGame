@@ -39,7 +39,7 @@ local bestDrawingsData = {}
 local cleanupFunctions = {}
 
 -- Function to set up the Best-Scores scrolling frame completely in SCALE units
-local function setupBestScoresScrollFrame()
+local function setupBestScoresUI()
     --------------------------------------------------
     -- 1. Create top bar for title and close button
     --------------------------------------------------
@@ -144,7 +144,7 @@ local function setupBestScoresScrollFrame()
     grid.Parent                 = scoreScrollFrame
 
     --------------------------------------------------
-    -- 5.  Populate the grid
+    -- 5.  Create empty containers for each theme
     --------------------------------------------------
     for i, theme in ipairs(ThemeList) do
         local container = template:Clone()
@@ -161,37 +161,48 @@ local function setupBestScoresScrollFrame()
         arConstraint.Parent      = container
 
         container.Parent = scoreScrollFrame      -- grid handles positioning
-        
-        task.wait(0.1)
-
-        -- Get drawing data from our cached bestDrawingsData instead of directly from BackendService
-        local drawingData = bestDrawingsData[theme]
-        
-        -- Update the container with drawing data if available
-        if drawingData then
-            -- 1. Fetch the containerFrames and other UI elements
-            local canvasFrame = container:FindFirstChild("CanvasFrame")
-            local trophyContainer = container:FindFirstChild("TrophyFrame"):FindFirstChild("TrophyContainer")
-            
-            if (drawingData.imageData) then
-                print(canvasFrame.AbsoluteSize)
-                -- 2. Initialize the canvas class 
-                local canvas = CanvasDraw.new(canvasFrame, Vector2.new(math.ceil(canvasFrame.AbsoluteSize.X), math.ceil(canvasFrame.AbsoluteSize.Y)))
-                -- 3. Display the drawing
-                CanvasDisplay.displayDrawingData(canvas, drawingData.imageData)
-                -- 4. Update the star rating
-                CanvasDisplay.updateStarDisplay(trophyContainer, drawingData.score, false)
-            end
-        end
     end
 
     return scoreScrollFrame
 end
 
--- Add this function to request best drawings from server
-local function requestBestDrawings()
-    print("Requesting best drawings from server")
-    RequestBestDrawingsEvent:FireServer()
+-- Separate function to update the drawings displays when data is received
+local function updateDrawingDisplays()
+    print("Updating drawings displays with received data")
+    
+    -- Get the scroll frame
+    local scoreScrollFrame = BestScores:FindFirstChild("ScoreScrollFrame")
+    if not scoreScrollFrame then
+        warn("ScoreScrollFrame not found when trying to update drawings")
+        return
+    end
+    
+    -- Update each theme container with its drawing data
+    for i, theme in ipairs(ThemeList) do
+        local containerName = ("ThemeContainer_%s"):format(theme)
+        local container = scoreScrollFrame:FindFirstChild(containerName)
+        
+        if container then
+            -- Get drawing data from our cached bestDrawingsData
+            local drawingData = bestDrawingsData[theme]
+            
+            -- Update the container with drawing data if available
+            if drawingData and drawingData.imageData then
+                -- 1. Fetch the containerFrames and other UI elements
+                local canvasFrame = container:FindFirstChild("CanvasFrame")
+                local trophyContainer = container:FindFirstChild("TrophyFrame"):FindFirstChild("TrophyContainer")
+                
+                -- 2. Initialize the canvas class and display the drawing
+                local canvas = CanvasDraw.new(canvasFrame, Vector2.new(math.ceil(canvasFrame.AbsoluteSize.X), math.ceil(canvasFrame.AbsoluteSize.Y)))
+                CanvasDisplay.displayDrawingData(canvas, drawingData.imageData)
+                
+                -- 3. Update the star rating
+                CanvasDisplay.updateStarDisplay(trophyContainer, drawingData.score, false)
+            end
+        else
+            warn("Container for theme", theme, "not found")
+        end
+    end
 end
 
 -- Set up event handler for receiving the drawings
@@ -200,8 +211,15 @@ ReceiveBestDrawingsEvent.OnClientEvent:Connect(function(drawings)
     bestDrawingsData = drawings or {}
     print(bestDrawingsData)
     
-    setupBestScoresScrollFrame()
+    -- Update the displays with the new data
+    updateDrawingDisplays()
 end)
+
+-- Add this function to request best drawings from server
+local function requestBestDrawings()
+    print("Requesting best drawings from server")
+    RequestBestDrawingsEvent:FireServer()
+end
 
 -- Function to handle BestScores button click
 local function onBestScoresClicked()
@@ -254,9 +272,11 @@ local function initialize()
     local playerControls = pModule:GetControls()
     playerControls:Disable()
     
-    -- Request best drawings data from server
-    requestBestDrawings()
+    -- First setup the UI structure
+    setupBestScoresUI()
     
+    -- Then request best drawings data from server
+    requestBestDrawings()
     
     -- Initially hide the BestScores frame until button is clicked
     BestScores.Visible = false
