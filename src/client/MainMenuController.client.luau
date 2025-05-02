@@ -23,6 +23,7 @@ local StartGameEvent = Events:WaitForChild("StartGame")
 local GameStateChangedEvent = Events:WaitForChild("GameStateChanged")
 local RequestBestDrawingsEvent = Events:WaitForChild("RequestBestDrawings")
 local ReceiveBestDrawingsEvent = Events:WaitForChild("ReceiveBestDrawings")
+local ReceiveNewBestDrawingEvent = Events:WaitForChild("ReceiveNewBestDrawing")
 
 -- Game state constants
 local GameState = {
@@ -178,7 +179,12 @@ local function updateDrawingDisplayForTheme(drawingData, theme)
     local container = bestScoresCanvasContainerByTheme[theme].container
     local canvas = bestScoresCanvasContainerByTheme[theme].canvas
 
+    -- Hide the loading
+    local Loading =  container:FindFirstChild("CanvasFrame"):FindFirstChild("Loading")
+    Loading.Visible = false
+
     -- Update the container with drawing data if available
+    -- If there is no previous scores, the drawingData will be nil
     if drawingData and drawingData.imageData then
         -- 1. Fetch the containerFrames and other UI elements
         local trophyContainer = container:FindFirstChild("TrophyFrame"):FindFirstChild("TrophyContainer")
@@ -204,6 +210,11 @@ ReceiveBestDrawingsEvent.OnClientEvent:Connect(function(drawings)
     bestDrawingsData = drawings or {}
     -- Update the displays with the new data
     updateDrawingDisplaysForAllThemes()
+end)
+
+-- Set up event handler for receiving the new best drawing
+ReceiveNewBestDrawingEvent.OnClientEvent:Connect(function(drawingData, theme)
+    updateDrawingDisplayForTheme(drawingData, theme)
 end)
 
 -- Add this function to request best drawings from server

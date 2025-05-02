@@ -46,7 +46,8 @@ local Events = {
     ShowResults = nil,
     ReturnToMainMenu = nil,
     RequestBestDrawings = nil,
-    ReceiveBestDrawings = nil
+    ReceiveBestDrawings = nil,
+    ReceiveNewBestDrawing = nil
 }
 
 -- Game state tracking
@@ -76,6 +77,7 @@ local function initializeEvents()
     Events.ReturnToMainMenu = EventsFolder:WaitForChild("ReturnToMainMenu")
     Events.RequestBestDrawings = EventsFolder:WaitForChild("RequestBestDrawings")
     Events.ReceiveBestDrawings = EventsFolder:WaitForChild("ReceiveBestDrawings")
+    Events.ReceiveNewBestDrawing = EventsFolder:WaitForChild("ReceiveNewBestDrawing")
 end
 
 -- Utility Functions
@@ -224,6 +226,10 @@ local function storeHighestScoringDrawing(player, theme, imageData, score, feedb
         }
         
         local success, error = BackendService:saveDrawingForTheme(player, theme, drawingData)
+
+        local rawImageData = CanvasDraw.DecompressImageDataCustom(imageData)
+        -- Notify the client that a new best drawing for this theme has been saved
+        Events.ReceiveNewBestDrawing:FireClient(player, {imageData = rawImageData, score = score, feedback = feedback}, theme)
         if success then
             debugPrint("Successfully saved drawing for theme '%s'", theme)
         else
@@ -425,9 +431,12 @@ local function startGame()
         debugPrint("Getting best score for theme %s", currentTheme)
         local player = GameManager.activePlayers[1]
         assert(player, "No player found in active players")
+
+        -- Get the current best score for the theme
         local bestScoreData, errorMessage = BackendService:getDrawingForTheme(player, currentTheme)
         local bestScore = nil   
 
+        -- If there is no best score, this means that the player has not submitted a drawing yet.
         if not bestScoreData then
             if errorMessage then
                 warn("Error getting best score for theme %s: %s", currentTheme, errorMessage)

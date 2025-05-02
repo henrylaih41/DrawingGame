@@ -170,6 +170,16 @@ local function initResultUI()
     log("Result UI initialized successfully")
 end
 
+local function updateDrawingDisplayForTheme(drawingData, theme)
+    bestScoreCanvas:Clear()
+    CanvasDisplay.displayDrawingData(bestScoreCanvas, drawingData.imageData)
+    CanvasDisplay.updateStarDisplay(bestScoreTrophyContainer, drawingData.score, false)
+end
+
+Events.ReceiveNewBestDrawing.OnClientEvent:Connect(function(drawingData, theme)
+    updateDrawingDisplayForTheme(drawingData, theme)
+end)
+
 -- Handle game state changes
 --- Handles game state changes received from the server via GameStateChanged event.
 --- Initializes UI if needed, shows/hides the screen based on game state,

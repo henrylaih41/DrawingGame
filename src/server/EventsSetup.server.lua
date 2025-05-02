@@ -29,5 +29,6 @@ createEvent("ShowResults")
 createEvent("ReturnToMainMenu")
 createEvent("RequestBestDrawings")
 createEvent("ReceiveBestDrawings")
+createEvent("ReceiveNewBestDrawing")
 
 print("Events setup complete") 
