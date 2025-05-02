@@ -39,7 +39,15 @@ function Module.new(ImageDataResX, ImageDataResY, Buffer)
 	}
 
 	local function GetIndex(X, Y)
-		return (X + (Y - 1) * ImageDataResX) * 4 - 4
+		local index = (X + (Y - 1) * ImageDataResX) * 4 - 4
+
+		if (buffer.len(ImageData.ImageBuffer) <= index) then
+			warn("Index out of bounds")
+			warn(buffer.len(ImageData.ImageBuffer), index, X, Y)
+			return 0
+		end
+
+		return index
 	end
 
 	--== ImageData methods ==--
@@ -73,7 +81,7 @@ function Module.new(ImageDataResX, ImageDataResY, Buffer)
 	function ImageData:GetRGBA(X: number, Y: number): (number, number, number, number)
 		local PixelBuffer = self.ImageBuffer
 		local Index = GetIndex(X, Y)
-
+		
 		return buffer.readu8(PixelBuffer, Index) / 255, buffer.readu8(PixelBuffer, Index + 1) / 255, buffer.readu8(PixelBuffer, Index + 2) / 255, buffer.readu8(PixelBuffer, Index + 3) / 255
 	end
 	

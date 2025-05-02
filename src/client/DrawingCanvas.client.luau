@@ -24,7 +24,7 @@ local ButtonEffects = require(ReplicatedStorage.Modules.Utils.ButtonEffects)
 ------------------------------------------------------------------------
 -- 2️⃣  DEBUG LOG WRAPPER
 ------------------------------------------------------------------------
-local DebugFlag = true
+local DebugFlag = false
 local function log(...)
     if DebugFlag then DebugUtils.print("DrawingCanvas:", ...) end
 end
@@ -361,21 +361,23 @@ local function initCanvas()
     
     -- Scale the canvas dimensions if they exceed the maximum allowed size
     local canvasWidth, canvasHeight = math.ceil(sz.X), math.ceil(sz.Y)
-    local scaleFactor = 1
-
+    
     log("Canvas width: ", canvasWidth, "Canvas height: ", canvasHeight)
     
-    if canvasWidth > MAX_CANVAS_DIMENSION or canvasHeight > MAX_CANVAS_DIMENSION then
-        local widthFactor = MAX_CANVAS_DIMENSION / canvasWidth
-        local heightFactor = MAX_CANVAS_DIMENSION / canvasHeight
-        scaleFactor = math.min(widthFactor, heightFactor)
-        
-        canvasWidth = math.floor(canvasWidth * scaleFactor)
-        canvasHeight = math.floor(canvasHeight * scaleFactor)
+    local scaleFactor = 1
+    local scaledWidth, scaledHeight = canvasWidth, canvasHeight
+    
+    -- Use CanvasDraw's scaleCanvasDimensions function to get appropriate dimensions
+    scaledWidth, scaledHeight, scaleFactor = CanvasDraw.scaleCanvasDimensions(canvasWidth, canvasHeight)
+    
+    canvasWidth = scaledWidth
+    canvasHeight = scaledHeight
+
+    if scaleFactor < 1 then
         log("Canvas size exceeded maximum dimensions. Scaling by factor:", scaleFactor)
     end
     
-    canvas = CanvasDraw.new(canvasFrame, Vector2.new(canvasWidth, canvasHeight))
+    canvas = CanvasDraw.new(canvasFrame, Vector2.new(scaledWidth, scaledHeight))
     log("Canvas ID: ", canvas.Id)
     canvas:Clear(CANVAS_BACKGROUND_COLOR)
     canvas.GridEnabled, canvas.AutoRender = false, true

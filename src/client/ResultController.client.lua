@@ -153,14 +153,18 @@ local function initResultUI()
 
     -- Create a canvas for the drawing display
     if not resultCanvas then -- Create canvas only if it doesn't exist
-         resultCanvas = CanvasDraw.new(resultCanvasFrame, Vector2.new(math.ceil(resultCanvasFrame.AbsoluteSize.X), math.ceil(resultCanvasFrame.AbsoluteSize.Y)))
+        local canvasWidth, canvasHeight = math.ceil(resultCanvasFrame.AbsoluteSize.X), math.ceil(resultCanvasFrame.AbsoluteSize.Y)
+        local scaledWidth, scaledHeight, _ = CanvasDraw.scaleCanvasDimensions(canvasWidth, canvasHeight)
+        resultCanvas = CanvasDraw.new(resultCanvasFrame, Vector2.new(scaledWidth, scaledHeight))
          log("Canvas: Created")
     else
          log("Canvas: Already exists")
     end
 
     if not bestScoreCanvas then
-        bestScoreCanvas = CanvasDraw.new(bestScoreCanvasFrame, Vector2.new(math.ceil(bestScoreCanvasFrame.AbsoluteSize.X), math.ceil(bestScoreCanvasFrame.AbsoluteSize.Y)))
+        local canvasWidth, canvasHeight = math.ceil(resultCanvasFrame.AbsoluteSize.X), math.ceil(resultCanvasFrame.AbsoluteSize.Y)
+        local scaledWidth, scaledHeight, _ = CanvasDraw.scaleCanvasDimensions(canvasWidth, canvasHeight)
+        bestScoreCanvas = CanvasDraw.new(bestScoreCanvasFrame, Vector2.new(scaledWidth, scaledHeight))
         log("Best Score Canvas: Created")
     else
         log("Best Score Canvas: Already exists")

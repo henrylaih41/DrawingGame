@@ -379,6 +379,23 @@ end
 
 type ParentType = GuiObject | MeshPart | Decal | Texture
 
+local MAX_CANVAS_DIMENSION = 1024
+
+function CanvasDraw.scaleCanvasDimensions(width, height)
+    local scaleFactor = 1
+    
+    if width > MAX_CANVAS_DIMENSION or height > MAX_CANVAS_DIMENSION then
+        local widthFactor = MAX_CANVAS_DIMENSION / width
+        local heightFactor = MAX_CANVAS_DIMENSION / height
+        scaleFactor = math.min(widthFactor, heightFactor)
+        
+        width = math.floor(width * scaleFactor)
+        height = math.floor(height * scaleFactor)
+    end
+    
+    return width, height, scaleFactor
+end 
+
 --== MODULE FUCNTIONS ==--
 
 -- Canvas functions
@@ -388,7 +405,8 @@ type ParentType = GuiObject | MeshPart | Decal | Texture
 	
 	Resolution limit is currently 1024x1024
 ]]
-function CanvasDraw.new(Parent: ParentType, Resolution: Vector2?, CanvasColour: Color3?, Blur: boolean?)
+function CanvasDraw.new(Parent: ParentType, Resolution: Vector2, CanvasColour: Color3?, Blur: boolean?)
+	Resolution = Vector2.new(math.ceil(Resolution.X), math.ceil(Resolution.Y))
 	local Canvas = {
 		-- Modifyable properties
 		OutputWarnings = true,
@@ -398,9 +416,6 @@ function CanvasDraw.new(Parent: ParentType, Resolution: Vector2?, CanvasColour: 
 		AutoRenderFpsLimit = 0,
 		AlphaBlendingMode = 0,
 		Id = HttpService:GenerateGUID(false),
-		-- Read only
-		Resolution = Vector2New(100, 100),
-
 		-- DEPRECATRED
 		Updated = RunService.Heartbeat,
 	}
