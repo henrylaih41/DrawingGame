@@ -1,0 +1,60 @@
+Theme  -- Lets store this in the datastore until we scale, from there we can move it to a external database
+- Name: string
+- Description: string
+- Grading Prompt: string -- For AI grading (max 1000 words)
+- Difficulty: int
+- Total Play Count: int
+- Duration: int
+- Created By: string
+- Created At: string
+- uuid: string
+- pageID: string
+
+ThemePage:
+- themes: {
+    ...
+}
+
+Player
+- Name: string
+- Total Play Count: int
+- Total Points: int
+- Energy: int
+- coins: int
+
+-- This stores the best drawings for each player for each theme
+BestDrawings
+- imageData = { type = "table", required = true },
+- score = { type = "number", required = true }, -- Thie is the number of trophies
+- points = { type = "number", required = true }, -- This is the calculated points for the drawing
+- timestamp = { type = "number", required = true },
+- theme = { type = "string", required = true },
+- playerId = { type = "number", required = true }
+- theme_uuid: string
+
+
+Datastores
+TopPlays:
+- Purpose: This store the top plays for each players
+- Key = playerId
+- Value = list of bestDrawings that accounts for the player's top X plays.
+
+PlayerBestDrawings:
+- Purpose: This store the best drawings for each player for each theme
+- Key = playerID_theme_uuid
+- Value = BestDrawings
+
+ThemesPages:
+- Purpose: Efficiently list themes with details in batches
+- Key: "Theme_Page_"
+- Value: ThemePage structure (full information of multiple themes per page, typically 100 per page)
+
+Theme:
+- Purpose: Provide fast, direct access to detailed individual theme data
+- Key: "Theme_"
+- Value: Complete Theme structure as defined above
+
+Players:
+- Purpose: Store player profile information and progress
+- Key: "Player_"
+- Value: Player structure as defined above

@@ -13,7 +13,10 @@ local DataStoreService = game:GetService("DataStoreService")
 
 -- Create DataStores
 local PlayerBestDrawingsStore = DataStoreService:GetDataStore("PlayerBestDrawings")
-local PlayersDataStore = DataStoreService:GetDataStore("PlayersData")
+local PlayersDataStore = DataStoreService:GetDataStore("Players")
+local ThemesDataStore = DataStoreService:GetDataStore("Themes")
+local ThemePagesDataStore = DataStoreService:GetDataStore("ThemePages")
+local TopPlaysDataStore = DataStoreService:GetDataStore("TopPlays")
 
 local function generateDrawingKey(playerId, theme_uuid)
     return string.format("%d_%s", playerId, theme_uuid)
@@ -42,15 +45,7 @@ BackendService.DefaultOptions = {
     }
 }
 
--- Define schema for drawing data
-local playerBestDrawingSchema = SchemaValidator.createSchema({
-    imageData = { type = "table", required = true },
-    score = { type = "number", required = true },
-    timestamp = { type = "number", required = true },
-    theme = { type = "string", required = true },
-    playerId = { type = "number", required = true }
-})
-
+-- Define schema for image data
 local imageDataSchema = SchemaValidator.createSchema({
     ImageBuffer = { type = "string", required = true },
     Width = { type = "number", required = true },
@@ -64,6 +59,41 @@ local playerDataSchema = SchemaValidator.createSchema({
     TotalPoints = { type = "number", required = true },
     Energy = { type = "number", required = true },
     coins = { type = "number", required = true }
+})
+
+-- Define schema for best drawings
+local playerBestDrawingSchema = SchemaValidator.createSchema({
+    imageData = { type = "table", required = true },
+    score = { type = "number", required = true },
+    points = { type = "number", required = true }, -- Added points field
+    timestamp = { type = "number", required = true },
+    theme = { type = "string", required = true },
+    theme_uuid = { type = "string", required = true }, -- Added theme_uuid field
+    playerId = { type = "number", required = true }
+})
+
+-- Define schema for theme data
+local themeSchema = SchemaValidator.createSchema({
+    Name = { type = "string", required = true },
+    Description = { type = "string", required = true },
+    GradingPrompt = { type = "string", required = true },
+    Difficulty = { type = "number", required = true },
+    TotalPlayCount = { type = "number", required = true },
+    Duration = { type = "number", required = true },
+    CreatedBy = { type = "string", required = true },
+    CreatedAt = { type = "string", required = true },
+    uuid = { type = "string", required = true },
+    pageID = { type = "string", required = true }
+})
+
+-- Define schema for theme page
+local themePageSchema = SchemaValidator.createSchema({
+    themes = { type = "table", required = true }
+})
+
+-- Define schema for top plays
+local topPlaysSchema = SchemaValidator.createSchema({
+    plays = { type = "table", required = true } -- Array of BestDrawings objects
 })
 
 -- Function to send a request to the OpenAI endpoint
@@ -148,6 +178,98 @@ function BackendService:Post(endpoint, data, options)
     end
 end
 
+-- Player Data Management Functions
+function BackendService:getPlayer(player)
+    assert(player, "Missing player parameter")
+    local playerId = player.UserId
+    
+    -- Try to get player data from DataStore
+    local success, result = pcall(function()
+        return PlayersDataStore:GetAsync("Player_" .. playerId)
+    end)
+    
+    if success and result then
+        -- Validate the schema
+        local valid, errors = playerDataSchema:validate(result)
+        if not valid then
+            warn("BackendService: Invalid player data schema for player " .. playerId .. ": " .. HttpService:JSONEncode(errors))
+            return nil, "Invalid player data schema"
+        end
+        return result, nil
+    else
+        -- Create default player data if not found
+        local defaultData = {
+            Name = player.Name,
+            TotalPlayCount = 0,
+            TotalPoints = 0,
+            Energy = 10, -- Starting energy
+            coins = 0
+        }
+        
+        -- Try to save the default data
+        local saveSuccess, saveError = self:savePlayer(player, defaultData)
+        if not saveSuccess then
+            return nil, "Failed to create player profile: " .. tostring(saveError)
+        end
+        
+        return defaultData, nil
+    end
+end
+
+function BackendService:savePlayer(player, playerData)
+    assert(player, "Missing player parameter")
+    assert(playerData, "Missing playerData parameter")
+    print("Saving player data for " .. player.Name)
+    local playerId = player.UserId
+    
+    -- Validate the schema
+    local valid, errors = playerDataSchema:validate(playerData)
+    if not valid then
+        warn("BackendService: Invalid player data schema for player " .. playerId .. ": " .. HttpService:JSONEncode(errors))
+        return false, "Invalid player data schema"
+    end
+    
+    -- Save to DataStore
+    local success, error = pcall(function()
+        PlayersDataStore:SetAsync("Player_" .. playerId, playerData)
+    end)
+    
+    if not success then
+        warn("BackendService: Failed to save player data for " .. playerId .. ": " .. tostring(error))
+        return false, "Failed to save player data: " .. tostring(error)
+    end
+    
+    return true, nil
+end
+
+-- Theme Management Functions
+function BackendService:getTheme(themeUuid)
+
+end
+
+-- Function to get themes from a specific page
+function BackendService:getThemePage(pageId)
+
+end
+
+-- Best Drawings Management
+function BackendService:saveBestDrawing(playerId, themeUuid, drawingData)
+
+end
+
+function BackendService:getBestDrawing(playerId, themeUuid)
+
+end
+
+-- Top Plays Management
+function BackendService:updateTopPlays(playerId, newDrawing)
+
+end
+
+function BackendService:getTopPlays(playerId)
+
+end
+
 -- Utility function to convert an image to base64
 -- Note: This requires the image to be in a format Roblox can read
 function BackendService:ImageToBase64(image)
@@ -202,12 +324,12 @@ function BackendService:submitDrawingToBackendForGrading(player, imageData, them
 end
 
 -- Function to get a player's drawing for a specific theme
-function BackendService:getDrawingForTheme(player, theme)
+function BackendService:getPlayerBestDrawing(player, theme_uuid)
     assert(player, "Missing player parameter")
-    assert(theme, "Missing theme parameter")
+    assert(theme_uuid, "Missing theme parameter")
     
     -- Create a unique key for this player and theme combination
-    local key = generateDrawingKey(player.UserId, theme)
+    local key = generateDrawingKey(player.UserId, theme_uuid)
     
     -- Attempt to get the drawing data from the DataStore
     local success, result = pcall(function()
@@ -230,12 +352,12 @@ function BackendService:getDrawingForTheme(player, theme)
     end)
     
     if success and result then
-        debugPrint("Retrieved drawing for player %s, theme %s", player.Name, theme)
+        debugPrint("Retrieved drawing for player %s, theme %s", player.Name, theme_uuid)
         
         return result, nil
     elseif success then
         -- No data found but operation succeeded
-        debugPrint("No drawing found for player %s, theme %s", player.Name, theme)
+        debugPrint("No drawing found for player %s, theme %s", player.Name, theme_uuid)
         return nil, "No drawing found"
     else
         -- Operation failed
@@ -244,9 +366,9 @@ function BackendService:getDrawingForTheme(player, theme)
     end
 end
 
-function BackendService:saveDrawingForTheme(player, theme, drawingData)
+function BackendService:savePlayerBestDrawing(player, theme_uuid, drawingData)
     assert(player, "Missing player parameter")
-    assert(theme, "Missing theme parameter")
+    assert(theme_uuid, "Missing theme parameter")
     assert(drawingData, "Missing drawingData parameter")
     
     -- Validate the drawing data against our schema
@@ -257,7 +379,7 @@ function BackendService:saveDrawingForTheme(player, theme, drawingData)
     assert(isValid, "Invalid image data: " .. errorMessage)
     
     -- Create a unique key for this player and theme combination
-    local key = generateDrawingKey(player.UserId, theme)
+    local key = generateDrawingKey(player.UserId, theme_uuid)
     
     -- Ensure playerId is included in the data
     drawingData.playerId = player.UserId
@@ -273,74 +395,11 @@ function BackendService:saveDrawingForTheme(player, theme, drawingData)
     
     if success then
         debugPrint("Successfully saved drawing for player %s, theme %s with score %s", 
-            player.Name, theme, tostring(drawingData.score))
+            player.Name, theme_uuid, tostring(drawingData.score))
             
         return true, nil
     else
         warn("BackendService: Failed to save drawing - " .. tostring(result))
-        return false, "DataStore error: " .. tostring(result)
-    end
-end
-
--- Function to get a player's profile
-function BackendService:getPlayer(player)
-    assert(player, "Missing player parameter")
-    
-    local key = "Player_" .. player.UserId
-    
-    -- Attempt to get the player data from the DataStore
-    local success, result = pcall(function()
-        local playerData = PlayersDataStore:GetAsync(key)
-        
-        if playerData then
-            -- Validate the data if it exists
-            local isValid, errorMessage = playerDataSchema:validate(playerData)
-            assert(isValid, "Invalid player data: " .. errorMessage)
-        end
-        
-        return playerData
-    end)
-    
-    if success and result then
-        debugPrint("Retrieved player profile for %s", player.Name)
-        return result, nil
-    elseif success then
-        -- No data found but operation succeeded, initialize player
-        debugPrint("No player profile found for %s, creating new profile", player.Name)
-        local newProfile = self:initializePlayerProfile(player)
-        return newProfile, nil
-    else
-        -- Operation failed
-        warn("BackendService: Failed to retrieve player profile - " .. tostring(result))
-        return nil, "DataStore error: " .. tostring(result)
-    end
-end
-
--- Function to save a player's profile
-function BackendService:setPlayer(player, playerData)
-    assert(player, "Missing player parameter")
-    assert(playerData, "Missing playerData parameter")
-    
-    -- Validate the player data against our schema
-    local isValid, errorMessage = playerDataSchema:validate(playerData)
-    assert(isValid, "Invalid player data: " .. errorMessage)
-    
-    local key = "Player_" .. player.UserId
-    
-    -- Attempt to save the player data to the DataStore
-    local success, result = pcall(function()
-        -- Calculate data size
-        local dataSize = #HttpService:JSONEncode(playerData)
-        debugPrint("Writing %d bytes to PlayersDataStore for key: %s", dataSize, key)
-        PlayersDataStore:SetAsync(key, playerData)
-        return true
-    end)
-    
-    if success then
-        debugPrint("Successfully saved player profile for %s", player.Name)
-        return true, nil
-    else
-        warn("BackendService: Failed to save player profile - " .. tostring(result))
         return false, "DataStore error: " .. tostring(result)
     end
 end

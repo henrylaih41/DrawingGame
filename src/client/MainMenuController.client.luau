@@ -24,6 +24,7 @@ local GameStateChangedEvent = Events:WaitForChild("GameStateChanged")
 local RequestBestDrawingsEvent = Events:WaitForChild("RequestBestDrawings")
 local ReceiveBestDrawingsEvent = Events:WaitForChild("ReceiveBestDrawings")
 local ReceiveNewBestDrawingEvent = Events:WaitForChild("ReceiveNewBestDrawing")
+local PlayerDataUpdatedEvent = Events:WaitForChild("PlayerDataUpdated")
 
 -- Game state constants
 local GameState = {
@@ -267,6 +268,14 @@ table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(BestScoresButton,
 
 -- Connect game state event
 GameStateChangedEvent.OnClientEvent:Connect(onGameStateChanged)
+
+local function onPlayerDataUpdated(playerData)
+    print("Player data updated:", playerData)
+    local count = Buttons.TrophyCount.count
+    count.Text = tostring(playerData.TotalPoints)
+end
+
+PlayerDataUpdatedEvent.OnClientEvent:Connect(onPlayerDataUpdated)
 
 -- Initialize the controller
 local function initialize()

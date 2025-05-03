@@ -4,7 +4,7 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
-local DebugFlag = true
+local DebugFlag = false
 local DebugUtils = require(ReplicatedStorage.Modules.Services.DebugUtils)
 
 -- Debug logging function using DebugUtils
@@ -33,6 +33,7 @@ local topLevelContainer = nil
 local resultUIInitialized = false
 local resultCanvas = nil
 local bestScoreCanvas = nil
+local bestScoreContainer = nil
 local resultCanvasTopBar = nil
 local resultTrophyContainer = nil
 local bestScoreTrophyContainer = nil
@@ -107,7 +108,7 @@ local function initResultUI()
     assert(resultScreen ~= nil, "ResultScreen not found in PlayerGui")
 
     local canvasContainer = topLevelContainer:WaitForChild("CanvasContainer")
-    local bestScoreContainer = topLevelContainer:WaitForChild("BestScoreContainer")
+    bestScoreContainer = topLevelContainer:WaitForChild("BestScoreContainer")
     local resultCanvasFrame = canvasContainer:WaitForChild("CanvasFrame")
     local bestScoreCanvasFrame = bestScoreContainer:WaitForChild("CanvasFrame")
 
@@ -148,9 +149,6 @@ local function initResultUI()
         Events.ReturnToMainMenu:FireServer()
     end)
     
-    -- Initially hide the feedback container until button is clicked
-    feedbackContainer.Visible = false
-
     -- Create a canvas for the drawing display
     if not resultCanvas then -- Create canvas only if it doesn't exist
         local canvasWidth, canvasHeight = math.ceil(resultCanvasFrame.AbsoluteSize.X), math.ceil(resultCanvasFrame.AbsoluteSize.Y)
@@ -200,6 +198,9 @@ Events.GameStateChanged.OnClientEvent:Connect(function(stateData)
         if not resultUIInitialized then
             initResultUI()
         end
+        -- Initially hide the feedback container until button is clicked
+        feedbackContainer.Visible = false
+        bestScoreContainer.Visible = false
         -- Set the theme text
         resultCanvasTopBar.Theme.Text = theme
         assert(resultUIInitialized, "ResultUI is not initialized")

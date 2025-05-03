@@ -104,20 +104,7 @@ local function handlePlayerJoined(player)
     -- Get player data from BackendService
     -- If player is new, this will automatically create a profile
     local playerData, error = BackendService:getPlayer(player)
-    
-    if not playerData then
-        warn("Failed to get player data for " .. player.Name .. ": " .. tostring(error))
-        -- Create a default player data as fallback if there was an error
-        playerData = {
-            Name = player.Name,
-            TotalPlayCount = 0,
-            TotalPoints = 0,
-            Energy = 10,
-            coins = 0
-        }
-    end
-    
-    -- Store player data in GameManager
+    assert(playerData, "Failed to get player data for " .. player.Name .. ": " .. tostring(error))
     GameManager.playerData[player.UserId] = playerData
     debugPrint("Stored player data for " .. player.Name)
     
@@ -125,9 +112,10 @@ local function handlePlayerJoined(player)
     debugPrint("Sending current game state to new player: %s", GameManager.currentState)
     Events.GameStateChanged:FireClient(player, {
         state = GameManager.currentState,
-        gameMode = GameManager.currentGameMode,
-        playerData = playerData -- Include player data in the state update
+        gameMode = GameManager.currentGameMode
     })
+
+    Events.PlayerDataUpdated:FireClient(player, playerData)
 end
 
 -- Helper function to save player data to backend
@@ -137,7 +125,7 @@ local function savePlayerData(player)
     
     if playerData then
         debugPrint("Saving player data for " .. player.Name)
-        local success, error = BackendService:setPlayer(player, playerData)
+        local success, error = BackendService:savePlayer(player, playerData)
         
         if not success then
             warn("Failed to save player data for " .. player.Name .. ": " .. tostring(error))
@@ -150,6 +138,7 @@ local function savePlayerData(player)
 end
 
 -- Function to update player data during gameplay
+-- This assume that the playerData is already stored in GameManager.playerData
 local function updatePlayerData(player, dataUpdates)
     local userId = player.UserId
     local playerData = GameManager.playerData[userId]
@@ -163,6 +152,8 @@ local function updatePlayerData(player, dataUpdates)
         -- Notify client of updated player data
         Events.PlayerDataUpdated:FireClient(player, playerData)
     end
+    GameManager.playerData[player.UserId] = playerData
+    savePlayerData(player)
 end
 
 local function handlePlayerLeft(player)
@@ -228,8 +219,8 @@ end
 -- imageData is a compressed image data returned by CompressImageDataCustom.
 local function storeHighestScoringDrawing(player, theme, imageData, score, feedback)
     -- Check if there's an existing drawing for this theme
-    local existingData, errorMessage = BackendService:getDrawingForTheme(player, theme)
-    
+    local existingData, errorMessage = BackendService:getPlayerBestDrawing(player, theme)
+    local existingScore = 0
     local shouldSaveDrawing = false
     
     if not existingData or errorMessage then
@@ -238,7 +229,7 @@ local function storeHighestScoringDrawing(player, theme, imageData, score, feedb
         shouldSaveDrawing = true
     else
         -- Compare scores to see if we should update
-        local existingScore = tonumber(existingData.score) or 0
+        existingScore = tonumber(existingData.score) or 0
         if score > existingScore then
             debugPrint("New drawing score (%d) is higher than existing score (%d) for theme '%s'. Updating.", 
                 score, existingScore, theme)
@@ -253,13 +244,21 @@ local function storeHighestScoringDrawing(player, theme, imageData, score, feedb
     if shouldSaveDrawing then
         local drawingData = {
             imageData = imageData,
+            points = score,
             score = score,
             timestamp = os.time(),
             theme = theme,
+            theme_uuid = theme,
             playerId = player.UserId
         }
-        
-        local success, error = BackendService:saveDrawingForTheme(player, theme, drawingData)
+
+        local playerData = GameManager.playerData[player.UserId]
+        local dataUpdates = {
+            TotalPoints = playerData.TotalPoints + score - existingScore,
+        }
+        updatePlayerData(player, dataUpdates)
+
+        local success, error = BackendService:savePlayerBestDrawing(player, theme, drawingData)
 
         local rawImageData = CanvasDraw.DecompressImageDataCustom(imageData)
         -- Notify the client that a new best drawing for this theme has been saved
@@ -288,6 +287,15 @@ local function runGradingPhase(currentTheme)
                 local errorMessage = false
                 local result = nil
                 debugPrint("Submitting drawing for grading for player %s", p.Name)
+
+                local playerData = GameManager.playerData[userId]
+
+                -- TODO: Update the energy here.
+                local dataUpdates = {
+                    TotalPlayCount = playerData.TotalPlayCount + 1,
+                }   
+                updatePlayerData(p, dataUpdates)
+
                 local compressedImageData = nil
                 result, errorMessage, compressedImageData = BackendService:submitDrawingToBackendForGrading(p, imageData, currentTheme)
 
@@ -303,7 +311,7 @@ local function runGradingPhase(currentTheme)
                     task.spawn(function()
                         local scoreValue = tonumber(result.result.Score) or 5
                         -- TODO, we can optimizer here by returning the best drawing image data.
-                        -- This way we can avoid the getDrawingForTheme call later.
+                        -- This way we can avoid the getPlayerBestDrawing call later.
                         -- We need to be careful since this function is called using a task spawn.
                         -- We either have to make this blocking or use some synchronization mechanism.
                         storeHighestScoringDrawing(p, currentTheme, compressedImageData, scoreValue, result.result.Feedback)
@@ -335,26 +343,6 @@ local function runGradingPhase(currentTheme)
         debugPrint("Grading tasks complete.")
     end
     allGradingCompleteSignal:Destroy()
-
-    -- After grading is complete, update player stats
-    for userId, scoreData in pairs(GameManager.playerScores) do
-        for _, p in ipairs(GameManager.activePlayers) do
-            if p.UserId == userId then
-                local score = tonumber(scoreData.score) or 0
-                
-                -- Update player stats
-                local dataUpdates = {
-                    TotalPlayCount = (GameManager.playerData[userId].TotalPlayCount or 0) + 1,
-                    TotalPoints = (GameManager.playerData[userId].TotalPoints or 0) + score,
-                    -- Decrease energy by 1 for each play
-                    Energy = math.max(0, (GameManager.playerData[userId].Energy or 0) - 1)
-                }
-                
-                updatePlayerData(p, dataUpdates)
-                break
-            end
-        end
-    end
 end
 
 local function runVotingPhase()
@@ -487,7 +475,7 @@ local function startGame()
         assert(player, "No player found in active players")
 
         -- Get the current best score for the theme
-        local bestScoreData, errorMessage = BackendService:getDrawingForTheme(player, currentTheme)
+        local bestScoreData, errorMessage = BackendService:getPlayerBestDrawing(player, currentTheme)
         local bestScore = nil   
 
         -- If there is no best score, this means that the player has not submitted a drawing yet.
@@ -655,13 +643,15 @@ local function init()
         
         -- Create a table to store the best drawing data for each theme
         local bestDrawings = {}
+        local playerPoints = 0
         -- For each theme, get the player's best drawing
         for _, theme in ipairs(ThemeList) do
             -- Use BackendService to fetch the drawing
-            local bestScoreData = BackendService:getDrawingForTheme(player, theme)
+            local bestScoreData = BackendService:getPlayerBestDrawing(player, theme)
 
             if bestScoreData then
                 local imageData = CanvasDraw.DecompressImageDataCustom(bestScoreData.imageData)
+                playerPoints = playerPoints + bestScoreData.points
 
                 local drawingData = {
                     imageData = imageData,
@@ -675,17 +665,23 @@ local function init()
                 debugPrint("No drawing found for theme '%s'", theme)
             end
         end
+
+        local playerData = GameManager.playerData[player.UserId]
+        print(playerData)
+
+        if(playerPoints ~= playerData.TotalPoints) then
+            warn("Player points do not match")
+            if playerPoints then 
+                warn("Player points: " .. playerPoints)
+            end
+            if playerData.TotalPoints then
+                warn("Player points: " .. playerData.TotalPoints)
+            end
+        end
         
         -- Send the data back to the requesting client
         Events.ReceiveBestDrawings:FireClient(player, bestDrawings)
         debugPrint("Sent best drawings data to %s for %d themes", player.Name, #ThemeList)
-    end)
-    
-    -- Add handler for updating player data from client (e.g., for purchases)
-    Events.UpdatePlayerData.OnServerEvent:Connect(function(player, dataUpdates)
-        updatePlayerData(player, dataUpdates)
-        -- Save immediately for important updates
-        savePlayerData(player)
     end)
     
     debugPrint("GameManager initialized")
