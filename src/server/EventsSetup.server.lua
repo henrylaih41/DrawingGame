@@ -33,6 +33,8 @@ createEvent("RequestBestDrawings")
 createEvent("ReceiveBestDrawings")
 createEvent("ReceiveNewBestDrawing")
 createEvent("PlayerDataUpdated")
+createEvent("RequestTopScores")
+createEvent("ReceiveTopScores")
 
 -- Set the parent of the Events folder
 Events.Parent = ReplicatedStorage

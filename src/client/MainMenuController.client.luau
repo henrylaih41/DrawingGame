@@ -71,7 +71,7 @@ local function setupBestScoresUI()
     local closeButton = Instance.new("TextButton")
     closeButton.Name = "CloseButton"
     closeButton.Size = UDim2.new(0.08, 0, 0.8, 0)
-    closeButton.Position = UDim2.new(0.95, 0, 0.1, 0)
+    closeButton.Position = UDim2.new(1, 0, 0.1, 0)
     closeButton.AnchorPoint = Vector2.new(1, 0)
     closeButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
     closeButton.BorderSizePixel = 0
@@ -110,6 +110,7 @@ local function setupBestScoresUI()
     scoreScrollFrame.ScrollBarThickness = 6
     scoreScrollFrame.ScrollingDirection = Enum.ScrollingDirection.Y
     scoreScrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y -- canvas grows for us
+    scoreScrollFrame.Active = true
 
     scoreScrollFrame.Parent = BestScores
     
@@ -182,7 +183,7 @@ local function updateDrawingDisplayForTheme(drawingData, theme)
     local canvas = bestScoresCanvasContainerByTheme[theme].canvas
 
     -- Hide the loading
-    local Loading =  container:FindFirstChild("CanvasFrame"):FindFirstChild("Loading")
+    local Loading = container:FindFirstChild("CanvasFrame"):FindFirstChild("Loading")
     Loading.Visible = false
 
     -- Update the container with drawing data if available
