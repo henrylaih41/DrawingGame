@@ -10,11 +10,13 @@ local CanvasDisplay = require(ReplicatedStorage.Modules.Canvas.CanvasDisplay)
 -- Get references to UI elements
 local PlayerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
 local MainMenuScreen = PlayerGui:WaitForChild("MainMenuScreen")
+local RankingScreenTopLevelContainer = PlayerGui:WaitForChild("RankingScreen"):WaitForChild("TopLevelContainer")
 local TopLevelContainer = MainMenuScreen:WaitForChild("TopLevelContainer")
 local BestScores = TopLevelContainer:WaitForChild("BestScores")
 local Buttons = TopLevelContainer:WaitForChild("Buttons")
 local SinglePlayerButton = Buttons:WaitForChild("SinglePlayerButton")
 local BestScoresButton = Buttons:WaitForChild("BestScoresButton")
+local RankingButton = Buttons:WaitForChild("RankingButton")
 local BestScoreContainer = ReplicatedStorage:WaitForChild("UI"):WaitForChild("BestScoreContainer")
 
 -- Set up events
@@ -222,27 +224,27 @@ end)
 
 -- Add this function to request best drawings from server
 local function requestBestDrawings()
-    print("Requesting best drawings from server")
     RequestBestDrawingsEvent:FireServer()
 end
 
 -- Function to handle BestScores button click
 local function onBestScoresClicked()
-    print("Best Scores selected")
     -- Toggle visibility of BestScores frame
     BestScores.Visible = not BestScores.Visible
 end
 
+local function onRankingClicked()
+    RankingScreenTopLevelContainer.Visible = not RankingScreenTopLevelContainer.Visible
+end
+
 -- Function to handle SinglePlayer button click
 local function onSinglePlayerClicked()
-    print("Single Player mode selected")
     -- Fire event to GameManager with game mode parameter
     StartGameEvent:FireServer("SinglePlayer")
 end
 
 -- Function to handle MultiPlayer button click
 local function onMultiPlayerClicked()
-    print("Multi-Player mode selected")
     -- Fire event to GameManager with game mode parameter
     StartGameEvent:FireServer("MultiPlayer")
 end
@@ -264,6 +266,7 @@ end
 -- Apply button effects and on click events
 table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(SinglePlayerButton, onSinglePlayerClicked))
 table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(BestScoresButton, onBestScoresClicked))
+table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(RankingButton, onRankingClicked))
 -- Need to get a better press image
 -- table.insert(cleanupFunctions, ButtonEffects.applyButtonPressEffect(SinglePlayerButton, "rbxassetid://140453037167378"))
 
@@ -271,7 +274,6 @@ table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(BestScoresButton,
 GameStateChangedEvent.OnClientEvent:Connect(onGameStateChanged)
 
 local function onPlayerDataUpdated(playerData)
-    print("Player data updated:", playerData)
     local count = Buttons.TrophyCount.count
     count.Text = tostring(playerData.TotalPoints)
 end

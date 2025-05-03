@@ -3,8 +3,8 @@
 -- CONFIG
 --------------------------------------------------------------------
 local TOP_MAP_NAME        = "TopPoints"     -- MemoryStore SortedMap
-local KEY_TTL_SECONDS     = 2 * 24 * 3600      -- 48 h (auto-evicts idle entries)
-local MAX_ROWS            = 100                -- hard cap
+local KEY_TTL_SECONDS     = 30 * 24 * 3600     -- 30 days(auto-evicts idle entries)
+local MAX_ROWS            = 100               -- hard cap
 local OVERFLOW_FETCH      = MAX_ROWS + 1       -- grab one extra to trim
 
 --------------------------------------------------------------------
@@ -98,9 +98,9 @@ game.Players.PlayerAdded:Connect(function(plr)
 end)
 
 Events.RequestTopScores.OnServerEvent:Connect(function(player)
-    print("RequestTopScores from " .. player.Name)
+    local playerData = BackendService:getPlayer(player)
     local topScores = TopMap:GetRangeAsync(Enum.SortDirection.Descending, MAX_ROWS)
-    Events.ReceiveTopScores:FireClient(player, topScores)
+    Events.ReceiveTopScores:FireClient(player, topScores, playerData)
 end)
 
 --------------------------------------------------------------------
