@@ -6,6 +6,7 @@ local Players= game:GetService("Players")
 local ThemeList = require(ReplicatedStorage.Modules.GameData.ThemeList)
 local CanvasDraw = require(ReplicatedStorage.Modules.Canvas.CanvasDraw)
 local CanvasDisplay = require(ReplicatedStorage.Modules.Canvas.CanvasDisplay)
+local GameConfig = require(ReplicatedStorage.Modules.GameData.GameConfig)
 
 -- Get references to UI elements
 local PlayerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
@@ -23,8 +24,8 @@ local BestScoreContainer = ReplicatedStorage:WaitForChild("UI"):WaitForChild("Be
 local Events = ReplicatedStorage:WaitForChild("Events")
 local StartGameEvent = Events:WaitForChild("StartGame")
 local GameStateChangedEvent = Events:WaitForChild("GameStateChanged")
-local RequestBestDrawingsEvent = Events:WaitForChild("RequestBestDrawings")
-local ReceiveBestDrawingsEvent = Events:WaitForChild("ReceiveBestDrawings")
+local RequestTopPlaysEvent = Events:WaitForChild("RequestTopPlays")
+local ReceiveTopPlaysEvent = Events:WaitForChild("ReceiveTopPlays")
 local ReceiveNewBestDrawingEvent = Events:WaitForChild("ReceiveNewBestDrawing")
 local PlayerDataUpdatedEvent = Events:WaitForChild("PlayerDataUpdated")
 
@@ -41,7 +42,7 @@ local GameState = {
 -- Store received drawings data
 local bestDrawingsData = {}
 local cleanupFunctions = {}
-local bestScoresCanvasContainerByTheme = {}
+local bestScoresCanvasContainerByRank = {}
 -- Function to set up the Best-Scores scrolling frame completely in SCALE units
 local function setupBestScoresUI()
     --------------------------------------------------
@@ -152,16 +153,16 @@ local function setupBestScoresUI()
     --------------------------------------------------
     -- 5.  Create empty containers for each theme
     --------------------------------------------------
-    for i, theme in ipairs(ThemeList) do
+    for i = 1, GameConfig.TOP_PLAYS_LIMIT do
         local container = template:Clone()
-        container.Name  = ("ThemeContainer_%s"):format(theme)
+        container.Name  = ("ThemeContainer_%s"):format(tostring(i))
         -- Set the parent so we initialize this container faster.
         container.Parent = scoreScrollFrame
 
-        local label = container:FindFirstChild("TopBar"):FindFirstChild("BestScoreTitle")
-        if label then
-            label.Text = theme
-        end
+        -- local label = container:FindFirstChild("TopBar"):FindFirstChild("BestScoreTitle")
+        -- if label then
+        --     label.Text = ("Top %d"):format(i)
+        -- end
 
         local arConstraint = Instance.new("UIAspectRatioConstraint")
         arConstraint.AspectRatio = aspect
@@ -174,15 +175,16 @@ local function setupBestScoresUI()
 
         local canvasFrame = container:FindFirstChild("CanvasFrame")
         local canvas = CanvasDraw.new(canvasFrame, Vector2.new(math.ceil(canvasFrame.AbsoluteSize.X), math.ceil(canvasFrame.AbsoluteSize.Y)))
-        bestScoresCanvasContainerByTheme[theme] = {container = container, canvas = canvas}
+        bestScoresCanvasContainerByRank[i] = {container = container, canvas = canvas}
     end
 
     return scoreScrollFrame
 end
 
-local function updateDrawingDisplayForTheme(drawingData, theme)
-    local container = bestScoresCanvasContainerByTheme[theme].container
-    local canvas = bestScoresCanvasContainerByTheme[theme].canvas
+local function updateDrawingDisplayForRank(drawingData, rank)
+    local container = bestScoresCanvasContainerByRank[rank].container
+    local canvas = bestScoresCanvasContainerByRank[rank].canvas
+    local label = container:FindFirstChild("TopBar"):FindFirstChild("BestScoreTitle")
 
     -- Hide the loading
     local Loading = container:FindFirstChild("CanvasFrame"):FindFirstChild("Loading")
@@ -191,6 +193,7 @@ local function updateDrawingDisplayForTheme(drawingData, theme)
     -- Update the container with drawing data if available
     -- If there is no previous scores, the drawingData will be nil
     if drawingData and drawingData.imageData then
+        label.Text = drawingData.theme
         -- 1. Fetch the containerFrames and other UI elements
         local trophyContainer = container:FindFirstChild("TrophyFrame"):FindFirstChild("TrophyContainer")
         -- 2. Display the drawing
@@ -200,31 +203,17 @@ local function updateDrawingDisplayForTheme(drawingData, theme)
     end
 end
 
--- Separate function to update the drawings displays when data is received
-local function updateDrawingDisplaysForAllThemes()
-    -- Update each theme container with its drawing data
-    for i, theme in ipairs(ThemeList) do
-        -- Get drawing data from our cached bestDrawingsData
-        local drawingData = bestDrawingsData[theme]
-        updateDrawingDisplayForTheme(drawingData, theme)
-    end
-end
-
 -- Set up event handler for receiving the drawings
-ReceiveBestDrawingsEvent.OnClientEvent:Connect(function(drawings)
-    bestDrawingsData = drawings or {}
-    -- Update the displays with the new data
-    updateDrawingDisplaysForAllThemes()
-end)
-
--- Set up event handler for receiving the new best drawing
-ReceiveNewBestDrawingEvent.OnClientEvent:Connect(function(drawingData, theme)
-    updateDrawingDisplayForTheme(drawingData, theme)
+ReceiveTopPlaysEvent.OnClientEvent:Connect(function(topPlays)
+    for i = 1, GameConfig.TOP_PLAYS_LIMIT do
+        local drawingData = topPlays[i]
+        updateDrawingDisplayForRank(drawingData, i)
+    end
 end)
 
 -- Add this function to request best drawings from server
-local function requestBestDrawings()
-    RequestBestDrawingsEvent:FireServer()
+local function requestTopPlays()
+    RequestTopPlaysEvent:FireServer()
 end
 
 -- Function to handle BestScores button click
@@ -291,7 +280,7 @@ local function initialize()
     setupBestScoresUI()
     
     -- Then request best drawings data from server
-    requestBestDrawings()
+    requestTopPlays()
     
     -- Initially hide the BestScores frame until button is clicked
     BestScores.Visible = false

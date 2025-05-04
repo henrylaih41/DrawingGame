@@ -629,45 +629,28 @@ local function handleStartGame(player, requestedGameMode)
     -- Start the game
     task.spawn(startGame)
 end
-
--- Initialize
-local function init()
-    -- Connect event handlers
-    Players.PlayerAdded:Connect(handlePlayerJoined)
-    Players.PlayerRemoving:Connect(handlePlayerLeft)
-    Events.StartGame.OnServerEvent:Connect(handleStartGame)
-    Events.SubmitDrawing.OnServerEvent:Connect(handleDrawingSubmission)
-    Events.SubmitVote.OnServerEvent:Connect(handleVoteSubmission)
-    Events.RequestBestDrawings.OnServerEvent:Connect(function(player)
-        debugPrint("Player %s requested best drawings", player.Name)
+local function handleRequestTopPlays(player)
+        debugPrint("Player %s requested top plays", player.Name)
+        local topPlays, _ = BackendService:getTopPlays(player.UserId)
         
         -- Create a table to store the best drawing data for each theme
         local bestDrawings = {}
         local playerPoints = 0
         -- For each theme, get the player's best drawing
-        for _, theme in ipairs(ThemeList) do
-            -- Use BackendService to fetch the drawing
-            local bestScoreData = BackendService:getPlayerBestDrawing(player, theme)
+        for i, playerBestDrawing in ipairs(topPlays) do
+            local imageData = CanvasDraw.DecompressImageDataCustom(playerBestDrawing.imageData)
+            playerPoints = playerPoints + playerBestDrawing.points
 
-            if bestScoreData then
-                local imageData = CanvasDraw.DecompressImageDataCustom(bestScoreData.imageData)
-                playerPoints = playerPoints + bestScoreData.points
-
-                local drawingData = {
-                    imageData = imageData,
-                    score = bestScoreData.score,
-                    feedback = bestScoreData.feedback
-                }
-            
-                bestDrawings[theme] = drawingData
-                debugPrint("Found best drawing for theme '%s' with score %d", theme, drawingData.score or 0)
-            else
-                debugPrint("No drawing found for theme '%s'", theme)
-            end
+            local drawingData = {
+                imageData = imageData,
+                score = playerBestDrawing.score,
+                feedback = playerBestDrawing.feedback,
+                theme = playerBestDrawing.theme
+            }
+            bestDrawings[i] = drawingData
         end
 
         local playerData = GameManager.playerData[player.UserId]
-        print(playerData)
 
         if(playerPoints ~= playerData.TotalPoints) then
             warn("Player points do not match")
@@ -677,12 +660,25 @@ local function init()
             if playerData.TotalPoints then
                 warn("Player points: " .. playerData.TotalPoints)
             end
+            -- Self Healing
+            playerData.TotalPoints = playerPoints
+            BackendService:savePlayer(player, playerData)
         end
         
         -- Send the data back to the requesting client
-        Events.ReceiveBestDrawings:FireClient(player, bestDrawings)
+        Events.ReceiveTopPlays:FireClient(player, bestDrawings)
         debugPrint("Sent best drawings data to %s for %d themes", player.Name, #ThemeList)
-    end)
+    end
+
+-- Initialize
+local function init()
+    -- Connect event handlers
+    Players.PlayerAdded:Connect(handlePlayerJoined)
+    Players.PlayerRemoving:Connect(handlePlayerLeft)
+    Events.StartGame.OnServerEvent:Connect(handleStartGame)
+    Events.SubmitDrawing.OnServerEvent:Connect(handleDrawingSubmission)
+    Events.SubmitVote.OnServerEvent:Connect(handleVoteSubmission)
+    Events.RequestTopPlays.OnServerEvent:Connect(handleRequestTopPlays)
     
     debugPrint("GameManager initialized")
 end

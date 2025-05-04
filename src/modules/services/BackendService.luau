@@ -18,6 +18,8 @@ local ThemesDataStore = DataStoreService:GetDataStore("Themes")
 local ThemePagesDataStore = DataStoreService:GetDataStore("ThemePages")
 local TopPlaysDataStore = DataStoreService:GetDataStore("TopPlays")
 
+local TOP_PLAYS_LIMIT = 10
+
 local function generateDrawingKey(playerId, theme_uuid)
     return string.format("%d_%s", playerId, theme_uuid)
 end
@@ -262,12 +264,107 @@ function BackendService:getBestDrawing(playerId, themeUuid)
 end
 
 -- Top Plays Management
-function BackendService:updateTopPlays(playerId, newDrawing)
-
+function BackendService:updateTopPlays(playerId, originTopPlays, newTopPlay)
+    assert(playerId, "Missing playerId parameter")
+    assert(originTopPlays, "Missing originTopPlays parameter")
+    assert(newTopPlay, "Missing newTopPlay parameter")
+    
+    -- Inplace modification of the top plays
+    local topPlays = originTopPlays
+    
+    -- Validate the new top play against schema
+    local valid, errors = playerBestDrawingSchema:validate(newTopPlay)
+    if not valid then
+        warn("BackendService: Invalid top play data: " .. HttpService:JSONEncode(errors))
+        return false, "Invalid top play data"
+    end
+    
+    -- Check if the new play should be added to top plays
+    local shouldAdd = false
+    local lowestPointsIndex = nil
+    local lowestPoints = nil
+    
+    -- Find the play with the lowest points
+    if #topPlays < TOP_PLAYS_LIMIT then
+        -- If we have fewer than 10 plays, just add the new one
+        shouldAdd = true
+    else
+        -- Find the play with lowest points
+        for i, play in ipairs(topPlays) do
+            if lowestPoints == nil or play.points < lowestPoints then
+                lowestPoints = play.points
+                lowestPointsIndex = i
+            end
+        end
+        
+        -- If new play has more points than the lowest play, replace it
+        if lowestPoints ~= nil and newTopPlay.points > lowestPoints then
+            table.remove(topPlays, lowestPointsIndex)
+            shouldAdd = true
+        end
+    end
+    
+    -- Add the new play if it qualifies
+    if shouldAdd then
+        table.insert(topPlays, newTopPlay)
+        
+        -- Sort plays by points in descending order
+        table.sort(topPlays, function(a, b)
+            return a.points > b.points
+        end)
+        
+        -- Save to DataStore with retry logic
+        local success, result = self:_performDataStoreOperationWithRetry(
+            TopPlaysDataStore, 
+            "SetAsync", 
+            "Player_" .. playerId, 
+            { plays = topPlays }
+        )
+        
+        if not success then
+            warn("BackendService: Failed to save top plays for " .. playerId .. ": " .. tostring(result))
+            return false, "Failed to save top plays: " .. tostring(result)
+        end
+        
+        return true, nil
+    end
+    
+    return true, "New play did not qualify for top plays"
 end
 
 function BackendService:getTopPlays(playerId)
-
+    assert(playerId, "Missing playerId parameter")
+    
+    -- Try to get top plays data from DataStore with retry logic
+    local success, result = self:_performDataStoreOperationWithRetry(
+        TopPlaysDataStore,
+        "GetAsync",
+        "Player_" .. playerId
+    )
+    
+    if success and result then
+        -- Validate the schema
+        local valid, errors = topPlaysSchema:validate(result)
+        if not valid then
+            warn("BackendService: Invalid top plays data schema for player " .. playerId .. ": " .. HttpService:JSONEncode(errors))
+            return nil, "Invalid top plays data schema"
+        end
+        
+        -- Sort plays by points in descending order
+        table.sort(result.plays, function(a, b)
+            return a.points > b.points
+        end)
+        
+        return result.plays, nil
+    elseif success then
+        -- No data found but operation succeeded, return empty table
+        debugPrint("No top plays found for player %s", playerId)
+        return {}, nil
+    else
+        -- Operation failed
+        warn("BackendService: Failed to retrieve top plays - " .. tostring(result))
+        return nil, "DataStore error: " .. tostring(result)
+    end
 end
 
 -- Utility function to convert an image to base64
@@ -402,6 +499,34 @@ function BackendService:savePlayerBestDrawing(player, theme_uuid, drawingData)
         warn("BackendService: Failed to save drawing - " .. tostring(result))
         return false, "DataStore error: " .. tostring(result)
     end
+end
+
+-- Private utility function for handling DataStore operations with retry logic
+function BackendService:_performDataStoreOperationWithRetry(dataStore, operation, key, value, retry)
+    local retry = retry or false
+    local MAX_RETRIES = 5
+    local success, result
+    for attempt = 1, MAX_RETRIES do
+        success, result = pcall(function()
+            if operation == "GetAsync" then
+                return dataStore:GetAsync(key)
+            elseif operation == "SetAsync" then
+                dataStore:SetAsync(key, value)
+                return true
+            else
+                error("Unsupported operation: " .. operation)
+            end
+        end)
+        
+        if success or not retry then
+            break
+        else 
+            -- Exponential backoff
+            task.wait(1 * 2 ^ (attempt - 1))
+        end
+    end
+    
+    return success, result
 end
 
 return BackendService 
