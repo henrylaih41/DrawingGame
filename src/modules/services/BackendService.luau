@@ -180,15 +180,59 @@ function BackendService:Post(endpoint, data, options)
     end
 end
 
+local function printDataStoreQuota(operationName)
+    assert(operationName, "Missing operationName parameter")
+
+    local quotaName = nil
+    if operationName == "SetAsync" then
+        quotaName = "SetIncrementAsync"
+    else
+        quotaName = operationName
+    end
+
+    -- Find the matching enum value
+    local targetRequestType = nil
+    for _, reqType in ipairs(Enum.DataStoreRequestType:GetEnumItems()) do
+        if reqType.Name == quotaName then
+            targetRequestType = reqType
+            break
+        end
+    end
+    
+    if not targetRequestType then
+        warn("Invalid DataStoreRequestType name: " .. quotaName)
+        return
+    end
+    
+    -- Get and print the quota for just this request type
+    local remaining = DataStoreService:GetRequestBudgetForRequestType(targetRequestType)
+    print("─ DataStore request budget for " .. quotaName .. " ─")
+    print(string.format("  %-22s : %.0f requests left", quotaName, remaining))
+    print("───────────────────────────────────────────────")
+end
+
+local function printAllDataStoreQuota()
+    print("─ Current DataStore request budget (remaining this minute) ─")
+    for _, reqType in ipairs(Enum.DataStoreRequestType:GetEnumItems()) do
+        local remaining = DataStoreService:GetRequestBudgetForRequestType(reqType)
+        -- remaining is a floating-point number that refills continuously
+        print(string.format("  %-22s : %.0f requests left", reqType.Name, remaining))
+    end
+    print("────────────────────────────────────────────────────────────")
+end
+
 -- Player Data Management Functions
 function BackendService:getPlayer(player)
     assert(player, "Missing player parameter")
     local playerId = player.UserId
     
-    -- Try to get player data from DataStore
-    local success, result = pcall(function()
-        return PlayersDataStore:GetAsync("Player_" .. playerId)
-    end)
+    local success, result = self:_performDataStoreOperationWithRetry(
+        PlayersDataStore,
+        "GetAsync",
+        "Player_" .. playerId,
+        nil,
+        true
+    )
     
     if success and result then
         -- Validate the schema
@@ -231,10 +275,13 @@ function BackendService:savePlayer(player, playerData)
         return false, "Invalid player data schema"
     end
     
-    -- Save to DataStore
-    local success, error = pcall(function()
-        PlayersDataStore:SetAsync("Player_" .. playerId, playerData)
-    end)
+    -- Save to DataStore with retry logic
+    local success, error = self:_performDataStoreOperationWithRetry(
+        PlayersDataStore,
+        "SetAsync",
+        "Player_" .. playerId,
+        playerData
+    )
     
     if not success then
         warn("BackendService: Failed to save player data for " .. playerId .. ": " .. tostring(error))
@@ -313,6 +360,9 @@ function BackendService:updateTopPlays(playerId, originTopPlays, newTopPlay)
             return a.points > b.points
         end)
         
+        local sizeOfTopPlays = #HttpService:JSONEncode(topPlays)
+        debugPrint("Size of top plays: %d", sizeOfTopPlays)
+
         -- Save to DataStore with retry logic
         local success, result = self:_performDataStoreOperationWithRetry(
             TopPlaysDataStore, 
@@ -430,7 +480,18 @@ function BackendService:getPlayerBestDrawing(player, theme_uuid)
     
     -- Attempt to get the drawing data from the DataStore
     local success, result = pcall(function()
-        local drawingData = PlayerBestDrawingsStore:GetAsync(key)
+        -- Use the utility function with retry for DataStore operation
+        local success, drawingData = self:_performDataStoreOperationWithRetry(
+            PlayerBestDrawingsStore, 
+            "GetAsync", 
+            key,
+            nil,
+            true -- Enable retry
+        )
+        
+        if not success then
+            error("Failed to retrieve data: " .. tostring(drawingData))
+        end
         
         -- Update size statistics if data was returned
         if drawingData then
@@ -486,7 +547,20 @@ function BackendService:savePlayerBestDrawing(player, theme_uuid, drawingData)
         -- Calculate data size
         local dataSize = #HttpService:JSONEncode(drawingData)
         debugPrint("Writing %d bytes to DataStore for key: %s", dataSize, key)
-        PlayerBestDrawingsStore:SetAsync(key, drawingData)
+        
+        -- Use the utility function with retry for DataStore operation
+        local success, operationResult = self:_performDataStoreOperationWithRetry(
+            PlayerBestDrawingsStore, 
+            "SetAsync", 
+            key, 
+            drawingData,
+            true -- Enable retry
+        )
+        
+        if not success then
+            error("Failed to save data: " .. tostring(operationResult))
+        end
+        
         return true
     end)
     
@@ -503,10 +577,11 @@ end
 
 -- Private utility function for handling DataStore operations with retry logic
 function BackendService:_performDataStoreOperationWithRetry(dataStore, operation, key, value, retry)
-    local retry = retry or false
+    local retry = retry or true
     local MAX_RETRIES = 5
     local success, result
     for attempt = 1, MAX_RETRIES do
+        printDataStoreQuota(operation)
         success, result = pcall(function()
             if operation == "GetAsync" then
                 return dataStore:GetAsync(key)
@@ -521,6 +596,7 @@ function BackendService:_performDataStoreOperationWithRetry(dataStore, operation
         if success or not retry then
             break
         else 
+            warn(result)
             -- Exponential backoff
             task.wait(1 * 2 ^ (attempt - 1))
         end

@@ -264,7 +264,11 @@ GameStateChangedEvent.OnClientEvent:Connect(onGameStateChanged)
 
 local function onPlayerDataUpdated(playerData)
     local count = Buttons.TrophyCount.count
-    count.Text = tostring(playerData.TotalPoints)
+    if playerData then
+        count.Text = tostring(playerData.TotalPoints)
+    else
+        warn("Player data is nil")
+    end
 end
 
 PlayerDataUpdatedEvent.OnClientEvent:Connect(onPlayerDataUpdated)

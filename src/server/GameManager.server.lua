@@ -49,6 +49,18 @@ local GameManager = {
     playerData = {} -- Table to store player data
 }
 
+local function getPlayerData(player)
+    local playerData = GameManager.playerData[player.UserId]
+    local errorMessage = nil
+    if not playerData then
+        warn("Requesting player data for " .. player.Name .. " from datastore")
+        playerData, errorMessage = BackendService:getPlayer(player)
+        assert(playerData, "Failed to get player data for " .. player.Name .. ": " .. tostring(errorMessage))
+    end
+    GameManager.playerData[player.UserId] = playerData
+    return playerData
+end
+
 -- Utility Functions
 local function debugPrint(message, ...)
     if CONSTANTS.DEBUG_ENABLED then
@@ -101,12 +113,7 @@ end
 local function handlePlayerJoined(player)
     table.insert(GameManager.activePlayers, player)
 
-    -- Get player data from BackendService
-    -- If player is new, this will automatically create a profile
-    local playerData, error = BackendService:getPlayer(player)
-    assert(playerData, "Failed to get player data for " .. player.Name .. ": " .. tostring(error))
-    GameManager.playerData[player.UserId] = playerData
-    debugPrint("Stored player data for " .. player.Name)
+    local playerData = getPlayerData(player)
     
     -- Tell the new player the current game state
     debugPrint("Sending current game state to new player: %s", GameManager.currentState)
@@ -121,7 +128,7 @@ end
 -- Helper function to save player data to backend
 local function savePlayerData(player)
     local userId = player.UserId
-    local playerData = GameManager.playerData[userId]
+    local playerData = getPlayerData(player)
     
     if playerData then
         debugPrint("Saving player data for " .. player.Name)
@@ -141,7 +148,7 @@ end
 -- This assume that the playerData is already stored in GameManager.playerData
 local function updatePlayerData(player, dataUpdates)
     local userId = player.UserId
-    local playerData = GameManager.playerData[userId]
+    local playerData = getPlayerData(player)
     
     if playerData and dataUpdates then
         for key, value in pairs(dataUpdates) do
@@ -151,9 +158,10 @@ local function updatePlayerData(player, dataUpdates)
         
         -- Notify client of updated player data
         Events.PlayerDataUpdated:FireClient(player, playerData)
+        -- Write to cache
+        GameManager.playerData[player.UserId] = playerData
+        savePlayerData(player)
     end
-    GameManager.playerData[player.UserId] = playerData
-    savePlayerData(player)
 end
 
 local function handlePlayerLeft(player)
@@ -252,7 +260,7 @@ local function storeHighestScoringDrawing(player, theme, imageData, score, feedb
             playerId = player.UserId
         }
 
-        local playerData = GameManager.playerData[player.UserId]
+        local playerData = getPlayerData(player)
         local dataUpdates = {
             TotalPoints = playerData.TotalPoints + score - existingScore,
         }
@@ -288,7 +296,7 @@ local function runGradingPhase(currentTheme)
                 local result = nil
                 debugPrint("Submitting drawing for grading for player %s", p.Name)
 
-                local playerData = GameManager.playerData[userId]
+                local playerData = getPlayerData(p)
 
                 -- TODO: Update the energy here.
                 local dataUpdates = {
@@ -629,6 +637,7 @@ local function handleStartGame(player, requestedGameMode)
     -- Start the game
     task.spawn(startGame)
 end
+
 local function handleRequestTopPlays(player)
         debugPrint("Player %s requested top plays", player.Name)
         local topPlays, _ = BackendService:getTopPlays(player.UserId)
@@ -650,7 +659,7 @@ local function handleRequestTopPlays(player)
             bestDrawings[i] = drawingData
         end
 
-        local playerData = GameManager.playerData[player.UserId]
+        local playerData = getPlayerData(player)
 
         if(playerPoints ~= playerData.TotalPoints) then
             warn("Player points do not match")
@@ -667,11 +676,18 @@ local function handleRequestTopPlays(player)
         
         -- Send the data back to the requesting client
         Events.ReceiveTopPlays:FireClient(player, bestDrawings)
+        Events.PlayerDataUpdated:FireClient(player, playerData)
         debugPrint("Sent best drawings data to %s for %d themes", player.Name, #ThemeList)
     end
 
 -- Initialize
 local function init()
+
+    -- Player might already be in the game
+    for _, p in ipairs(Players:GetPlayers()) do
+        task.spawn(handlePlayerJoined, p)
+    end
+
     -- Connect event handlers
     Players.PlayerAdded:Connect(handlePlayerJoined)
     Players.PlayerRemoving:Connect(handlePlayerLeft)

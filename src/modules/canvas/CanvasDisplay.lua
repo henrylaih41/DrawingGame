@@ -5,7 +5,7 @@ local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 
 local CanvasDisplay = {}
-local DebugFlag = true
+local DebugFlag = false
 
 -- Debug logging function using DebugUtils
 --- Logs a message to the console if DebugFlag is enabled.
