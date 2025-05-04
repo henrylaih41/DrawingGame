@@ -189,6 +189,7 @@ local function updateDrawingDisplayForRank(drawingData, rank)
     -- Hide the loading
     local Loading = container:FindFirstChild("CanvasFrame"):FindFirstChild("Loading")
     Loading.Visible = false
+    container.Visible = false
 
     -- Update the container with drawing data if available
     -- If there is no previous scores, the drawingData will be nil
@@ -200,6 +201,7 @@ local function updateDrawingDisplayForRank(drawingData, rank)
         CanvasDisplay.displayDrawingData(canvas, drawingData.imageData)
         -- 3. Update the star rating
         CanvasDisplay.updateStarDisplay(trophyContainer, drawingData.score, false)
+        container.Visible = true
     end
 end
 

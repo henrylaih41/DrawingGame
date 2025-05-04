@@ -4,6 +4,7 @@
 -- Services
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local GameConfig = require(ReplicatedStorage.Modules.GameData.GameConfig)
 
 -- Modules
 local CanvasDraw = require(ReplicatedStorage.Modules.Canvas.CanvasDraw)
@@ -59,6 +60,20 @@ local function getPlayerData(player)
     end
     GameManager.playerData[player.UserId] = playerData
     return playerData
+end
+
+local function savePlayerData(player, playerData, flush)
+    local flush = flush or true
+    if playerData then
+        -- Update the cache
+        GameManager.playerData[player.UserId] = playerData
+        if flush then
+            -- Save to datastore
+            BackendService:savePlayer(player, playerData)
+        end
+        -- Notify the client
+        Events.PlayerDataUpdated:FireClient(player, playerData)
+    end
 end
 
 -- Utility Functions
@@ -125,45 +140,6 @@ local function handlePlayerJoined(player)
     Events.PlayerDataUpdated:FireClient(player, playerData)
 end
 
--- Helper function to save player data to backend
-local function savePlayerData(player)
-    local userId = player.UserId
-    local playerData = getPlayerData(player)
-    
-    if playerData then
-        debugPrint("Saving player data for " .. player.Name)
-        local success, error = BackendService:savePlayer(player, playerData)
-        
-        if not success then
-            warn("Failed to save player data for " .. player.Name .. ": " .. tostring(error))
-        else
-            debugPrint("Successfully saved player data for " .. player.Name)
-        end
-    else
-        debugPrint("No player data to save for " .. player.Name)
-    end
-end
-
--- Function to update player data during gameplay
--- This assume that the playerData is already stored in GameManager.playerData
-local function updatePlayerData(player, dataUpdates)
-    local userId = player.UserId
-    local playerData = getPlayerData(player)
-    
-    if playerData and dataUpdates then
-        for key, value in pairs(dataUpdates) do
-            playerData[key] = value
-        end
-        debugPrint("Updated player data for " .. player.Name)
-        
-        -- Notify client of updated player data
-        Events.PlayerDataUpdated:FireClient(player, playerData)
-        -- Write to cache
-        GameManager.playerData[player.UserId] = playerData
-        savePlayerData(player)
-    end
-end
-
 local function handlePlayerLeft(player)
     -- Save player data before removing
     savePlayerData(player)
@@ -224,8 +200,94 @@ local function runDrawingPhase(currentTheme)
     return currentTheme
 end
 
+local function topPlaysWithoutImageFromTopPlays(topPlays)
+    local topPlaysWithoutImage = {}
+
+    -- Get the stripped down top plays
+    for i, topPlay in ipairs(topPlays) do
+        local topPlayWithoutImage = {
+            theme = topPlay.theme,
+            score = topPlay.score,
+            points = topPlay.points,
+            timestamp = topPlay.timestamp,
+            theme_uuid = topPlay.theme_uuid,
+            playerId = topPlay.playerId,
+            imageData = nil
+        }
+
+        table.insert(topPlaysWithoutImage, topPlayWithoutImage)
+    end
+
+    return topPlaysWithoutImage
+end
+
+local function selfHealPlayer(player)
+    local playerData = getPlayerData(player)
+    if not playerData.topPlaysWithoutImage or (#playerData.topPlaysWithoutImage < GameConfig.TOP_PLAYS_LIMIT) then
+        local topPlays = BackendService:getTopPlays(player)
+        local topPlaysWithoutImage = topPlaysWithoutImageFromTopPlays(topPlays)
+
+        playerData.topPlaysWithoutImage = topPlaysWithoutImage
+        savePlayerData(player, playerData)
+    end
+end 
+
+local function sendTopPlaysToClient(player, topPlays)
+    debugPrint("Player %s requested top plays", player.Name)
+    local errorMessage = nil
+
+    -- If no topPlays are provided, get them from the backend.
+    if not topPlays then
+        topPlays, errorMessage = BackendService:getTopPlays(player)
+        assert(topPlays, "Failed to get top plays for player " .. player.Name .. ": " .. tostring(errorMessage))
+    else 
+        table.sort(topPlays, function(a, b)
+            return a.points > b.points
+        end)
+    end
+
+    -- Create a table to store the best drawing data for each theme
+    local bestDrawings = {}
+    local playerPoints = 0
+    -- For each theme, get the player's best drawing
+    for i, playerBestDrawing in ipairs(topPlays) do
+        local imageData = CanvasDraw.DecompressImageDataCustom(playerBestDrawing.imageData)
+        playerPoints = playerPoints + playerBestDrawing.points
+
+        local drawingData = {
+            imageData = imageData,
+            score = playerBestDrawing.score,
+            feedback = playerBestDrawing.feedback,
+            theme = playerBestDrawing.theme
+        }
+        bestDrawings[i] = drawingData
+    end
+
+    local playerData = getPlayerData(player)
+
+    if(playerPoints ~= playerData.TotalPoints) then
+        warn("Player points do not match")
+        if playerPoints then 
+            warn("Player points: " .. playerPoints)
+        end
+        if playerData.TotalPoints then
+            warn("Player points: " .. playerData.TotalPoints)
+        end
+        -- Self Healing
+        playerData.TotalPoints = playerPoints
+        BackendService:savePlayer(player, playerData)
+    end
+    
+    -- Send the data back to the requesting client
+    Events.ReceiveTopPlays:FireClient(player, bestDrawings)
+    Events.PlayerDataUpdated:FireClient(player, playerData)
+    debugPrint("Sent best drawings data to %s for %d themes", player.Name, #ThemeList)
+end
+
 -- imageData is a compressed image data returned by CompressImageDataCustom.
 local function storeHighestScoringDrawing(player, theme, imageData, score, feedback)
+    -- Update this to use the theme_uuid instead of the theme name.
+    local theme_uuid = theme
     -- Check if there's an existing drawing for this theme
     local existingData, errorMessage = BackendService:getPlayerBestDrawing(player, theme)
     local existingScore = 0
@@ -250,23 +312,61 @@ local function storeHighestScoringDrawing(player, theme, imageData, score, feedb
     
     -- Save the drawing if needed
     if shouldSaveDrawing then
+        warn("Saving new drawing for theme '%s'", theme)
         local drawingData = {
             imageData = imageData,
             points = score,
             score = score,
             timestamp = os.time(),
             theme = theme,
-            theme_uuid = theme,
+            theme_uuid = theme_uuid,
             playerId = player.UserId
         }
 
-        local playerData = getPlayerData(player)
-        local dataUpdates = {
-            TotalPoints = playerData.TotalPoints + score - existingScore,
-        }
-        updatePlayerData(player, dataUpdates)
-
         local success, error = BackendService:savePlayerBestDrawing(player, theme, drawingData)
+        if not success then
+            warn("Failed to save player best drawing for theme '%s': %s", theme, error)
+        end
+        
+        -- self healing - topPlaysWithoutImage
+        selfHealPlayer(player)
+        -- At this point, the playerData must contain the topPlaysWithoutImage field.
+        local playerData = getPlayerData(player)
+
+        local shouldAddToTopPlays, replaceThemeUuid 
+            = BackendService:checkIfNewBestDrawingChangesTopPlays(playerData.topPlaysWithoutImage, drawingData)
+
+        if shouldAddToTopPlays then
+            -- Get the real topPlays with ImageData
+            local topPlays = BackendService:getTopPlays(player)
+
+            if replaceThemeUuid then
+                -- Replace the old top play with the new one
+                for i, topPlay in ipairs(topPlays) do
+                    if topPlay.theme_uuid == replaceThemeUuid then
+                        topPlays[i] = drawingData
+                    end
+                end
+            -- If replaceThemeUuid is nil, it means we should just insert the new drawing.
+            else
+                table.insert(topPlays, drawingData)
+            end
+
+            -- Do the update, we update the topPlaysWithoutImage and the topPlays.
+            local topPlaysWithoutImage = topPlaysWithoutImageFromTopPlays(topPlays)
+            playerData.topPlaysWithoutImage = topPlaysWithoutImage
+
+            local totalPoints = 0
+            for _, topPlay in ipairs(topPlays) do
+                totalPoints = totalPoints + topPlay.points
+                playerData.TotalPoints = totalPoints
+            end
+
+            savePlayerData(player, playerData)
+            BackendService:saveTopPlays(player, topPlays)
+            -- Send the new top plays to the client.
+            sendTopPlaysToClient(player, topPlays)
+        end
 
         local rawImageData = CanvasDraw.DecompressImageDataCustom(imageData)
         -- Notify the client that a new best drawing for this theme has been saved
@@ -297,12 +397,8 @@ local function runGradingPhase(currentTheme)
                 debugPrint("Submitting drawing for grading for player %s", p.Name)
 
                 local playerData = getPlayerData(p)
-
-                -- TODO: Update the energy here.
-                local dataUpdates = {
-                    TotalPlayCount = playerData.TotalPlayCount + 1,
-                }   
-                updatePlayerData(p, dataUpdates)
+                playerData.TotalPlayCount = playerData.TotalPlayCount + 1
+                savePlayerData(p, playerData, false)
 
                 local compressedImageData = nil
                 result, errorMessage, compressedImageData = BackendService:submitDrawingToBackendForGrading(p, imageData, currentTheme)
@@ -351,108 +447,6 @@ local function runGradingPhase(currentTheme)
         debugPrint("Grading tasks complete.")
     end
     allGradingCompleteSignal:Destroy()
-end
-
-local function runVotingPhase()
-    -- Prepare drawings for voting
-    local drawingsForVoting = {}
-    for userId, imageData in pairs(GameManager.playerDrawings) do
-        -- Ensure the player who drew is still in the lobby
-        local playerExists = false
-        if not imageData then
-            debugPrint("Skipping drawing from player %s (no image data)", userId)
-            continue
-        end
-        
-        for _, p in ipairs(GameManager.activePlayers) do
-            if p.UserId == userId then
-                playerExists = true
-                break
-            end
-        end
-
-        if playerExists then
-            table.insert(drawingsForVoting, {
-                playerId = userId,
-                imageData = imageData
-            })
-        else
-            debugPrint("Skipping drawing from player %s (not in lobby)", userId)
-        end
-    end
-
-    -- Send drawings to all clients if there are any drawings
-    if #drawingsForVoting > 0 then
-        debugPrint("Sending %d drawings to clients for voting", #drawingsForVoting)
-        for _, p in ipairs(GameManager.activePlayers) do
-            Events.DrawingsReceived:FireClient(p, drawingsForVoting)
-        end
-    else
-        debugPrint("No valid drawings available for voting.")
-    end
-
-    -- Reset voting variables
-    GameManager.playerVotes = {}
-    GameManager.voteResults = {}
-
-    -- Start voting time countdown
-    for i = CONSTANTS.VOTING_TIME, 0, -1 do
-        Events.GameCountdown:FireAllClients(i, GameState.VOTING)
-        if i > 0 then task.wait(1) end
-    end
-    debugPrint("Voting time complete.")
-    task.wait(2) -- Grace period for final votes
-end
-
-local function getMultiplayerResults()
-    local resultsData = {}
-    debugPrint("Tallying multiplayer votes.")
-    
-    -- Tally votes
-    local winningPlayerId = nil
-    local highestVotes = 0
-
-    for votedId, count in pairs(GameManager.voteResults) do
-        -- Ensure the voted player is still in the lobby
-        local playerExists = false
-        local votedPlayer = Players:GetPlayerByUserId(tonumber(votedId) or 0)
-        
-        if votedPlayer then
-            for _, p in ipairs(GameManager.activePlayers) do
-                if p == votedPlayer then
-                    playerExists = true
-                    break
-                end
-            end
-        end
-
-        if playerExists then
-            debugPrint("Player %s received %d votes", votedId, count)
-            if count > highestVotes then
-                highestVotes = count
-                winningPlayerId = votedId
-            elseif count == highestVotes then
-                winningPlayerId = nil -- Handle ties
-                debugPrint("Tie detected at %d votes", highestVotes)
-            end
-        else
-            debugPrint("Ignoring votes for player %s (no longer in lobby)", votedId)
-        end
-    end
-
-    resultsData.votes = GameManager.voteResults
-    resultsData.winner = winningPlayerId
-
-    if winningPlayerId then
-        local winnerName = Players:GetNameFromUserIdAsync(tonumber(winningPlayerId) or 0) or "Unknown"
-        debugPrint("Winner is %s (%s) with %d votes", winnerName, winningPlayerId, highestVotes)
-    elseif next(GameManager.voteResults) ~= nil then
-        debugPrint("No single winner determined (tie or no votes for present players).")
-    else
-        debugPrint("No votes were cast or tallied.")
-    end
-    
-    return resultsData
 end
 
 -- Game Flow
@@ -529,17 +523,6 @@ local function startGame()
         if connection then
             connection:Disconnect()
         end
-        
-    elseif GameManager.currentGameMode == GameMode.MULTIPLAYER then
-        -- === VOTING PHASE (Multiplayer) ===
-        transitionToState(GameState.VOTING)
-        debugPrint("Starting VOTING phase for multiplayer.")
-        runVotingPhase()
-        
-        -- === RESULTS PHASE ===
-        transitionToState(GameState.RESULTS)
-        resultsData = getMultiplayerResults()
-        task.wait(15) -- Give time to see results
     end
     
     -- === RETURN TO MAIN MENU ===
@@ -638,47 +621,7 @@ local function handleStartGame(player, requestedGameMode)
     task.spawn(startGame)
 end
 
-local function handleRequestTopPlays(player)
-        debugPrint("Player %s requested top plays", player.Name)
-        local topPlays, _ = BackendService:getTopPlays(player.UserId)
-        
-        -- Create a table to store the best drawing data for each theme
-        local bestDrawings = {}
-        local playerPoints = 0
-        -- For each theme, get the player's best drawing
-        for i, playerBestDrawing in ipairs(topPlays) do
-            local imageData = CanvasDraw.DecompressImageDataCustom(playerBestDrawing.imageData)
-            playerPoints = playerPoints + playerBestDrawing.points
 
-            local drawingData = {
-                imageData = imageData,
-                score = playerBestDrawing.score,
-                feedback = playerBestDrawing.feedback,
-                theme = playerBestDrawing.theme
-            }
-            bestDrawings[i] = drawingData
-        end
-
-        local playerData = getPlayerData(player)
-
-        if(playerPoints ~= playerData.TotalPoints) then
-            warn("Player points do not match")
-            if playerPoints then 
-                warn("Player points: " .. playerPoints)
-            end
-            if playerData.TotalPoints then
-                warn("Player points: " .. playerData.TotalPoints)
-            end
-            -- Self Healing
-            playerData.TotalPoints = playerPoints
-            BackendService:savePlayer(player, playerData)
-        end
-        
-        -- Send the data back to the requesting client
-        Events.ReceiveTopPlays:FireClient(player, bestDrawings)
-        Events.PlayerDataUpdated:FireClient(player, playerData)
-        debugPrint("Sent best drawings data to %s for %d themes", player.Name, #ThemeList)
-    end
 
 -- Initialize
 local function init()
@@ -694,7 +637,7 @@ local function init()
     Events.StartGame.OnServerEvent:Connect(handleStartGame)
     Events.SubmitDrawing.OnServerEvent:Connect(handleDrawingSubmission)
     Events.SubmitVote.OnServerEvent:Connect(handleVoteSubmission)
-    Events.RequestTopPlays.OnServerEvent:Connect(handleRequestTopPlays)
+    Events.RequestTopPlays.OnServerEvent:Connect(sendTopPlaysToClient)
     
     debugPrint("GameManager initialized")
 end

@@ -1,5 +1,5 @@
 local GameConfig = {
-    TOP_PLAYS_LIMIT = 10,
+    TOP_PLAYS_LIMIT = 3,
 }
 
 return GameConfig

@@ -7,6 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CanvasDraw = require(ReplicatedStorage.Modules.Canvas.CanvasDraw)
 local PromptService = require(ReplicatedStorage.Modules.Services.PromptService)
 local SchemaValidator = require(ReplicatedStorage.Modules.Utils.SchemaValidator)
+local GameConfig = require(ReplicatedStorage.Modules.GameData.GameConfig)
 local BackendService = {}
 local DEBUG_ENABLED = true
 local DataStoreService = game:GetService("DataStoreService")
@@ -60,7 +61,8 @@ local playerDataSchema = SchemaValidator.createSchema({
     TotalPlayCount = { type = "number", required = true },
     TotalPoints = { type = "number", required = true },
     Energy = { type = "number", required = true },
-    coins = { type = "number", required = true }
+    coins = { type = "number", required = true },
+    topPlaysWithoutImage = { type = "table", required = false}
 })
 
 -- Define schema for best drawings
@@ -91,11 +93,6 @@ local themeSchema = SchemaValidator.createSchema({
 -- Define schema for theme page
 local themePageSchema = SchemaValidator.createSchema({
     themes = { type = "table", required = true }
-})
-
--- Define schema for top plays
-local topPlaysSchema = SchemaValidator.createSchema({
-    plays = { type = "table", required = true } -- Array of BestDrawings objects
 })
 
 -- Function to send a request to the OpenAI endpoint
@@ -311,79 +308,100 @@ function BackendService:getBestDrawing(playerId, themeUuid)
 end
 
 -- Top Plays Management
-function BackendService:updateTopPlays(playerId, originTopPlays, newTopPlay)
-    assert(playerId, "Missing playerId parameter")
-    assert(originTopPlays, "Missing originTopPlays parameter")
+function BackendService:checkIfNewBestDrawingChangesTopPlays(originTopPlaysWithoutImageData, newTopPlay)
+    assert(originTopPlaysWithoutImageData, "Missing originTopPlays parameter")
     assert(newTopPlay, "Missing newTopPlay parameter")
-    
-    -- Inplace modification of the top plays
-    local topPlays = originTopPlays
-    
+
     -- Validate the new top play against schema
     local valid, errors = playerBestDrawingSchema:validate(newTopPlay)
     if not valid then
         warn("BackendService: Invalid top play data: " .. HttpService:JSONEncode(errors))
-        return false, "Invalid top play data"
+        return false, nil
     end
     
     -- Check if the new play should be added to top plays
     local shouldAdd = false
+    local replaceThemeUuid = nil
+    
+    -- Check if this theme already exists in the top plays
+    local existingPlayIndex = nil
     local lowestPointsIndex = nil
     local lowestPoints = nil
     
-    -- Find the play with the lowest points
-    if #topPlays < TOP_PLAYS_LIMIT then
-        -- If we have fewer than 10 plays, just add the new one
-        shouldAdd = true
-    else
-        -- Find the play with lowest points
-        for i, play in ipairs(topPlays) do
-            if lowestPoints == nil or play.points < lowestPoints then
-                lowestPoints = play.points
-                lowestPointsIndex = i
-            end
+    -- Find existing play with same theme and track lowest points
+    for i, play in ipairs(originTopPlaysWithoutImageData) do
+        -- Track the play with lowest points
+        if lowestPoints == nil or play.points < lowestPoints then
+            lowestPoints = play.points
+            lowestPointsIndex = i
         end
         
-        -- If new play has more points than the lowest play, replace it
-        if lowestPoints ~= nil and newTopPlay.points > lowestPoints then
-            table.remove(topPlays, lowestPointsIndex)
+        -- Check if this theme already exists
+        if play.theme_uuid == newTopPlay.theme_uuid then
+            existingPlayIndex = i
+        end
+    end
+    
+    -- CASE 1: Theme exists in top plays
+    if existingPlayIndex then
+        -- Only replace if new score is higher
+        if newTopPlay.points > originTopPlaysWithoutImageData[existingPlayIndex].points then
             shouldAdd = true
+            replaceThemeUuid = newTopPlay.theme_uuid
+        end
+        -- Otherwise do nothing (keep existing score)
+    
+    -- CASE 2: Theme doesn't exist in top plays
+    else
+        -- If under limit, we can just append
+        if #originTopPlaysWithoutImageData < GameConfig.TOP_PLAYS_LIMIT then
+            shouldAdd = true
+        -- If at limit, replace lowest score if new score is higher
+        elseif newTopPlay.points > lowestPoints then
+            shouldAdd = true
+            replaceThemeUuid = originTopPlaysWithoutImageData[lowestPointsIndex].theme_uuid
         end
     end
     
-    -- Add the new play if it qualifies
-    if shouldAdd then
-        table.insert(topPlays, newTopPlay)
-        
-        -- Sort plays by points in descending order
-        table.sort(topPlays, function(a, b)
-            return a.points > b.points
-        end)
-        
-        local sizeOfTopPlays = #HttpService:JSONEncode(topPlays)
-        debugPrint("Size of top plays: %d", sizeOfTopPlays)
-
-        -- Save to DataStore with retry logic
-        local success, result = self:_performDataStoreOperationWithRetry(
-            TopPlaysDataStore, 
-            "SetAsync", 
-            "Player_" .. playerId, 
-            { plays = topPlays }
-        )
-        
-        if not success then
-            warn("BackendService: Failed to save top plays for " .. playerId .. ": " .. tostring(result))
-            return false, "Failed to save top plays: " .. tostring(result)
-        end
-        
-        return true, nil
-    end
-    
-    return true, "New play did not qualify for top plays"
+    return shouldAdd, replaceThemeUuid
 end
 
-function BackendService:getTopPlays(playerId)
-    assert(playerId, "Missing playerId parameter")
+function BackendService:saveTopPlays(player, topPlays)
+    local playerId = player.UserId
+    assert(player, "Missing player parameter")
+    assert(topPlays, "Missing topPlays parameter")
+
+    for _, topPlay in ipairs(topPlays) do
+        -- Validate the schema
+        local valid, errors = playerBestDrawingSchema:validate(topPlay)
+        if not valid then
+            warn(errors)
+            return false, "Invalid top play data"
+        end
+    end
+
+    -- Log the topPlays bytes
+    local dataSize = #HttpService:JSONEncode(topPlays)
+    warn("Writing %d bytes to TopPlays for key: %s", dataSize, "Player_" .. playerId)
+
+    local success, error = self:_performDataStoreOperationWithRetry(
+        TopPlaysDataStore,
+        "SetAsync",
+        "Player_" .. playerId, 
+        topPlays,
+        true)
+
+    if not success then
+        warn("BackendService: Failed to save top plays for player " .. playerId .. ": " .. tostring(error))
+        return false, "Failed to save top plays: " .. tostring(error)
+    end
+
+    return true, nil
+end
+
+function BackendService:getTopPlays(player)
+    assert(player, "Missing player parameter")
+    local playerId = player.UserId
     
     -- Try to get top plays data from DataStore with retry logic
     local success, result = self:_performDataStoreOperationWithRetry(
@@ -394,18 +412,20 @@ function BackendService:getTopPlays(playerId)
     
     if success and result then
         -- Validate the schema
-        local valid, errors = topPlaysSchema:validate(result)
-        if not valid then
-            warn("BackendService: Invalid top plays data schema for player " .. playerId .. ": " .. HttpService:JSONEncode(errors))
-            return nil, "Invalid top plays data schema"
+        for _, topPlay in ipairs(result) do
+            local valid, errors = playerBestDrawingSchema:validate(topPlay)
+            if not valid then
+                warn(errors)
+                return nil, "Invalid top play data"
+            end
         end
         
         -- Sort plays by points in descending order
-        table.sort(result.plays, function(a, b)
+        table.sort(result, function(a, b)
             return a.points > b.points
         end)
         
-        return result.plays, nil
+        return result, nil
     elseif success then
         -- No data found but operation succeeded, return empty table
         debugPrint("No top plays found for player %s", playerId)

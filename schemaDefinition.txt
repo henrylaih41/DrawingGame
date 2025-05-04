@@ -29,11 +29,10 @@ BestDrawings
 - points = { type = "number", required = true }, -- This is the calculated points for the drawing
 - timestamp = { type = "number", required = true },
 - theme = { type = "string", required = true },
-- playerId = { type = "number", required = true }
 - theme_uuid: string
+- playerId = { type = "number", required = true }
 
-
-Datastores
+### Datastores
 TopPlays:
 - Purpose: This store the top plays for each players
 - Key = playerId
