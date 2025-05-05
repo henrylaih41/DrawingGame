@@ -34,7 +34,7 @@ end
 local Events               = ReplicatedStorage:WaitForChild("Events")
 local GameStateChangedEvent= Events:WaitForChild("GameStateChanged")
 local GameCountdownEvent   = Events:WaitForChild("GameCountdown")
-local SubmitDrawingEvent   = Events:WaitForChild("SubmitDrawing", 10)
+local SubmitDrawingEvent   = Events:WaitForChild("SubmitDrawing")
 
 local LocalPlayer   = Players.LocalPlayer
 local PlayerGui     = LocalPlayer:WaitForChild("PlayerGui")
@@ -57,7 +57,6 @@ local CANVAS_BACKGROUND_COLOR
 local IS_DRAWING       = false
 local canvasInitialized= false
 local currentGameState = "LOBBY"
-local drawingTimeLeft  = 0
 local timerRotateScript = nil
 
 -- Track UI event connections for cleanup
@@ -505,11 +504,11 @@ end
 ------------------------------------------------------------------------
 GameStateChangedEvent.OnClientEvent:Connect(function(stateData)
     local newState = stateData.state
-    local theme = stateData.theme
     local prev = currentGameState
     currentGameState = newState
 
     if newState == "DRAWING" then
+        local theme = stateData.theme.Name
         log("Drawing phase started")
         if not canvasInitialized then initCanvas() end
         if timerRotateScript then

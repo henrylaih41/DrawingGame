@@ -11,6 +11,7 @@ local GameConfig = require(ReplicatedStorage.Modules.GameData.GameConfig)
 -- Get references to UI elements
 local PlayerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
 local MainMenuScreen = PlayerGui:WaitForChild("MainMenuScreen")
+local ThemeListScreen = PlayerGui:WaitForChild("ThemeListScreen")
 local RankingScreenTopLevelContainer = PlayerGui:WaitForChild("RankingScreen"):WaitForChild("TopLevelContainer")
 local TopLevelContainer = MainMenuScreen:WaitForChild("TopLevelContainer")
 local BestScores = TopLevelContainer:WaitForChild("BestScores")
@@ -64,7 +65,7 @@ local function setupBestScoresUI()
     titleLabel.Position = UDim2.new(0.1, 0, 0.1, 0)
     titleLabel.BackgroundTransparency = 1
     titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    titleLabel.Text = "Best Drawings"
+    titleLabel.Text = string.format("Best Drawings (Top %d)", GameConfig.TOP_PLAYS_LIMIT)
     titleLabel.TextScaled = true
     titleLabel.Font = Enum.Font.GothamBold
     titleLabel.ZIndex = 11
@@ -229,9 +230,9 @@ local function onRankingClicked()
 end
 
 -- Function to handle SinglePlayer button click
-local function onSinglePlayerClicked()
-    -- Fire event to GameManager with game mode parameter
-    StartGameEvent:FireServer("SinglePlayer")
+local function onStartClicked()
+    local ThemeListTopLevelContainer = ThemeListScreen:WaitForChild("TopLevelContainer")
+    ThemeListTopLevelContainer.Visible = true 
 end
 
 -- Function to handle MultiPlayer button click
@@ -255,7 +256,7 @@ local function onGameStateChanged(stateData)
 end
 
 -- Apply button effects and on click events
-table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(SinglePlayerButton, onSinglePlayerClicked))
+table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(SinglePlayerButton, onStartClicked))
 table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(BestScoresButton, onBestScoresClicked))
 table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(RankingButton, onRankingClicked))
 -- Need to get a better press image

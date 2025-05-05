@@ -6,7 +6,6 @@ local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 local CanvasDraw = require(ReplicatedStorage.Modules.Canvas.CanvasDraw)
-local PromptService = require(ReplicatedStorage.Modules.Services.PromptService)
 local SchemaValidator = require(ServerScriptService.modules.SchemaValidator)
 local BackendService = {}
 local DEBUG_ENABLED = true
@@ -34,25 +33,6 @@ BackendService.DefaultOptions = {
     }
 }
 
--- Define schema for theme data
-local themeSchema = SchemaValidator.createSchema({
-    Name = { type = "string", required = true },
-    Description = { type = "string", required = true },
-    GradingPrompt = { type = "string", required = true },
-    Difficulty = { type = "number", required = true },
-    TotalPlayCount = { type = "number", required = true },
-    Duration = { type = "number", required = true },
-    CreatedBy = { type = "string", required = true },
-    CreatedAt = { type = "string", required = true },
-    uuid = { type = "string", required = true },
-    pageID = { type = "string", required = true }
-})
-
--- Define schema for theme page
-local themePageSchema = SchemaValidator.createSchema({
-    themes = { type = "table", required = true }
-})
-
 -- Function to send a request to the OpenAI endpoint
 function BackendService:SendOpenAIRequest(compressedImageData, prompt, theme, playerId)
     assert(compressedImageData, "Missing compressedImageData parameter")
@@ -72,7 +52,7 @@ function BackendService:SendOpenAIRequest(compressedImageData, prompt, theme, pl
         prompt = prompt,
         metadata = {
             playerId = playerId,
-            theme = theme  -- Move theme into metadata
+            theme = theme.Name  -- Move theme into metadata
         }
     }
     
@@ -166,8 +146,8 @@ function BackendService:submitDrawingToBackendForGrading(player, imageData, them
         return nil, "Failed to compress image data"
     end
 
-    -- Get the prompt from the PromptService
-    local prompt = PromptService:getPrompt("BASIC_PROMPT", theme)
+    local prompt = "The theme is " .. theme.Name
+
     if not prompt then
         warn("submitDrawingToBackendForGrading failed to get prompt for player: " .. player.Name .. " with theme: " .. tostring(theme))
         return nil, "Failed to get prompt"

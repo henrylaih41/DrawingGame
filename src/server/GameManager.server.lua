@@ -14,12 +14,12 @@ local PlayerBestDrawingsStore = require(ServerScriptService.modules.PlayerBestDr
 local CanvasDraw = require(ReplicatedStorage.Modules.Canvas.CanvasDraw)
 local BackendService = require(ServerScriptService.modules.BackendService)
 local ThemeList = require(ReplicatedStorage.Modules.GameData.ThemeList)
+local ThemeStore = require(ServerScriptService.modules.ThemeStore)
 
 -- Constants
 local CONSTANTS = {
     MAX_PLAYERS = 1,
     COUNTDOWN_TIME = 1,
-    DRAWING_TIME = 600,
     VOTING_TIME = 30, -- 30 seconds for voting
     DEBUG_ENABLED = true
 }
@@ -183,9 +183,9 @@ local function runDrawingPhase(currentTheme)
     GameManager.skipDrawingTime = false -- Reset skip flag
     debugPrint("Cleared previous drawings and scores")
 
-    -- Theme is now passed as a parameter, no need to select it here
+    local drawingTime = currentTheme.Duration * 60
 
-    for i = CONSTANTS.DRAWING_TIME, 0, -1 do
+    for i = drawingTime, 0, -1 do
         -- Check if we should skip the remaining time
         if GameManager.skipDrawingTime then
             debugPrint("Skipping remaining drawing time as all players have submitted.")
@@ -290,10 +290,8 @@ end
 
 -- imageData is a compressed image data returned by CompressImageDataCustom.
 local function storeHighestScoringDrawing(player, theme, imageData, score, feedback)
-    -- Update this to use the theme_uuid instead of the theme name.
-    local theme_uuid = theme
     -- Check if there's an existing drawing for this theme
-    local existingData, errorMessage = PlayerBestDrawingsStore:getPlayerBestDrawing(player, theme)
+    local existingData, errorMessage = PlayerBestDrawingsStore:getPlayerBestDrawing(player, theme.uuid)
     local existingScore = 0
     local shouldSaveDrawing = false
     
@@ -322,12 +320,12 @@ local function storeHighestScoringDrawing(player, theme, imageData, score, feedb
             points = score,
             score = score,
             timestamp = os.time(),
-            theme = theme,
-            theme_uuid = theme_uuid,
+            theme = theme.Name,
+            theme_uuid = theme.uuid,
             playerId = player.UserId
         }
 
-        local success, error = PlayerBestDrawingsStore:savePlayerBestDrawing(player, theme, drawingData)
+        local success, error = PlayerBestDrawingsStore:savePlayerBestDrawing(player, theme.uuid, drawingData)
         if not success then
             warn("Failed to save player best drawing for theme '%s': %s", theme, error)
         end
@@ -454,18 +452,17 @@ local function runGradingPhase(currentTheme)
 end
 
 -- Game Flow
-local function startGame()
+local function startGame(theme_uuid)
     -- Reset game state
     GameManager.playerDrawings = {}
     GameManager.playerScores = {}
     GameManager.voteResults = {}
     GameManager.skipDrawingTime = false
     
-    -- Select theme before starting drawing phase
-    local themeIndex = math.random(1, #ThemeList)
-    local currentTheme = ThemeList[themeIndex]
-    debugPrint("Selected theme for this round: %s", currentTheme)
-    
+    local currentTheme = ThemeStore:getTheme(theme_uuid)
+
+    warn(currentTheme)
+
     -- === DRAWING PHASE ===
     transitionToState(GameState.DRAWING, {theme = currentTheme})
     runDrawingPhase(currentTheme)
@@ -481,7 +478,7 @@ local function startGame()
         assert(player, "No player found in active players")
 
         -- Get the current best score for the theme
-        local bestScoreData, errorMessage = PlayerBestDrawingsStore:getPlayerBestDrawing(player, currentTheme)
+        local bestScoreData, errorMessage = PlayerBestDrawingsStore:getPlayerBestDrawing(player, currentTheme.uuid)
         local bestScore = nil   
 
         -- If there is no best score, this means that the player has not submitted a drawing yet.
@@ -590,23 +587,15 @@ local function handleVoteSubmission(player, votedPlayerId)
 end
 
 -- Handle start game request from client
-local function handleStartGame(player, requestedGameMode)
+local function handleStartGame(player, theme_uuid)
     if GameManager.currentState ~= GameState.MAIN_MENU then
         debugPrint("Ignoring start game request - game already in progress")
         return
     end
     
-    debugPrint("Starting game requested by %s in mode: %s", player.Name, requestedGameMode)
+    debugPrint("Starting game requested by %s for theme: %s", player.Name, theme_uuid)
     
-    -- Set the game mode based on client request
-    if requestedGameMode == "SinglePlayer" then
-        GameManager.currentGameMode = GameMode.SINGLE_PLAYER
-    elseif requestedGameMode == "MultiPlayer" then
-        GameManager.currentGameMode = GameMode.MULTIPLAYER
-    else
-        -- Default to single player if invalid mode
-        GameManager.currentGameMode = GameMode.SINGLE_PLAYER
-    end
+    GameManager.currentGameMode = GameMode.SINGLE_PLAYER
     
     -- Ensure requesting player is in active players
     local playerInGame = false
@@ -622,7 +611,13 @@ local function handleStartGame(player, requestedGameMode)
     end
     
     -- Start the game
-    task.spawn(startGame)
+    startGame(theme_uuid)
+end
+
+local function sendThemeListPageToClient(player)
+    -- fetch all theme at once for now.
+    local themeList = ThemeStore:getThemeSummary(GameConfig.THEME_LIST_LIMIT)
+    Events.ReceiveThemeListPage:FireClient(player, themeList)
 end
 
 -- Initialize
@@ -640,9 +635,28 @@ local function init()
     Events.SubmitDrawing.OnServerEvent:Connect(handleDrawingSubmission)
     Events.SubmitVote.OnServerEvent:Connect(handleVoteSubmission)
     Events.RequestTopPlays.OnServerEvent:Connect(sendTopPlaysToClient)
+    Events.RequestThemeListPage.OnServerEvent:Connect(sendThemeListPageToClient)
     
     debugPrint("GameManager initialized")
 end
 
 -- Start the module
 init()
+
+-- One time creation
+-- local ThemeService = require(ServerScriptService.modules.ThemeService)
+-- ThemeService:createTheme("Test Theme", "Test Description", "Test Grading Prompt", "Easy", 10, "Test Player")
+-- ThemeService:createTheme("Test Theme2", "Test Description", "Test Grading Prompt", "Easy", 10, "Test Player")
+-- ThemeService:createTheme("Test Theme3", "Test Description", "Test Grading Prompt", "Easy", 10, "Test Player")
+-- ThemeService:createTheme("Test Theme", "Test Description", "Test Grading Prompt", "Easy", 10, "Test Player")
+-- ThemeService:createTheme("Test Theme2", "Test Description", "Test Grading Prompt", "Easy", 10, "Test Player")
+-- ThemeService:createTheme("Test Theme3", "Test Description", "Test Grading Prompt", "Easy", 10, "Test Player")
+-- ThemeService:createTheme("Test Theme", "Test Description", "Test Grading Prompt", "Easy", 10, "Test Player")
+-- ThemeService:createTheme("Test Theme2", "Test Description", "Test Grading Prompt", "Easy", 10, "Test Player")
+-- ThemeService:createTheme("Test Theme3", "Test Description", "Test Grading Prompt", "Easy", 10, "Test Player")
+-- ThemeService:createTheme("Test Theme", "Test Description", "Test Grading Prompt", "Easy", 10, "Test Player")
+-- ThemeService:createTheme("Test Theme2", "Test Description", "Test Grading Prompt", "Easy", 10, "Test Player")
+-- ThemeService:createTheme("Test Theme3", "Test Description", "Test Grading Prompt", "Easy", 10, "Test Player")
+-- ThemeService:createTheme("Test Theme", "Test Description", "Test Grading Prompt", "Easy", 10, "Test Player")
+-- ThemeService:createTheme("Test Theme2", "Test Description", "Test Grading Prompt", "Easy", 10, "Test Player")
+-- ThemeService:createTheme("Test Theme3", "Test Description", "Test Grading Prompt", "Easy", 10, "Test Player")

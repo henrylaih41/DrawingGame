@@ -25,7 +25,7 @@ local headerBackgroundColor = Color3.fromRGB(40,40,40)
 --------------------------------------------------------------------
 -- PUBLIC ----------------------------------------------------------
 --------------------------------------------------------------------
-function LeaderboardBuilder.Create(container, totalRows, createRow, rowPerPage, topBarHeightScale, headerHeightScale)
+function LeaderboardBuilder.Create(container, totalRows, createRow, createFooter, rowPerPage, topBarHeightScale, headerHeightScale)
     assert(typeof(container) == "Instance", "Pass a valid TopLevelContainer")
     assert(typeof(totalRows) == "number"   and totalRows > 0, "totalRows must be > 0")
     assert(typeof(createRow) == "function", "createRow(name) must be a function")
@@ -175,41 +175,19 @@ function LeaderboardBuilder.Create(container, totalRows, createRow, rowPerPage, 
     end
 
     -- Player rank --
-    local playerRank = createRow("PlayerRank")
-    playerRank.Parent = container
-    playerRank.Position = UDim2.new(0,0,1-headerHeightScale,0)
-    playerRank.Size = UDim2.new(1,0,headerHeightScale,0)
-    playerRank.BorderSizePixel = 1
-    playerRank.BackgroundTransparency = headerTransparency
-    playerRank.BackgroundColor3 = headerBackgroundColor 
-    ----------------------------------------------------------------
-    -- 4. BUTTON BEHAVIOUR -----------------------------------------
-    ----------------------------------------------------------------
-    local currentPage = 1
-    local function updateLabel()
-        pageLbl.Text = string.format("%d / %d", currentPage, pageCount)
-    end
-    updateLabel()
-
-    prevBtn.MouseButton1Click:Connect(function()
-        if currentPage > 1 then
-            currentPage -= 1
-            pageLayout:JumpToIndex(currentPage - 1)
-            updateLabel()
-        end
-    end)
-
-    nextBtn.MouseButton1Click:Connect(function()
-        if currentPage < pageCount then
-            currentPage += 1
-            pageLayout:JumpToIndex(currentPage - 1)
-            updateLabel()
-        end
-    end)
+    local footer = createFooter("Footer")
+    footer.Parent = container
+    footer.Position = UDim2.new(0,0,1-headerHeightScale,0)
+    footer.Size = UDim2.new(1,0,headerHeightScale,0)
+    footer.BorderSizePixel = 1
+    footer.BackgroundTransparency = headerTransparency
+    footer.BackgroundColor3 = headerBackgroundColor 
 
     closeBtn.MouseButton1Click:Connect(function()
         container.Visible = false
     end)
+
+    return prevBtn, nextBtn, pageLbl, pageLayout
 end
 
 return LeaderboardBuilder

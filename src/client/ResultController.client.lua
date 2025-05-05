@@ -51,7 +51,7 @@ local feedbackButton, menuButton, bestScoreButton = nil, nil, nil
 ---    score = number,      -- The score (0-10) to display as stars.
 ---    feedback = string    -- The feedback text to display.
 --- }
-local function displayResults(playerScore, bestScore, theme)
+local function displayResults(playerScore, bestScore)
     assert(playerScore ~= nil, "Result data is nil")
     assert(playerScore.drawing ~= nil, "Result drawing is nil")
     assert(playerScore.score ~= nil, "Result score is nil")
@@ -172,14 +172,14 @@ local function initResultUI()
     log("Result UI initialized successfully")
 end
 
-local function updateDrawingDisplayForTheme(drawingData, theme)
+local function updateDrawingDisplayForTheme(drawingData)
     bestScoreCanvas:Clear()
     CanvasDisplay.displayDrawingData(bestScoreCanvas, drawingData.imageData)
     CanvasDisplay.updateStarDisplay(bestScoreTrophyContainer, drawingData.score, false)
 end
 
-Events.ReceiveNewBestDrawing.OnClientEvent:Connect(function(drawingData, theme)
-    updateDrawingDisplayForTheme(drawingData, theme)
+Events.ReceiveNewBestDrawing.OnClientEvent:Connect(function(drawingData)
+    updateDrawingDisplayForTheme(drawingData)
 end)
 
 -- Handle game state changes
@@ -202,7 +202,7 @@ Events.GameStateChanged.OnClientEvent:Connect(function(stateData)
         feedbackContainer.Visible = false
         bestScoreContainer.Visible = false
         -- Set the theme text
-        resultCanvasTopBar.Theme.Text = theme
+        resultCanvasTopBar.Theme.Text = theme.Name
         assert(resultUIInitialized, "ResultUI is not initialized")
         -- Ensure UI is initialized (might have been initialized above or previously)
         if not resultUIInitialized then initResultUI() end
@@ -212,7 +212,7 @@ Events.GameStateChanged.OnClientEvent:Connect(function(stateData)
         if stateData.playerScores then
             -- Store the results data
             -- Display the results for current player
-            displayResults(stateData.playerScores[tostring(LocalPlayer.UserId)], stateData.bestScore, theme)
+            displayResults(stateData.playerScores[tostring(LocalPlayer.UserId)], stateData.bestScore)
         else
             warn("ResultController: Received RESULTS state but no resultsData was provided.")
             -- Display error message or hide elements

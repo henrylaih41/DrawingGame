@@ -38,7 +38,7 @@ PlayerBestDrawingsStore.playerBestDrawingSchema = SchemaValidator.createSchema({
 })
 
 -- Function to get a player's drawing for a specific theme
-function PlayerBestDrawingsStore:getPlayerBestDrawing(player, theme_uuid)
+function PlayerBestDrawingsStore:getPlayerBestDrawing(player, theme_uuid: string)
     assert(player, "Missing player parameter")
     assert(theme_uuid, "Missing theme parameter")
     
@@ -91,7 +91,7 @@ function PlayerBestDrawingsStore:getPlayerBestDrawing(player, theme_uuid)
     end
 end
 
-function PlayerBestDrawingsStore:savePlayerBestDrawing(player, theme_uuid, drawingData)
+function PlayerBestDrawingsStore:savePlayerBestDrawing(player, theme_uuid: string, drawingData)
     assert(player, "Missing player parameter")
     assert(theme_uuid, "Missing theme parameter")
     assert(drawingData, "Missing drawingData parameter")
