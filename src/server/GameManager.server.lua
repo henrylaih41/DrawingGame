@@ -4,11 +4,15 @@
 -- Services
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
 local GameConfig = require(ReplicatedStorage.Modules.GameData.GameConfig)
+local PlayerStore = require(ServerScriptService.modules.PlayerStore)
+local TopPlaysStore = require(ServerScriptService.modules.TopPlaysStore)
+local PlayerBestDrawingsStore = require(ServerScriptService.modules.PlayerBestDrawingsStore)
 
 -- Modules
 local CanvasDraw = require(ReplicatedStorage.Modules.Canvas.CanvasDraw)
-local BackendService = require(ReplicatedStorage.Modules.Services.BackendService)
+local BackendService = require(ServerScriptService.modules.BackendService)
 local ThemeList = require(ReplicatedStorage.Modules.GameData.ThemeList)
 
 -- Constants
@@ -55,7 +59,7 @@ local function getPlayerData(player)
     local errorMessage = nil
     if not playerData then
         warn("Requesting player data for " .. player.Name .. " from datastore")
-        playerData, errorMessage = BackendService:getPlayer(player)
+        playerData, errorMessage = PlayerStore:getPlayer(player)
         assert(playerData, "Failed to get player data for " .. player.Name .. ": " .. tostring(errorMessage))
     end
     GameManager.playerData[player.UserId] = playerData
@@ -69,7 +73,7 @@ local function savePlayerData(player, playerData, flush)
         GameManager.playerData[player.UserId] = playerData
         if flush then
             -- Save to datastore
-            BackendService:savePlayer(player, playerData)
+            PlayerStore:savePlayer(player, playerData)
         end
         -- Notify the client
         Events.PlayerDataUpdated:FireClient(player, playerData)
@@ -224,7 +228,7 @@ end
 local function selfHealPlayer(player)
     local playerData = getPlayerData(player)
     if not playerData.topPlaysWithoutImage or (#playerData.topPlaysWithoutImage < GameConfig.TOP_PLAYS_LIMIT) then
-        local topPlays = BackendService:getTopPlays(player)
+        local topPlays = TopPlaysStore:getTopPlays(player)
         local topPlaysWithoutImage = topPlaysWithoutImageFromTopPlays(topPlays)
 
         playerData.topPlaysWithoutImage = topPlaysWithoutImage
@@ -238,7 +242,7 @@ local function sendTopPlaysToClient(player, topPlays)
 
     -- If no topPlays are provided, get them from the backend.
     if not topPlays then
-        topPlays, errorMessage = BackendService:getTopPlays(player)
+        topPlays, errorMessage = TopPlaysStore:getTopPlays(player)
         assert(topPlays, "Failed to get top plays for player " .. player.Name .. ": " .. tostring(errorMessage))
     else 
         table.sort(topPlays, function(a, b)
@@ -275,7 +279,7 @@ local function sendTopPlaysToClient(player, topPlays)
         end
         -- Self Healing
         playerData.TotalPoints = playerPoints
-        BackendService:savePlayer(player, playerData)
+        PlayerStore:savePlayer(player, playerData)
     end
     
     -- Send the data back to the requesting client
@@ -289,7 +293,7 @@ local function storeHighestScoringDrawing(player, theme, imageData, score, feedb
     -- Update this to use the theme_uuid instead of the theme name.
     local theme_uuid = theme
     -- Check if there's an existing drawing for this theme
-    local existingData, errorMessage = BackendService:getPlayerBestDrawing(player, theme)
+    local existingData, errorMessage = PlayerBestDrawingsStore:getPlayerBestDrawing(player, theme)
     local existingScore = 0
     local shouldSaveDrawing = false
     
@@ -323,7 +327,7 @@ local function storeHighestScoringDrawing(player, theme, imageData, score, feedb
             playerId = player.UserId
         }
 
-        local success, error = BackendService:savePlayerBestDrawing(player, theme, drawingData)
+        local success, error = PlayerBestDrawingsStore:savePlayerBestDrawing(player, theme, drawingData)
         if not success then
             warn("Failed to save player best drawing for theme '%s': %s", theme, error)
         end
@@ -334,11 +338,11 @@ local function storeHighestScoringDrawing(player, theme, imageData, score, feedb
         local playerData = getPlayerData(player)
 
         local shouldAddToTopPlays, replaceThemeUuid 
-            = BackendService:checkIfNewBestDrawingChangesTopPlays(playerData.topPlaysWithoutImage, drawingData)
+            = TopPlaysStore:checkIfNewBestDrawingChangesTopPlays(playerData.topPlaysWithoutImage, drawingData)
 
         if shouldAddToTopPlays then
             -- Get the real topPlays with ImageData
-            local topPlays = BackendService:getTopPlays(player)
+            local topPlays = TopPlaysStore:getTopPlays(player)
 
             if replaceThemeUuid then
                 -- Replace the old top play with the new one
@@ -363,7 +367,7 @@ local function storeHighestScoringDrawing(player, theme, imageData, score, feedb
             end
 
             savePlayerData(player, playerData)
-            BackendService:saveTopPlays(player, topPlays)
+            TopPlaysStore:saveTopPlays(player, topPlays)
             -- Send the new top plays to the client.
             sendTopPlaysToClient(player, topPlays)
         end
@@ -477,7 +481,7 @@ local function startGame()
         assert(player, "No player found in active players")
 
         -- Get the current best score for the theme
-        local bestScoreData, errorMessage = BackendService:getPlayerBestDrawing(player, currentTheme)
+        local bestScoreData, errorMessage = PlayerBestDrawingsStore:getPlayerBestDrawing(player, currentTheme)
         local bestScore = nil   
 
         -- If there is no best score, this means that the player has not submitted a drawing yet.
@@ -620,8 +624,6 @@ local function handleStartGame(player, requestedGameMode)
     -- Start the game
     task.spawn(startGame)
 end
-
-
 
 -- Initialize
 local function init()

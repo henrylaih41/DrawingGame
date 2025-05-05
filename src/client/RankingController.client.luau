@@ -1,21 +1,17 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Modules = ReplicatedStorage:WaitForChild("Modules")
 local LeaderBoardBuilder = require(ReplicatedStorage.Modules.Utils.LeaderBoardBuilder)
 
 -- Get references to UI elements
 local PlayerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
-local SocialService = game:GetService("SocialService")
 local RankingScreen = PlayerGui:WaitForChild("RankingScreen")
 local TopLevelContainer = RankingScreen:WaitForChild("TopLevelContainer")
 local rowTemplate = ReplicatedStorage:WaitForChild("UI"):WaitForChild("PlayerRankRow")
 
-local MAX_ROWS = 100 -- TODO: Get from server.
-local ROWS_PER_PAGE = 10
+local MAX_ROWS = 100 -- TODO: Get from server or read from game config.
+local ROWS_PER_PAGE = 20
 
 -- Set up events
 local Events = ReplicatedStorage:WaitForChild("Events")
-local RequestTopScoresEvent = Events:WaitForChild("RequestTopScores")
-local ReceiveTopScoresEvent = Events:WaitForChild("ReceiveTopScores")
 local LocalPlayer = game:GetService("Players").LocalPlayer
 
 local function createRow(name)
@@ -30,7 +26,7 @@ local function createRow(name)
 end
 
 local function initRankingUI()
-    local row_per_page = 20
+    local row_per_page = ROWS_PER_PAGE
     LeaderBoardBuilder.Create(TopLevelContainer, MAX_ROWS, createRow, row_per_page)
     local pageContainer = TopLevelContainer:FindFirstChild("PageContainer")
     local header = TopLevelContainer:FindFirstChild("Header")

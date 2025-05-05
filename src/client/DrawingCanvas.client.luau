@@ -14,7 +14,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players           = game:GetService("Players")
 local UserInputService  = game:GetService("UserInputService")
 local GuiService        = game:GetService("GuiService")
-local RunService        = game:GetService("RunService")
 
 local Color       = require(ReplicatedStorage.Modules.Canvas.ColorPicker)
 local DebugUtils  = require(ReplicatedStorage.Modules.Services.DebugUtils)

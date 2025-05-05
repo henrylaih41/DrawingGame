@@ -12,7 +12,8 @@ local OVERFLOW_FETCH      = MAX_ROWS + 1       -- grab one extra to trim
 --------------------------------------------------------------------
 local MS  = game:GetService("MemoryStoreService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local BackendService = require(ReplicatedStorage.Modules.Services.BackendService)
+local ServerScriptService = game:GetService("ServerScriptService")
+local PlayerStore = require(ServerScriptService.modules.PlayerStore)
 local Events = ReplicatedStorage:WaitForChild("Events")
 
 local TopMap     = MS:GetSortedMap(TOP_MAP_NAME)
@@ -77,7 +78,7 @@ end
 game.Players.PlayerAdded:Connect(function(plr)
     -- simple debounce: one read per join
     task.spawn(function()
-        local playerData = BackendService:getPlayer(plr)
+        local playerData = PlayerStore:getPlayer(plr)
         local points = playerData["TotalPoints"]
 
         -- fetch 100-th score once to compare (cheap)
@@ -98,7 +99,7 @@ game.Players.PlayerAdded:Connect(function(plr)
 end)
 
 Events.RequestTopScores.OnServerEvent:Connect(function(player)
-    local playerData = BackendService:getPlayer(player)
+    local playerData = PlayerStore:getPlayer(player)
     local topScores = TopMap:GetRangeAsync(Enum.SortDirection.Descending, MAX_ROWS)
     Events.ReceiveTopScores:FireClient(player, topScores, playerData)
 end)
