@@ -8,7 +8,7 @@ local RankingScreen = PlayerGui:WaitForChild("RankingScreen")
 local TopLevelContainer = RankingScreen:WaitForChild("TopLevelContainer")
 local rowTemplate = ReplicatedStorage:WaitForChild("UI"):WaitForChild("PlayerRankRow")
 
-local MAX_ROWS = GameConfig.RANKING_LIMIT -- TODO: Get from server or read from game config.
+local MAX_ROWS = GameConfig.RANKING_LIMIT
 local ROWS_PER_PAGE = GameConfig.ROWS_PER_PAGE
 
 -- Set up events

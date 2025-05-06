@@ -508,7 +508,7 @@ GameStateChangedEvent.OnClientEvent:Connect(function(stateData)
     currentGameState = newState
 
     if newState == "DRAWING" then
-        local theme = stateData.theme.Name
+        local theme = stateData.theme.Name .. " [" .. stateData.theme.Difficulty .. "]"
         log("Drawing phase started")
         if not canvasInitialized then initCanvas() end
         if timerRotateScript then

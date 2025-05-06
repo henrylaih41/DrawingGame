@@ -13,7 +13,6 @@ local PlayerBestDrawingsStore = require(ServerScriptService.modules.PlayerBestDr
 -- Modules
 local CanvasDraw = require(ReplicatedStorage.Modules.Canvas.CanvasDraw)
 local BackendService = require(ServerScriptService.modules.BackendService)
-local ThemeList = require(ReplicatedStorage.Modules.GameData.ThemeList)
 local ThemeStore = require(ServerScriptService.modules.ThemeStore)
 
 -- Constants
@@ -58,7 +57,6 @@ local function getPlayerData(player)
     local playerData = GameManager.playerData[player.UserId]
     local errorMessage = nil
     if not playerData then
-        warn("Requesting player data for " .. player.Name .. " from datastore")
         playerData, errorMessage = PlayerStore:getPlayer(player)
         assert(playerData, "Failed to get player data for " .. player.Name .. ": " .. tostring(errorMessage))
     end
@@ -215,6 +213,7 @@ local function topPlaysWithoutImageFromTopPlays(topPlays)
             points = topPlay.points,
             timestamp = topPlay.timestamp,
             theme_uuid = topPlay.theme_uuid,
+            theme_difficulty = topPlay.theme_difficulty,
             playerId = topPlay.playerId,
             imageData = nil
         }
@@ -262,7 +261,8 @@ local function sendTopPlaysToClient(player, topPlays)
             imageData = imageData,
             score = playerBestDrawing.score,
             feedback = playerBestDrawing.feedback,
-            theme = playerBestDrawing.theme
+            theme = playerBestDrawing.theme,
+            theme_difficulty = playerBestDrawing.theme_difficulty
         }
         bestDrawings[i] = drawingData
     end
@@ -285,7 +285,6 @@ local function sendTopPlaysToClient(player, topPlays)
     -- Send the data back to the requesting client
     Events.ReceiveTopPlays:FireClient(player, bestDrawings)
     Events.PlayerDataUpdated:FireClient(player, playerData)
-    debugPrint("Sent best drawings data to %s for %d themes", player.Name, #ThemeList)
 end
 
 -- imageData is a compressed image data returned by CompressImageDataCustom.
@@ -314,13 +313,13 @@ local function storeHighestScoringDrawing(player, theme, imageData, score, feedb
     
     -- Save the drawing if needed
     if shouldSaveDrawing then
-        warn("Saving new drawing for theme '%s'", theme)
         local drawingData = {
             imageData = imageData,
             points = score,
             score = score,
             timestamp = os.time(),
             theme = theme.Name,
+            theme_difficulty = theme.Difficulty,
             theme_uuid = theme.uuid,
             playerId = player.UserId
         }
@@ -461,8 +460,6 @@ local function startGame(theme_uuid)
     
     local currentTheme = ThemeStore:getTheme(theme_uuid)
 
-    warn(currentTheme)
-
     -- === DRAWING PHASE ===
     transitionToState(GameState.DRAWING, {theme = currentTheme})
     runDrawingPhase(currentTheme)
@@ -484,7 +481,7 @@ local function startGame(theme_uuid)
         -- If there is no best score, this means that the player has not submitted a drawing yet.
         if not bestScoreData then
             if errorMessage then
-                warn("Error getting best score for theme %s: %s", currentTheme, errorMessage)
+                -- warn("Error getting best score for theme %s: %s", currentTheme, errorMessage)
             end
             bestScore = {
                 drawing = nil,
@@ -643,20 +640,5 @@ end
 -- Start the module
 init()
 
--- One time creation
--- local ThemeService = require(ServerScriptService.modules.ThemeService)
--- ThemeService:createTheme("Test Theme", "Test Description", "Test Grading Prompt", "Easy", 10, "Test Player")
--- ThemeService:createTheme("Test Theme2", "Test Description", "Test Grading Prompt", "Easy", 10, "Test Player")
--- ThemeService:createTheme("Test Theme3", "Test Description", "Test Grading Prompt", "Easy", 10, "Test Player")
--- ThemeService:createTheme("Test Theme", "Test Description", "Test Grading Prompt", "Easy", 10, "Test Player")
--- ThemeService:createTheme("Test Theme2", "Test Description", "Test Grading Prompt", "Easy", 10, "Test Player")
--- ThemeService:createTheme("Test Theme3", "Test Description", "Test Grading Prompt", "Easy", 10, "Test Player")
--- ThemeService:createTheme("Test Theme", "Test Description", "Test Grading Prompt", "Easy", 10, "Test Player")
--- ThemeService:createTheme("Test Theme2", "Test Description", "Test Grading Prompt", "Easy", 10, "Test Player")
--- ThemeService:createTheme("Test Theme3", "Test Description", "Test Grading Prompt", "Easy", 10, "Test Player")
--- ThemeService:createTheme("Test Theme", "Test Description", "Test Grading Prompt", "Easy", 10, "Test Player")
--- ThemeService:createTheme("Test Theme2", "Test Description", "Test Grading Prompt", "Easy", 10, "Test Player")
--- ThemeService:createTheme("Test Theme3", "Test Description", "Test Grading Prompt", "Easy", 10, "Test Player")
--- ThemeService:createTheme("Test Theme", "Test Description", "Test Grading Prompt", "Easy", 10, "Test Player")
--- ThemeService:createTheme("Test Theme2", "Test Description", "Test Grading Prompt", "Easy", 10, "Test Player")
--- ThemeService:createTheme("Test Theme3", "Test Description", "Test Grading Prompt", "Easy", 10, "Test Player")
+-- local ThemeLoader = require(ServerScriptService.modules.ThemeLoader)
+-- ThemeLoader:loadThemes()

@@ -33,6 +33,7 @@ PlayerBestDrawingsStore.playerBestDrawingSchema = SchemaValidator.createSchema({
     points = { type = "number", required = true }, -- Added points field
     timestamp = { type = "number", required = true },
     theme = { type = "string", required = true },
+    theme_difficulty = { type = "string", required = true },
     theme_uuid = { type = "string", required = true }, -- Added theme_uuid field
     playerId = { type = "number", required = true }
 })

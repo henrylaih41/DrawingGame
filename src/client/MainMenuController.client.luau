@@ -3,7 +3,6 @@ local Modules = ReplicatedStorage:WaitForChild("Modules")
 local Utils = Modules:WaitForChild("Utils")
 local ButtonEffects = require(Utils:WaitForChild("ButtonEffects"))
 local Players= game:GetService("Players")
-local ThemeList = require(ReplicatedStorage.Modules.GameData.ThemeList)
 local CanvasDraw = require(ReplicatedStorage.Modules.Canvas.CanvasDraw)
 local CanvasDisplay = require(ReplicatedStorage.Modules.Canvas.CanvasDisplay)
 local GameConfig = require(ReplicatedStorage.Modules.GameData.GameConfig)
@@ -14,6 +13,7 @@ local MainMenuScreen = PlayerGui:WaitForChild("MainMenuScreen")
 local ThemeListScreen = PlayerGui:WaitForChild("ThemeListScreen")
 local RankingScreenTopLevelContainer = PlayerGui:WaitForChild("RankingScreen"):WaitForChild("TopLevelContainer")
 local TopLevelContainer = MainMenuScreen:WaitForChild("TopLevelContainer")
+local LoadTheme = TopLevelContainer:WaitForChild("LoadTheme")
 local BestScores = TopLevelContainer:WaitForChild("BestScores")
 local Buttons = TopLevelContainer:WaitForChild("Buttons")
 local SinglePlayerButton = Buttons:WaitForChild("SinglePlayerButton")
@@ -191,11 +191,14 @@ local function updateDrawingDisplayForRank(drawingData, rank)
     local Loading = container:FindFirstChild("CanvasFrame"):FindFirstChild("Loading")
     Loading.Visible = false
     container.Visible = false
-
     -- Update the container with drawing data if available
     -- If there is no previous scores, the drawingData will be nil
     if drawingData and drawingData.imageData then
-        label.Text = drawingData.theme
+        local title = drawingData.theme
+        if drawingData.theme_difficulty then
+            title = title .. " [" .. drawingData.theme_difficulty .. "]"
+        end
+        label.Text = title
         -- 1. Fetch the containerFrames and other UI elements
         local trophyContainer = container:FindFirstChild("TrophyFrame"):FindFirstChild("TrophyContainer")
         -- 2. Display the drawing
@@ -229,10 +232,27 @@ local function onRankingClicked()
     RankingScreenTopLevelContainer.Visible = not RankingScreenTopLevelContainer.Visible
 end
 
+local theme_uuids = {}
+
+Events.ReceiveThemeListPage.OnClientEvent:Connect(function(themeList)
+    for _, theme in ipairs(themeList) do
+        table.insert(theme_uuids, theme.value.uuid)
+    end
+end)
+
 -- Function to handle SinglePlayer button click
 local function onStartClicked()
-    local ThemeListTopLevelContainer = ThemeListScreen:WaitForChild("TopLevelContainer")
-    ThemeListTopLevelContainer.Visible = true 
+    if #theme_uuids == 0 then
+        warn("No themes found")
+        return
+    end
+
+    -- Select a random theme from the list
+    local randomIndex = math.random(1, #theme_uuids)
+    local theme_uuid = theme_uuids[randomIndex]
+    StartGameEvent:FireServer(theme_uuid)
+    -- local ThemeListTopLevelContainer = ThemeListScreen:WaitForChild("TopLevelContainer")
+    -- ThemeListTopLevelContainer.Visible = true 
 end
 
 -- Function to handle MultiPlayer button click
@@ -306,6 +326,15 @@ local function cleanup()
 end
 
 initialize()
+
+-- Check for Admin
+if Players.LocalPlayer.UserId == 8240890430 then
+    LoadTheme.Visible = true
+    LoadTheme.MouseButton1Click:Connect(function()
+        warn("Loading theme")
+        Events.AdminCommand:FireServer("LoadTheme")
+    end)
+end
 
 -- Return cleanup function if needed by a parent system
 return cleanup 

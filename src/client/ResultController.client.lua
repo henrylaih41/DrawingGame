@@ -202,7 +202,10 @@ Events.GameStateChanged.OnClientEvent:Connect(function(stateData)
         feedbackContainer.Visible = false
         bestScoreContainer.Visible = false
         -- Set the theme text
-        resultCanvasTopBar.Theme.Text = theme.Name
+        resultCanvasTopBar.Theme.Text = theme.Name 
+        if theme.Difficulty then
+            resultCanvasTopBar.Theme.Text = resultCanvasTopBar.Theme.Text .. " [" .. theme.Difficulty .. "]"
+        end
         assert(resultUIInitialized, "ResultUI is not initialized")
         -- Ensure UI is initialized (might have been initialized above or previously)
         if not resultUIInitialized then initResultUI() end

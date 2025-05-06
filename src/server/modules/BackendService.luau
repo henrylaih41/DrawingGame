@@ -52,7 +52,7 @@ function BackendService:SendOpenAIRequest(compressedImageData, prompt, theme, pl
         prompt = prompt,
         metadata = {
             playerId = playerId,
-            theme = theme.Name  -- Move theme into metadata
+            theme = theme.Name
         }
     }
     
@@ -146,7 +146,7 @@ function BackendService:submitDrawingToBackendForGrading(player, imageData, them
         return nil, "Failed to compress image data"
     end
 
-    local prompt = "The theme is " .. theme.Name
+    local prompt = "The theme is " .. theme.Name .. " and the guideline is " .. theme.GradingPrompt
 
     if not prompt then
         warn("submitDrawingToBackendForGrading failed to get prompt for player: " .. player.Name .. " with theme: " .. tostring(theme))

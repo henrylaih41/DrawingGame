@@ -93,10 +93,6 @@ function TopPlaysStore:saveTopPlays(player, topPlays)
         end
     end
 
-    -- Log the topPlays bytes
-    local dataSize = #HttpService:JSONEncode(topPlays)
-    warn("Writing %d bytes to TopPlays for key: %s", dataSize, "Player_" .. playerId)
-
     local success, error = DataStoreHelper:_performDataStoreOperationWithRetry(
         TopPlaysDataStore,
         "SetAsync",

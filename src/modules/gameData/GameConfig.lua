@@ -1,5 +1,5 @@
 local GameConfig = {
-    TOP_PLAYS_LIMIT = 3,
+    TOP_PLAYS_LIMIT = 30,
     RANKING_LIMIT = 100,
     ROWS_PER_PAGE = 20,
     THEME_LIST_LIMIT = 100,

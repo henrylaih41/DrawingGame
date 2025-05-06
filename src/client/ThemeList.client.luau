@@ -102,8 +102,6 @@ local function initRankingUI()
     header.DescriptionLabel.Text = "Description"
     header.DurationLabel.Text = "Duration"
     Events.ReceiveThemeListPage.OnClientEvent:Connect(function(themeList)
-        warn(themeList)
-        warn(#themeList)
         local pageFrame = nil 
         for i, theme in ipairs(themeList) do
             theme = theme.value

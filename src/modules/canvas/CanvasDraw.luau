@@ -413,7 +413,7 @@ function CanvasDraw.new(Parent: ParentType, Resolution: Vector2, CanvasColour: C
 		AutoRender = true,
 		GridTransparency = 1,
 		GridColour = Color3.new(1, 1, 1),
-		AutoRenderFpsLimit = 0,
+		AutoRenderFpsLimit = 30,
 		AlphaBlendingMode = 0,
 		Id = HttpService:GenerateGUID(false),
 		-- DEPRECATRED
