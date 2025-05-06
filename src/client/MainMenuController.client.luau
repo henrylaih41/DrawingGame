@@ -11,7 +11,8 @@ local GameConfig = require(ReplicatedStorage.Modules.GameData.GameConfig)
 local PlayerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
 local MainMenuScreen = PlayerGui:WaitForChild("MainMenuScreen")
 local ThemeListScreen = PlayerGui:WaitForChild("ThemeListScreen")
-local RankingScreenTopLevelContainer = PlayerGui:WaitForChild("RankingScreen"):WaitForChild("TopLevelContainer")
+local RankingScreen = PlayerGui:WaitForChild("RankingScreen")
+local RankingScreenTopLevelContainer = RankingScreen:WaitForChild("TopLevelContainer")
 local TopLevelContainer = MainMenuScreen:WaitForChild("TopLevelContainer")
 local LoadTheme = TopLevelContainer:WaitForChild("LoadTheme")
 local BestScores = TopLevelContainer:WaitForChild("BestScores")
@@ -176,6 +177,7 @@ local function setupBestScoresUI()
 
         local canvasFrame = container:FindFirstChild("CanvasFrame")
         local canvas = CanvasDraw.new(canvasFrame, Vector2.new(math.ceil(canvasFrame.AbsoluteSize.X), math.ceil(canvasFrame.AbsoluteSize.Y)))
+        canvas.AutoRenderFpsLimit = 1
         bestScoresCanvasContainerByRank[i] = {container = container, canvas = canvas}
     end
 
@@ -230,6 +232,11 @@ end
 
 local function onRankingClicked()
     RankingScreenTopLevelContainer.Visible = not RankingScreenTopLevelContainer.Visible
+    if RankingScreenTopLevelContainer.Visible then
+        RankingScreen.Enabled = true
+    else
+        RankingScreen.Enabled = false
+    end
 end
 
 local theme_uuids = {}
