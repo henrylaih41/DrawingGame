@@ -268,8 +268,10 @@ local function onGameStateChanged(stateData)
         
         -- Show main menu only when in MAIN_MENU state, hide otherwise
         if stateData.state == GameState.MAIN_MENU then
+            MainMenuScreen.Enabled = true
             TopLevelContainer.Visible = true
         else
+            MainMenuScreen.Enabled = false
             TopLevelContainer.Visible = false
         end
     end
