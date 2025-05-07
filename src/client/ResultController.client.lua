@@ -64,6 +64,7 @@ local function displayResults(playerScore, bestScore)
 
     -- Display the winning drawing
     CanvasDisplay.displayDrawingData(resultCanvas, playerScore.drawing)
+    resultCanvas:Render()
 
     -- Update the star rating
     CanvasDisplay.updateStarDisplay(resultTrophyContainer, playerScore.score, true)
@@ -79,6 +80,7 @@ local function displayResults(playerScore, bestScore)
     if bestScore.drawing then
         -- -- Update the best score canvas
         CanvasDisplay.displayDrawingData(bestScoreCanvas, bestScore.drawing)
+        bestScoreCanvas:Render()
         log("Best score" .. bestScore.score)
         CanvasDisplay.updateStarDisplay(bestScoreTrophyContainer, bestScore.score, false)
     else 
@@ -154,6 +156,7 @@ local function initResultUI()
         local canvasWidth, canvasHeight = math.ceil(resultCanvasFrame.AbsoluteSize.X), math.ceil(resultCanvasFrame.AbsoluteSize.Y)
         local scaledWidth, scaledHeight, _ = CanvasDraw.scaleCanvasDimensions(canvasWidth, canvasHeight)
         resultCanvas = CanvasDraw.new(resultCanvasFrame, Vector2.new(scaledWidth, scaledHeight))
+        resultCanvas.AutoRenderFpsLimit = 1
          log("Canvas: Created")
     else
          log("Canvas: Already exists")
@@ -163,6 +166,7 @@ local function initResultUI()
         local canvasWidth, canvasHeight = math.ceil(resultCanvasFrame.AbsoluteSize.X), math.ceil(resultCanvasFrame.AbsoluteSize.Y)
         local scaledWidth, scaledHeight, _ = CanvasDraw.scaleCanvasDimensions(canvasWidth, canvasHeight)
         bestScoreCanvas = CanvasDraw.new(bestScoreCanvasFrame, Vector2.new(scaledWidth, scaledHeight))
+        bestScoreCanvas.AutoRenderFpsLimit = 1
         log("Best Score Canvas: Created")
     else
         log("Best Score Canvas: Already exists")

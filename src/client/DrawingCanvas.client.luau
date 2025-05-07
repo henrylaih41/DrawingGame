@@ -455,7 +455,12 @@ local function initCanvas()
         prevX, prevY = x, y
     end
 
-    UserInputService.InputBegan:Connect(function(i)
+    -- Store UserInputService connections to manage their lifecycle
+    local uisInputBeganConnection
+    local uisInputChangedDrawingConnection
+    local uisInputEndedConnection
+
+    uisInputBeganConnection = UserInputService.InputBegan:Connect(function(i)
         if currentGameState=="DRAWING" and (i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch) then
             local pos = Vector2.new(i.Position.X, i.Position.Y)
             local inset = drawingScreen.IgnoreGuiInset and Vector2.new(0,0) or GuiService:GetGuiInset()
@@ -470,7 +475,7 @@ local function initCanvas()
         end
     end)
 
-    UserInputService.InputChanged:Connect(function(i)
+    uisInputChangedDrawingConnection = UserInputService.InputChanged:Connect(function(i)
         if IS_DRAWING and 
             (i.UserInputType==Enum.UserInputType.MouseMovement or
              i.UserInputType==Enum.UserInputType.Touch) and
@@ -479,7 +484,7 @@ local function initCanvas()
         end
     end)
 
-    UserInputService.InputEnded:Connect(function(i)
+    uisInputEndedConnection = UserInputService.InputEnded:Connect(function(i)
         if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then
             if IS_DRAWING then
                 log("Taking snapshot input ended")
@@ -490,6 +495,23 @@ local function initCanvas()
             showActiveIndicator(false, Vector2.zero)
             prevX, prevY = nil, nil
         end
+    end)
+
+    -- Add a cleanup function for these UserInputService connections
+    table.insert(uiConnections, function()
+        if uisInputBeganConnection then
+            uisInputBeganConnection:Disconnect()
+            uisInputBeganConnection = nil
+        end
+        if uisInputChangedDrawingConnection then
+            uisInputChangedDrawingConnection:Disconnect()
+            uisInputChangedDrawingConnection = nil
+        end
+        if uisInputEndedConnection then
+            uisInputEndedConnection:Disconnect()
+            uisInputEndedConnection = nil
+        end
+        log("Cleaned up UserInputService connections for drawing canvas")
     end)
 end
 

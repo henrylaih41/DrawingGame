@@ -5,241 +5,192 @@ local ThemeLoader = {}
 
 function ThemeLoader:loadThemes()
     ThemeService:createTheme(
-        "Dog", 
-        "Draw your favorite dog!",
+        "Mountains", 
+        "",
         [[
-    Score 1: Page is almost blank or random lines that don't look like a dog. Little to no effort or recognisable subject.
-    Score 2: Rough dog blob, missing face or legs. Dog attempt exists but is barely formed.
-    Score 3: Basic dog outline (head + body) but off-balance; one flat color. Dog shape is there but details and proportions are weak.
-    Score 4: Clear dog silhouette with simple face; stiff pose; few colors. Recognisable dog, minor mistakes, limited detail.
-    Score 5: Well-proportioned dog, basic fur texture or spots; maybe a ground line. Solid effort with correct parts, some personality showing.
-    Score 6: Balanced body, hints of a real breed, clean lines, 2+ colors, small background (e.g., grass). Good fundamentals plus extra touches.
-    Score 7: Expressive face, dynamic pose, shading or bold line weight; fun add-ons (collar, toy). Strong anatomy and creativity working together.
-    Score 8: Strong breed likeness, smooth shading/fur strokes, cool backdrop that tells a mini-story. Skilled technique and thoughtful scene.
-    Score 9: Spot-on anatomy, consistent light source, rich textures, engaging action (frisbee catch). Nearly professional quality with depth and motion.
-    Score 10: Perfect proportions, polished highlights/shadows, detailed environment, wow-factor originality. Professional-level finish—nothing to fix!]],
+        Score 1: Page mostly blank or random marks; no recognizable peaks; effort extremely low. Tip: Block in one big triangle so viewers see a mountain.
+Score 2: Single rough triangle suggests a hill; missing snowcaps, ridges, or horizon; no color; empty sky. Add: more triangles and outline a horizon line.
+Score 3: Basic mountain range (two–three peaks) drawn; uneven lines; one flat color; no depth; sky blank. Next: vary peak sizes and shade one side darker.
+Score 4: Peaks show light vs. dark sides; simple snowcaps or trees added; two colors in use; background still bare. Improve: smooth outline and sketch clouds or a river.
+Score 5: Three or more colors; clear shading, tree line, and light source; tiny background detail (sun) present; perspective off. Refine: fade colors toward base to add depth.
+Score 6: Range has foreground and background peaks; blended colors or gradients; sky with clouds or birds; anatomy good but rocky texture rough. Polish: use broken lines for crags and add cast shadows.
+Score 7: Dynamic composition—overlapping peaks, mist layers, river valley; consistent lighting; textures varied (rock, snow, forest); minor proportion slips. Push: soften distant mountains with lighter tones.
+Score 8: High detail: crisp ridges, believable shadows, atmospheric depth; rich color blending; compelling background story (sunset hike, cabin). Tweak: highlight edge glow where sun hits peaks.
+Score 9: Professional polish; dramatic lighting, foreground trees, midground lake, distant peaks; imaginative twist (crystal peaks, floating islands) executed smoothly; only tiny line bumps. Finish: erase stray marks, deepen reflections.
+Score 10: Stunning masterpiece—flawless perspective, cinematic lighting, perfect textures from rocky scree to wispy clouds; captivating narrative scene; poster quality. Judges have no fixes—keep creating!
+    ]],
         "Medium", 15, 
         "Server")
     ThemeService:createTheme(
-        "Dog", 
-        "Draw your favorite dog!",
+        "Movie", 
+        "",
         [[
-    Score 1: Page is blank or only squiggles. Boost: draw one big circle for the head.
-    Score 2: Stick dog: four lines and a blob. Boost: add two floppy ears and a tail.
-    Score 3: Dog shape but parts funny sizes. Boost: make head smaller than body; give four paws.
-    Score 4: Dog outline plus face dots. No color. Boost: color the body one solid shade.
-    Score 5: Easy-to-spot breed (long ears = beagle). Boost: bend legs or tail so it looks alive.
-    Score 6: Dog is running, sitting, or jumping. Boost: add one simple shadow under the paws.
-    Score 7: Happy face—tongue out or big smile. Boost: shade light side and dark side a little.
-    Score 8: Fun angle—dog looking up or sideways. Boost: add fur dots or spots on the coat.
-    Score 9: Lots of fur detail and shiny eyes. Boost: clean up shaky lines around paws.
-    Score 10: Looks like a poster—perfect pup with background (park or bed). Boost: keep going—you nailed it!
-        ]],
+Score 1: Mostly blank page or random marks—no movie vibe at all. Tip: Sketch a simple clapperboard so people know it’s film-related.
+Score 2: Rough outline of one object (film reel, popcorn, etc.)—shape sloppy, no colour, empty background. Tip: Add a second cinema item and trace over lines for cleaner edges.
+Score 3: Basic scene with 2–3 items (screen + seats, reel + tickets); flat single colour; no depth. Tip: Shade one side darker and place objects on a ground line for realism.
+Score 4: Complete theatre or set: screen, seats, maybe a director’s chair; two colours; small details like play button; perspective off. Tip: Smooth outlines and add a simple backdrop (curtains, stars).
+Score 5: Clear composition with characters watching or filming; three+ colours; light source hinted; tiny background detail (exit sign) present. Tip: Fade colour in distance to boost depth.
+Score 6: Dynamic camera angle; blended colours or gradients; props (camera tripod, popcorn tubs); sky or wall texture; textures a bit rough. Tip: Use dot/line patterns for carpet, add shadows under chairs.
+Score 7: Story moment (hero on red carpet, chase scene); consistent lighting; layered background (crowd, stage lights); minor anatomy slips. Tip: Soften far objects with lighter tones to show distance.
+Score 8: High detail: crisp reels, believable shadows, atmospheric lighting (spotlights); rich colour blending; engaging action. Tip: Add rim-light glow on edges touched by spotlights.
+Score 9: Pro-level polish; depth from foreground popcorn to distant screen; dramatic lighting (neon, lens flare); fun twist (retro 8-bit cinema) executed cleanly; only tiny line bumps. Tip: Erase stray marks, deepen reflections on shiny metal.
+Score 10: Show-stopping masterpiece—flawless perspective, cinematic lighting, perfect textures from velvet seats to wispy smoke; scene tells a full story. Judges can’t suggest fixes—just keep rolling!
+    ]],
+        "Medium", 15, 
+        "Server")
+    ThemeService:createTheme(
+        "Classroom", 
+        "",
+        [[
+Score 1: Page nearly blank or random marks—nothing says “classroom.” Tip: Draw a big rectangle for the board so viewers know where the lesson happens.
+Score 2: One rough object (desk, board, or book); shape wobbly, no color, empty background. Tip: Add a second object and trace over lines for cleaner edges.
+Score 3: Two–three items (teacher desk + board + chair); flat single color; no depth or floor line. Tip: Shade one side darker and add a horizon line to ground items.
+Score 4: Full room outline with several desks, windows, or door; two colors; small details like chalk. Perspective off. Tip: Smooth outlines and sketch posters, clocks, or a wastebasket for life.
+Score 5: Clear layout—rows of desks, teacher’s area, light source hinted; three+ colors; tiny background detail (class rules poster). Tip: Fade color toward back of room to show depth.
+Score 6: Depth shown: overlapping desks, blended colors or gradients; props (books, backpack); textures a bit rough. Tip: Add wood-grain lines on desks and shadows under chairs for realism.
+Score 7: Story moment (student raising hand, teacher pointing at board); consistent lighting; layered background (windows with trees). Minor anatomy slips. Tip: Soften distant objects with lighter tones and refine hand shapes.
+Score 8: High detail: neat desk rows, believable shadows, atmospheric light from windows; rich color blending; engaging scene. Tip: Add rim-light glow where sunlight hits edges and scribbles on notebooks.
+Score 9: Pro polish; depth from foreground backpack to far bulletin board; dramatic lighting (sunbeams, projector glow); fun twist (futuristic smartboard) executed cleanly; only tiny line bumps. Tip: Erase stray marks, deepen reflections on glossy floors.
+Score 10: Show-stopping masterpiece—flawless perspective, cinematic lighting, perfect textures from tiled ceiling to scuffed floor; scene tells a story (science experiment, group project). Judges can’t suggest fixes—keep shining!
+    ]],
+        "Medium", 15, 
+        "Server")
+    ThemeService:createTheme(
+        "Sea", 
+        "",
+        [[
+Score 1 - Page mostly blank or random marks; no playground vibe. Tip: Add one simple swing set outline so viewers know the theme.
+Score 2 - Single rough structure (slide or swing) with wobbly lines; no color; empty background. Tip: Draw a ground line and color the main object.
+Score 3 - Two or three items (slide + swing + seesaw); flat single color; no depth or sky. Tip: Shade undersides darker and add a horizon to anchor everything.
+Score 4 - Full play area outline with several pieces; two-three colors; tiny detail like ladder rungs; perspective off. Tip: Smooth outlines and add grass or sandbox border.
+Score 5 - Clear layout—multiple structures, kids’ path, hinted light source; three+ colors; small background (clouds, fence). Tip: Fade colors farther back to show distance.
+Score 6 - Foreground structure big and detailed; textured ground (wood chips, grass); simple figures (kid or dog); shadows basic. Tip: Dot texture on ground and add shadow beneath each piece.
+Score 7 - Story moment (child on swing, race down slide); consistent lighting; layered depth; minor shape slips. Tip: Soften far objects with lighter tones and refine figure limbs.
+Score 8 - Detailed equipment with bolts, ropes, realistic shadows; rich color blending; extra scene element (water fountain, picnic table); tiny errors only. Tip: Brighten highlight edges on metal bars.
+Score 9 - Pro polish; depth from foreground monkey bars to distant trees; dramatic lighting (sunset glow, lens flare); fun twist (space-themed play set) executed cleanly; minute line bumps. Tip: Erase stray marks and deepen reflections on shiny slides.
+Score 10 - Masterpiece—flawless perspective, vibrant colors, cinematic lighting, perfect textures from rubber mat to leafy trees; scene tells a joyful story; nothing to fix—keep creating!
+    ]],
+        "Medium", 15, 
+        "Server")
+    ThemeService:createTheme(
+        "Playground", 
+        "",
+        [[
+Score 1 - Page mostly blank or random marks; no playground vibe. Tip: Add one simple swing set outline so viewers know the theme.
+Score 2 - Single rough structure (slide or swing) with wobbly lines; no color; empty background. Tip: Draw a ground line and color the main object.
+Score 3 - Two or three items (slide + swing + seesaw); flat single color; no depth or sky. Tip: Shade undersides darker and add a horizon to anchor everything.
+Score 4 - Full play area outline with several pieces; two-three colors; tiny detail like ladder rungs; perspective off. Tip: Smooth outlines and add grass or sandbox border.
+Score 5 - Clear layout—multiple structures, kids’ path, hinted light source; three+ colors; small background (clouds, fence). Tip: Fade colors farther back to show distance.
+Score 6 - Foreground structure big and detailed; textured ground (wood chips, grass); simple figures (kid or dog); shadows basic. Tip: Dot texture on ground and add shadow beneath each piece.
+Score 7 - Story moment (child on swing, race down slide); consistent lighting; layered depth; minor shape slips. Tip: Soften far objects with lighter tones and refine figure limbs.
+Score 8 - Detailed equipment with bolts, ropes, realistic shadows; rich color blending; extra scene element (water fountain, picnic table); tiny errors only. Tip: Brighten highlight edges on metal bars.
+Score 9 - Pro polish; depth from foreground monkey bars to distant trees; dramatic lighting (sunset glow, lens flare); fun twist (space-themed play set) executed cleanly; minute line bumps. Tip: Erase stray marks and deepen reflections on shiny slides.
+Score 10 - Masterpiece—flawless perspective, vibrant colors, cinematic lighting, perfect textures from rubber mat to leafy trees; scene tells a joyful story; nothing to fix—keep creating!
+    ]],
+        "Medium", 15, 
+        "Server")
+    ThemeService:createTheme(
+        "Playground", 
+        "",
+        [[
+Score 1 - Page is mostly empty or scribbles; the playground idea hasn’t shown up yet.
+Score 2 - We spot one playground thing (maybe a lonely swing or slide) but lines are super rough and no color yet.
+Score 3 - Two or three simple pieces of gear appear—slide, swing, seesaw—colored with one shade. Shapes still wobbly, background blank.
+Score 4 - Whole play space outlined: several structures and a ground line or sky. A couple of colors pop in; details are loose but clear.
+Score 5 - Layout makes sense (rows of swings, sandbox corner). At least three colors, a hint of sunlight or shadows, and maybe grass or a fence.
+Score 6 - Bigger variety: tall slide up front, smaller stuff behind. Ground texture (wood chips or grass dots), a kid or pet doodled in, colors blended a bit.
+Score 7 - Scene tells a tiny story—friends racing down slides, kid mid-swing. Lighting looks consistent, and depth feels real even if proportions are off.
+Score 8 - Good detail on equipment (chains, ladder rungs), fun extras like benches or trees, and smoother shading. The whole drawing feels lively.
+Score 9 - Very polished: bold colors, clean lines, cool angle (bird’s-eye or low view). Maybe a twist—space-themed jungle gym or rainbow rubber floor. Only small slips visible.
+Score 10 - Wow factor! Everything clicks: dynamic composition, bright yet balanced colors, playful textures, and a clear story that grabs attention immediately.
+    ]],
+        "Easy", 10, 
+        "Server")
+
+    ThemeService:createTheme(
+        "Cat", 
+        "",
+        [[
+Score 1 - Page nearly blank or random lines—no hint of a kitty. Tip: Draw one circle for the head and two triangles for ears so viewers spot a cat right away.
+Score 2 - Basic cat outline (head + body blob); limbs or tail missing; no color; blank background. Tip: Add four legs and a tail, then trace lines for cleaner edges.
+Score 3 - Full-body cat with head, body, tail, four legs; single flat color; shapes stiff; background empty. Tip: Curve the spine, bend the tail, and give the face two big eyes for life.
+Score 4 - Cat pose looks natural; two–three colors (fur and eyes); tiny detail like whiskers; proportions off. Tip: Smooth outlines and add simple shading on one side for depth.
+Score 5 - Clear coat pattern (stripes, spots) or shading; expressive face; small background hint (pillow, grass). Tip: Fade colors on belly and inner ears to add softness.
+Score 6 - Dynamic pose—stretching, jumping, curled nap; fur texture implied with short strokes; background props (toy, window) present. Tip: Darken shadow under paws and highlight fur tips for shine.
+Score 7 - Scene tells a story (cat pawing yarn, stalking butterfly); consistent lighting; layered depth; minor anatomy slips. Tip: Lighten distant objects and refine paw shapes with tiny claws.
+Score 8 - Rich details: layered fur strokes, believable shadows, subtle color blending; environment (sunlit sill, moonlit roof) enhances mood. Tip: Add faint fur direction lines around joints and brighten eye highlights.
+Score 9 - Polished composition—foreground whiskers sharp, midground cat body, soft background; dramatic lighting (sunbeam, neon glow); fun twist (cyber-cat armor) executed cleanly. Tip: Erase stray sketch marks and deepen reflections in eyes or metal.
+Score 10 - Purr-fect masterpiece—flawless anatomy, silky fur rendering, cinematic lighting, engaging narrative; every element intentional from claw scratches to reflected highlights. Judges can’t suggest improvements—just keep prowling!
+    ]],
+        "Medium", 15, 
+        "Server")
+    ThemeService:createTheme(
+        "Cat", 
+        "",
+        [[
+Score 1 – Page pretty much blank or random scribbles—no cat energy yet.
+Score 2 – One quick shape (circle + ears) hints at a kitty, but that’s it—no face, no color.
+Score 3 – Full kitty outline (head, body, tail) appears. Lines shaky, no shading, background empty.
+Score 4 – Kitty has a cute face and maybe whiskers or stripes. One or two colors pop in.
+Score 5 – Pose feels natural (sitting, stretching). Three-ish colors, tiny detail like paw pads or a toy.
+Score 6 – Fun vibe: playful tail curl, basic shading, small background (pillow, grass).
+Score 7 – Story moment—cat chasing yarn or napping in sun. Colors blend a bit, lighting makes sense.
+Score 8 – Nice fur texture or pattern, bright eyes, extra props (butterfly, window sill). Everything ties together.
+Score 9 – Polished piece: clean lines, bold colors, cool angle (close-up or dramatic side view). Almost nothing looks off.
+Score 10 – Total show-stopper—instantly reads “cat,” oozes personality, great colors and shading, feels ready for a poster.
+    ]],
         "Easy", 10, 
         "Server")
     ThemeService:createTheme(
-        "Superhero", 
-        "Draw a superhero!",
+        "Cat", 
+        "",
         [[
-        Score 1: Page mostly blank or random marks. No clear hero or effort shown.
-    Score 2: Rough stick-figure with hint of cape or mask. Subject exists but anatomy and costume are missing.
-    Score 3: Basic human outline, stiff stance, single color. Hero shape visible, but poor proportions and flat look.
-    Score 4: Recognisable silhouette with simple emblem; minimal face detail. Clearer form yet little motion or shading.
-    Score 5: Well-proportioned body, two-color suit, flat background line. Solid fundamentals; starts feeling “comic.”
-    Score 6: Balanced muscles, slight action pose, 3+ colors, skyline or burst. Adds energy and palette variety.
-    Score 7: Dynamic foreshortened pose, emblem pops, basic shadows/highlights. Shows depth and bold movement.
-    Score 8: Cohesive color scheme, functional costume parts, city scene hints. Strong design sense and storytelling.
-    Score 9: Consistent light source, muscle shading, dramatic perspective, action lines. Near-pro finish with texture and drama.
-    Score 10: Perfect anatomy, polished highlights, intricate background, fresh heroic concept. Professional quality—nothing left to improve!
-        ]],
-        "Medium", 15, 
-        "Server")
-    ThemeService:createTheme(
-        "Superhero", 
-        "Draw a superhero!",
-        [[
-    Score 1: Blank page or random lines. Boost: sketch one big stick figure first.
-    Score 2: Stick person, no costume. Boost: add a cape or mask so we know it’s a hero.
-    Score 3: Hero outline but odd sizes. Boost: make head smaller than chest; add two fists.
-    Score 4: Clear costume shape, no color. Boost: fill suit with one bold color.
-    Score 5: Iconic bits—logo, mask, or cape flap. Boost: tilt body like it’s flying or landing.
-    Score 6: Action pose—punch, jump, or flight. Boost: add one simple shadow on ground.
-    Score 7: Power effect—lightning, fire, or glow. Boost: shade light side and dark side a little.
-    Score 8: Cool angle—hero leaping toward us. Boost: add small background (city roof, sky).
-    Score 9: Extra detail—muscle lines, armor shine. Boost: clean shaky edges and refine logo.
-    Score 10: Poster-ready: perfect hero, cool backdrop, wow factor. Boost: keep it up—you’re a comic pro!
-        ]],
+Score 1 – Page pretty much blank or random scribbles—no cat energy yet.
+Score 2 – One quick shape (circle + ears) hints at a kitty, but that’s it—no face, no color.
+Score 3 – Full kitty outline (head, body, tail) appears. Lines shaky, no shading, background empty.
+Score 4 – Kitty has a cute face and maybe whiskers or stripes. One or two colors pop in.
+Score 5 – Pose feels natural (sitting, stretching). Three-ish colors, tiny detail like paw pads or a toy.
+Score 6 – Fun vibe: playful tail curl, basic shading, small background (pillow, grass).
+Score 7 – Story moment—cat chasing yarn or napping in sun. Colors blend a bit, lighting makes sense.
+Score 8 – Nice fur texture or pattern, bright eyes, extra props (butterfly, window sill). Everything ties together.
+Score 9 – Polished piece: clean lines, bold colors, cool angle (close-up or dramatic side view). Almost nothing looks off.
+Score 10 – Total show-stopper—instantly reads “cat,” oozes personality, great colors and shading, feels ready for a poster.
+    ]],
         "Easy", 10, 
         "Server")
     ThemeService:createTheme(
-        "Cartoon & Anime Characters", 
-        "Bring your favorite Cartoon & Anime heroes to life!",
-        [[
-        Score 1: Empty page or random scribbles. No shapes link to any known character; very limited effort, color, or detail.
-    Score 2: Rough stick-figure or blob that might be a character. Key parts missing (e.g., no face or limbs), single dull color, messy lines, little time spent.
-    Score 3: Basic silhouette hints at someone—“oh, that could be Pikachu”—but features are off-proportion. Minimal colors, lines shaky, no background.
-    Score 4: Core traits are present (e.g., big round ears, spiky anime hair) and body is sized okay. Flat colors fill most shapes, with tiny details still wrong or missing.
-    Score 5: Clearly that character! Full flat color palette, complete outfit or symbols, but shading is absent and pose feels stiff. Minor proportion slip-ups (one arm longer, etc.).
-    Score 6: Good likeness in a simple action pose—Naruto running, SpongeBob waving. Flat colors plus light highlights; background is a single shape or gradient. Anatomy mostly correct.
-    Score 7: Dynamic expression or motion, accurate costume logos, clean linework, basic cel-shading. Small background element (rocks, clouds) supports story. Everything feels balanced.
-    Score 8: Strong resemblance with confident line weight, layered lighting or shadows, and a creative twist (e.g., Ladybug mid-flip with motion streaks). Background adds depth without clutter.
-    Score 9: Polished detail—foreshortening, gradient color blends, reflective eyes. Background tells a mini-story (Luffy on a pirate ship deck). Only tiny inconsistencies keep it from perfect.
-    Score 10: Studio-quality poster. Flawless anatomy, perspective, and proportions; rich multi-layer shading; energetic background fully integrated. Personal flair shines yet the character is instantly recognizable. Total wow factor.
-        ]],
-        "Medium", 15, 
-        "Server")
-    ThemeService:createTheme(
-        "Fantasy Creatures", 
-        "From mighty dragons to sparkly unicorns—unleash every beast from your imagination!",
-        [[
-    Score 1: Bare page or random doodles. Almost no effort, no link to a creature. Tip: Start with big shapes first—head, body, wings.
-    Score 2: Rough stick-figure beast with missing parts. Key features absent; scribbly lines, one flat color. Tip: Add the main traits (horns, tail, claws) before coloring.
-    Score 3: Basic outline suggests “dragon-ish” but parts float or overlap odd. Proportions way off; colors few; background empty. Tip: Use guidelines (ovals & lines) so wings attach logically.
-    Score 4: Clear creature silhouette plus two signature features (e.g., mer-tail + seashell bra). Shapes mostly right but flat color blocks; no shading. Tip: Clean up linework and fill every shape fully.
-    Score 5: Definitely a fantasy beast with full colors, simple pose. Complete anatomy yet stiff; tiny detail slips (feet too small). Tip: Try a slight bend in the spine or wing angle for motion.
-    Score 6: Action pose—griffin mid-pounce! Flat colors + light highlights. Good proportions; hint of background sky or cave. Tip: Add one light source to pop shadows.
-    Score 7: Dynamic expression, clean line weight, two-step shading (light & mid-tone). Small background element that fits story. Overall balance; only minor line wiggles. Tip: Increase contrast between light and shadow for depth.
-    Score 8: Confident perspective (foreshortened claws), layered lighting, creative twist (lava dragon with ember glow). Background adds depth without stealing focus. Polished look but a few edges muddy. Tip: Add texture (scales, feathers) with tiny strokes.
-    Score 9: Near-professional detail—gradient blends, reflections in eyes, atmospheric background. Only micro errors. Feels alive; story clear (phoenix bursting from ashes). Tip: Tidy stray pixels and refine textures.
-    Score 10: “Poster-ready” masterpiece. Flawless anatomy, rich multi-layer shading, epic background fully integrated. Wow factor off the charts. Nothing distracts; personal style shines yet creature is unmistakable.
-        ]],
-        "Medium", 15, 
-        "Server")
-    ThemeService:createTheme(
-        "Sports", 
-        "Ready, set, draw — capture the thrill of the game in one epic sketch!",
-        [[
-    Score 1: Nearly blank paper or loose scribbles. Effort is almost zero; nothing sports-related pops out. Quick win: block in one big action pose first—stick figures are okay!
-    Score 2: Single stick figure holding a ball; no background. Idea is there but details missing—no goal, net, or gear. Quick win: add one key prop (hoop, goalpost) and basic uniform lines.
-    Score 3: Basic body plus one sports item, but limbs bend oddly or overlap. Proportions off; action feels frozen; one flat color max. Quick win: use simple motion lines (swoosh, dash) and two solid colors.
-    Score 4: Full figure with jersey, ball, and rough background (field outline). Forms recognizable yet stiff; coloring patchy; no shadows. Quick win: clean up line weight and fill every shape edge to edge.
-    Score 5: Clear athlete pose—soccer kick, slam dunk, sprinter start. Complete uniform colors and equipment; minor limb size slip-ups. Quick win: tilt the torso or limb for a sense of speed.
-    Score 6: Action vibe: player mid-air, skateboard tilt, water splash. Flat colors plus light highlights; quick crowd or court lines. Quick win: drop a single light source to cast simple shadows.
-    Score 7: Dynamic expression—grit face, victory yell. Clean line weight; two-step shading. Balanced composition; background element (scoreboard, stadium lights) matches story. Quick win: increase contrast between highlight and shadow for pop.
-    Score 8: Strong perspective—foreshortened arm for the dunk, curved fish-eye rink. Layered lighting, sweat shine, motion streaks. Polished but a few edges wobbly; colors blend smoothly. Quick win: add texture (grass blades, court wood grain) in small strokes.
-    Score 9: Near-pro detail—gradient skin tones, reflective gear, blurred crowd. Atmosphere (dust, stadium glow) supports action. One or two tiny anatomy glitches keep it shy of perfect. Quick win: sharpen tricky joints (elbows, knees) and tidy stray pixels.
-    Score 10: “Poster-ready” highlight reel. Flawless anatomy, dramatic perspective, rich multi-layer shading.
-        ]],
-        "Medium", 15, 
-        "Server")
-    ThemeService:createTheme(
-        "Food", 
-        "Dish out delicious art—make every bite look too tasty to resist!",
-        [[
-    Score 1: Almost blank page or random lines. No clear food, zero effort. Tip: sketch a big outline first—circle for plate or crust.
-    Score 2: Lonely blob with one color; maybe it’s bread? Idea exists but features missing (no toppings, no plate). Tip: add at least one key food detail—pepperoni spots, straw, frosting swirl.
-    Score 3: Basic outline hints at pizza or donut, but shapes uneven, colors flat. Proportions off; no shading; background empty. Tip: use two colors and clean edges to make it recognizable.
-    Score 4: Full dish silhouette with a few toppings or textures. Forms mostly right yet stiff; patchy coloring; no shadows. Tip: fill every shape edge-to-edge and thicken line weight.
-    Score 5: Clear snack—burger layers, sushi filling, ice-cream scoops. Complete colors; simple pose on plate; minor size slips. Tip: tilt or stack items for extra dimension.
-    Score 6: Action vibe: cheese stretch, soda fizz, steam curls. Flat colors plus light highlights; quick tablecloth or tray line. Tip: pick one light source and add simple shadows underneath.
-    Score 7: Tasty textures—melting cheese, sprinkled sugar, shiny glaze. Clean lines; two-step shading. Balanced composition with small background (checkered napkin, café counter). Tip: increase contrast between highlight and shadow to pop flavor.
-    Score 8: Confident perspective—overhead sushi platter, angled milkshake glass. Layered lighting; creative twist (galaxy-swirl ice cream). Polished but a few uneven edges; colors blend smoothly. Tip: add tiny surface textures (sesame seeds, bubbles) for realism.
-    Score 9: Near-pro detail—gradient sauce drips, reflections on glass, steam glow. Background story (bakery shelf, picnic grass). One or two tiny proportion slips keep it shy of perfect. Tip: tighten tricky curves (plate rim, cup lip) and erase stray marks.
-    Score 10: “Menu-ready” masterpiece. Flawless shapes, rich multi-layer shading, appetizing highlights. Background fully integrated (rustic board, café vibe). Instant wow—viewers feel hungry. Personal style shines yet food is crystal clear. Tip: keep cooking—this belongs in a cookbook!
-        ]],
-        "Medium", 15, 
-        "Server")
-    ThemeService:createTheme(
-        "Food", 
-        "Dish out delicious art—make every bite look too tasty to resist!",
-        [[
-        Score 1: Blank page or random squiggles. Boost: draw one clear food shape first—circle, triangle, or bun.
-    Score 2: Blob that might be bread. Boost: add one key detail (pepperoni dot, straw, cherry).
-    Score 3: Food outline but wobbly sizes. Boost: make outline smooth; add two colors.
-    Score 4: Clear shape plus face dots or topping spots. No color fill. Boost: color the whole thing one solid shade.
-    Score 5: Easy-to-spot snack (slice of pizza, donut ring). Boost: stack layers or tilt slice for life.
-    Score 6: Action! Cheese stretch, soda fizz, steam curl. Boost: drop one simple shadow under the food.
-    Score 7: Texture pop—sprinkles, sesame seeds, glaze shine. Boost: shade light side and dark side a bit.
-    Score 8: Fun angle—overhead plate or tilted milkshake glass. Boost: add small background (table line, tray).
-    Score 9: Extra detail—dripping sauce, shiny glass, crisp edges. Boost: clean shaky lines and refine toppings.
-    Score 10: Menu-ready masterpiece with cute backdrop (picnic cloth, café counter). Boost: keep cooking—you nailed the wow!
-        ]],
-        "Easy", 10, "Server")
-     ThemeService:createTheme(
-        "Emotions", 
+        "Candies", 
         "",
         [[
-Score 1: Blank page or random lines. Boost: start with one circle for a face.
-Score 2: Plain stick head, no expression. Boost: add eyes, mouth, and eyebrows.
-Score 3: Expression exists but looks off (mixed signals). Boost: make mouth bigger and match eyebrows.
-Score 4: Clear happy/sad/angry face, no color. Boost: fill the face with one solid shade.
-Score 5: Emotion easy to spot plus one prop (tear, sweat, heart). Boost: tilt the head or body to add drama.
-Score 6: Action—laughing open mouth, angry fist, shocked hands. Boost: drop one simple shadow under the figure.
-Score 7: Extra clues—speech bubble, emoji symbols, motion lines. Boost: shade light side and dark side a little.
-Score 8: Fun angle—face looking up, down, or sideways. Boost: add tiny background (rain for sad, sun for joy).
-Score 9: Detail—shiny tears, blushing cheeks, vein pop. Boost: clean shaky lines and refine props.
-Score 10: Poster-ready emotion scene with full backdrop. Boost: keep it up—you made us feel something!
-        ]],
-        "Medium", 15, 
-        "Server")
-     ThemeService:createTheme(
-        "Emotions", 
-        "",
-        [[
-Score 1: Blank page. Boost: draw a face.
-Score 2: Plain face, no feeling. Boost: add a smile or frown.
-Score 3: Small smile/frown, hard to spot. Boost: make the mouth huge.
-Score 4: Clear happy / sad / angry face. Boost: add eyebrows.
-Score 5: Face + one extra sign (tear, heart, sweat). Boost: tilt the head.
-Score 6: Body shows feeling (jump, slump). Boost: add one shadow.
-Score 7: Motion lines or speech bubble. Boost: shade one side darker.
-Score 8: Fun angle (looking up / down). Boost: tiny background (sun, rain).
-Score 9: Cool details (blush, shiny tears). Boost: clean shaky lines.
-Score 10: Whole scene screams the emotion. Boost: keep it—awesome!
-        ]],
+Score 1 – Page mostly blank or random marks—no sugar rush yet.
+Score 2 – One quick candy shape (maybe a circle with a wrapper twist) but no color or detail.
+Score 3 – A few sweets show up—tiny lollipop, jellybean, gumdrop—flat single color, no background.
+Score 4 – Candies are clearer with wrappers, stripes, or shine spots; two colors pop; lines still wobbly.
+Score 5 – Mixed candy pile or neat row; three+ bright colors; little detail like sprinkle dots or swirls.
+Score 6 – Fun vibe: glossy highlights, simple shadows, maybe a candy bowl or trick-or-treat bag.
+Score 7 – Mini story—candy spilling, being unwrapped, or stacked into a tower; colors blend smoothly.
+Score 8 – Tasty textures (sugar crystals, chocolate drizzle), playful background (confetti, stripes). Everything ties together sweetly.
+Score 9 – Polished and vibrant: clean outlines, bold shading, cool angle (close-up gummy bear or rainbow candy path). Hardly any slips.
+Score 10 – Mouth-watering masterpiece—instantly screams “candy shop,” killer color harmony, dynamic composition ready for a poster.
+    ]],
         "Easy", 10, 
         "Server")
-     ThemeService:createTheme(
-        "Nature", 
+    ThemeService:createTheme(
+        "Icecream", 
         "",
         [[
-Score 1: Blank page. Boost: draw a tree trunk.
-Score 2: One shape, no clue (blob). Boost: add leaves or a sun.
-Score 3: Simple tree or hill, wobbly. Boost: smooth the outline.
-Score 4: Clear tree / mountain / river. Boost: add a second object (cloud, flower).
-Score 5: Two nature items, no color. Boost: fill each with one solid shade.
-Score 6: Colors + small detail (sun rays, petals). Boost: drop a light shadow.
-Score 7: Motion lines (wind, water flow). Boost: shade one side darker.
-Score 8: Fun angle—bird's-eye or side view. Boost: add tiny background shapes (distant hills).
-Score 9: Extra texture—bark lines, ripples. Boost: clean shaky edges.
-Score 10: Whole scene feels alive—balanced, colorful sky & ground. Boost: keep it—beautiful work!
-        ]],
+Score 1 – Page almost empty or random scribbles—no ice-cream flavor yet.
+Score 2 – One rough cone or scoop shape appears, but no color or toppings.
+Score 3 – Full cone (or cup) with a single scoop; flat color; background blank.
+Score 4 – Extra scoops or simple toppings (cherry, syrup stripe); two colors pop; lines still shaky.
+Score 5 – Clear dessert: waffle texture, melting edge, three+ bright colors; tiny detail like sprinkles.
+Score 6 – Fun vibe: drippy syrup, simple shadow under cone, maybe a napkin or spoon nearby.
+Score 7 – Mini story—ice-cream tipping over, being shared, or stacked high; colors blend smoothly.
+Score 8 – Tasty textures (waffle crunch, creamy swirls, glossy syrup), playful background (sunburst, neon stripes). Everything ties together sweetly.
+Score 9 – Polished and vibrant: clean outlines, bold highlights, cool angle (close-up drip or tall sundae tower). Hardly any slips.
+Score 10 – Mouth-watering masterpiece—instantly screams “ice-cream parlor,” perfect color harmony, dynamic composition ready for a poster.
+    ]],
         "Easy", 10, 
-        "Server")
-     ThemeService:createTheme(
-        "Nature", 
-        "",
-        [[
-Score 1 - The page is nearly blank or covered in unrelated doodles. No identifiable landscape elements. Demonstrates minimal effort and zero understanding of natural forms.
-Score 2 - One crude shape suggests a hill or tree-blob, but proportions are wildly off; horizon missing; no color logic. Lines are scratchy, perspective ignored. Add basic ground–sky division and distinct shapes to move up.
-Score 3 - Basic skyline appears: ground line, sun, lone tree. Forms are flat, colors single-tone, no texture or light source. Depth is absent. Work on overlapping shapes and varied greens or browns.
-Score 4 - Scene contains at least three nature elements (e.g., tree, river, mountain). Proportions mostly sensible, but values remain flat; sky may be one solid blue. No atmospheric perspective yet. Introduce gradual color shifts and foreground shadows.
-Score 5 - Clear composition: foreground, midground, background separated by size or value. Simple lighting—light side vs. shade—gives volume. Water reflects some sky color; foliage shows texture strokes. Perspective still stiff, but viewer “believes” the space.
-Score 6 - Intentional focal point (waterfall, lone maple) guides the eye. Lighting direction consistent; cast shadows match objects. Color palette shows harmony—cool distant mountains, warm near rocks. Depth hints via softer edges in the distance.
-Score 7 - Dynamic atmosphere: mist, wind lines, or cloud layering adds mood. Textures differentiate bark, grass, and water ripples. Overlaps and diminishing sizes create convincing spatial scale. Minor perspective slips keep it from pro tier.
-Score 8 - Advanced depth: aerial perspective fades far colors; foreground details crisp. Light behaves realistically on varied surfaces (specular lake highlight, translucent leaves). Composition uses rule-of-thirds or leading lines. Color temperature shifts enhance story (e.g., sunset glow).
-Score 9 - Near-professional polish. Subtle gradients, reflected light, secondary color bounces. Complex textures—moss, rock strata—retain clarity without clutter. Atmospheric effects (rain shafts, dust motes) support narrative. Only tiny inaccuracies in anatomy of trees or rock forms remain.
-Score 10 - Portfolio-ready masterpiece. Flawless perspective; layered lighting including rim or back-light. Depth of field implied through edge softness. Color harmony feels cinematic; values balanced for readability. Every texture—frothy water, craggy cliffs, wispy clouds—reads true yet shows artist’s style. Scene tells a clear story (calm dawn, raging storm) with zero weak spots.
-        ]],
-        "Hard", 20, 
-        "Server")
-     ThemeService:createTheme(
-        "Dinosaurs", 
-        "",
-        [[
-Use this dino-themed rubric to score drawings from beginners to next-level paleo-artists. Judges look for recognizable anatomy, creative flair, color work, backgrounds, and storytelling. Start each critique with a positive note, point to one clear improvement, and cheer the artist onward—the goal is growth, not perfection.
-Score 1: Canvas mostly blank or random marks; no recognizable dinosaur; minimal effort shown. To improve, sketch a simple dinosaur outline and focus on connecting head, body, and tail so viewers know what it is.
-Score 2: Simple outline suggests a dinosaur shape but it's extremely rough; limbs or head missing, no colors, background empty, and little detail. Try adding all major body parts and trace over lines for cleaner edges.
-Score 3: Basic dinosaur form complete with head, body, tail, and at least two legs; shapes uneven, single flat color, background empty, details minimal. Next, refine proportions and add a second color or pattern for liveliness.
-Score 4: Dinosaur has full body parts and small details like teeth or plates; at least two colors used; proportions off and background still blank. Work on balancing limb sizes and introduce a simple backdrop such as rocks or plants.
-Score 5: Dinosaur shows clear proportions, three or more colors, added textures like lines or spots; tiny background element (grass) present; minor perspective issues remain. Enhance depth with thin-to-thick line variation and a larger setting behind the creature.
-Score 6: Dinosaur in a dynamic pose with correct limb count; light shading or gradient attempts; background contains two elements (trees, volcano); overall balance good yet somewhat rough. Polish by smoothing gradients and adding shadows beneath feet for realism.
-Score 7: Dinosaur well-proportioned, lively pose, expressive face and eyes; consistent shading; at least three background items create a scene; creativity shows (feathers, armor). Push farther with lighting direction and subtle highlights on scales.
-Score 8: Highly detailed dinosaur with textures like scales and claws, accurate perspective; rich color blending; cohesive background storytelling (chasing prey, roaring on cliff); very minor anatomy inaccuracies. Sharpen detail on focal points and refine sky or ground textures.
-Score 9: Professional-level polish; dynamic composition shows foreground, midground, background depth; moody lighting; imaginative twist (neon T-rex, cyber stegosaurus) executed cleanly; only tiny flaws in line smoothness. Finalize by erasing stray marks and enhancing reflections or motion effects.
-Score 10: Jaw-dropping masterpiece: flawless anatomy, vibrant blended colors, expert shading and highlights, cinematic story scene; every element intentional, from tiny claw scratches to atmospheric fog; poster quality. Judges struggle to suggest improvements—just keep shining!
-        ]],
-        "Medium", 15, 
         "Server")
 end
 

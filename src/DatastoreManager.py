@@ -8,9 +8,9 @@ Requires:
   • Python 3.8+
   • `pip install requests`
   • A Roblox Open Cloud API key with
-        - “Read” AND “Write” permission
+        - "Read" AND "Write" permission
         - Datastore → Delete Entries
-        - restricted to the datastores you’re wiping
+        - restricted to the datastores you're wiping
 """
 
 from __future__ import annotations
@@ -68,6 +68,44 @@ def list_keys(store: str, cursor: Optional[str] = None) -> dict:
     r.raise_for_status()
     return r.json()           # {"keys":[{"key":"…"}, …], "nextPageCursor": "…"}
 
+def get_key_value(store: str, key: str) -> any:
+    """GET an entry's value."""
+    params = {
+        "datastoreName": store,
+        "entryKey":      key,
+    }
+    url = f"{BASE}/datastore/entries/entry"
+    r = requests.get(url, headers=HEADERS, params=params, timeout=REQUEST_TIMEOUT)
+    r.raise_for_status()
+    # The response is the value itself (JSON, string, number, boolean)
+    # For Roblox, it's often JSON, so we try to parse it.
+    try:
+        return r.json()
+    except requests.exceptions.JSONDecodeError:
+        return r.text # Or handle as appropriate if non-JSON is expected
+
+def list_key_values(store: str, cursor: Optional[str] = None) -> dict:
+    """Call List Entries for one datastore and retrieve values for each key."""
+    key_listing_page = list_keys(store, cursor)
+    entries_with_values = []
+
+    keys_info = key_listing_page.get("keys", [])
+    for key_info in keys_info:
+        key = key_info["key"]
+        try:
+            value = get_key_value(store, key)
+            entries_with_values.append({"key": key, "value": value})
+        except requests.HTTPError as e:
+            logging.warning(f"  • failed to get value for key '{key}': {e}")
+            # Optionally, append with a placeholder or skip
+            entries_with_values.append({"key": key, "value": None, "error": str(e)})
+
+
+    return {
+        "entries": entries_with_values,
+        "nextPageCursor": key_listing_page.get("nextPageCursor")
+    }
+
 def delete_key(store: str, key: str) -> None:
     """DELETE an entry."""
     params = {
@@ -76,7 +114,7 @@ def delete_key(store: str, key: str) -> None:
     }
     url = f"{BASE}/datastore/entries/entry"
     r = requests.delete(url, headers=HEADERS, params=params, timeout=REQUEST_TIMEOUT)
-    # Success is “204 No Content”; anything else → raise
+    # Success is "204 No Content"; anything else → raise
     if r.status_code != 204:
         r.raise_for_status()
 
@@ -127,3 +165,8 @@ def main() -> None:
 #     enable_wipe = input("Enable wipe? (y/n): ")
 #     if enable_wipe == "y":
 #         main()
+
+entries = list_key_values("Themes")
+
+for e in entries["entries"]:
+    print(e["value"]["Name"] + " " + e["value"]["Difficulty"])

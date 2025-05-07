@@ -307,6 +307,7 @@ PlayerDataUpdatedEvent.OnClientEvent:Connect(onPlayerDataUpdated)
 
 -- Initialize the controller
 local function initialize()
+    math.randomseed(os.time())
     local LocalPlayer = Players.LocalPlayer
     local pModule = require(LocalPlayer:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule"))
     local playerControls = pModule:GetControls()
