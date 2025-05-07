@@ -54,24 +54,6 @@ local function putInMap(userIdStr, playerName, points)
     )
 end
 
-local function maybeTrim()
-    -- ensure we never exceed 100 rows
-    local page = TopMap:GetRangeAsync(Enum.SortDirection.Descending, OVERFLOW_FETCH)
-    if #page > MAX_ROWS then
-        local last = page[#page]       -- #101
-        TopMap:RemoveAsync(last.key)
-    end
-end
-
---------------------------------------------------------------------
--- 2.  Main exposed function: add points & maintain leaderboard
---------------------------------------------------------------------
-function LB.UpdatePlayerPoints(player, totalPoints: number)
-    -- update the MemoryStore map (fast, quota-cheap)
-    putInMap(tostring(player.UserId), player.Name, totalPoints)
-    maybeTrim()
-end
-
 --------------------------------------------------------------------
 -- 3.  Hook on player join to ensure they appear if already qualified
 --------------------------------------------------------------------
@@ -80,22 +62,7 @@ game.Players.PlayerAdded:Connect(function(plr)
     task.spawn(function()
         local playerData = PlayerStore:getPlayer(plr)
         local points = playerData["TotalPoints"]
-
-        -- fetch 100-th score once to compare (cheap)
-        local page = TopMap:GetRangeAsync(Enum.SortDirection.Descending, MAX_ROWS)
-        local needsInsert = (#page < MAX_ROWS)
-        if not needsInsert then
-            local lowestScore = page[#page].value
-            local thresholdPoints = math.floor(lowestScore / 2^32)
-            if points > thresholdPoints then
-                needsInsert = true
-            end
-        end
-
-        if needsInsert then
-            putInMap(tostring(plr.UserId), plr.Name, points)
-            maybeTrim()
-        end
+        putInMap(tostring(plr.UserId), plr.Name, points)
     end)
 end)
 

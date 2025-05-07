@@ -42,8 +42,6 @@ function Module.new(ImageDataResX, ImageDataResY, Buffer)
 		local index = (X + (Y - 1) * ImageDataResX) * 4 - 4
 
 		if (buffer.len(ImageData.ImageBuffer) <= index) then
-			warn("Index out of bounds")
-			warn(buffer.len(ImageData.ImageBuffer), index, X, Y)
 			return 0
 		end
 
