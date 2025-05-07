@@ -39,7 +39,7 @@ local function packValue(userId, playerName, points)
 end
 
 local function makeSortKey(points)
-    -- Preserve your “higher score first, recent wins ties” rule
+    -- Preserve your "higher score first, recent wins ties" rule
     --   score ⬆  ⇒ rank ⬆
     --   newer    ⇒ rank ⬆ on equal score
     return (points * 2^32) + (0xFFFFFFFF - os.time())
@@ -82,11 +82,12 @@ game.Players.PlayerAdded:Connect(function(plr)
         local points = playerData["TotalPoints"]
 
         -- fetch 100-th score once to compare (cheap)
-        local page = TopMap:GetRangeAsync(Enum.SortDirection.Descending, MAX_ROWS) -- row #100
+        local page = TopMap:GetRangeAsync(Enum.SortDirection.Descending, MAX_ROWS)
         local needsInsert = (#page < MAX_ROWS)
         if not needsInsert then
-            local thresholdPoints = math.floor(page[1].value / 2^32)
-            if points> thresholdPoints then
+            local lowestScore = page[#page].value
+            local thresholdPoints = math.floor(lowestScore / 2^32)
+            if points > thresholdPoints then
                 needsInsert = true
             end
         end
