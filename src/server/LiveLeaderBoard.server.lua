@@ -2,7 +2,7 @@
 --------------------------------------------------------------------
 -- CONFIG
 --------------------------------------------------------------------
-local TOP_MAP_NAME        = "TopPoints"     -- MemoryStore SortedMap
+local TOP_MAP_NAME        = "TopPointsV2"     -- MemoryStore SortedMap
 local KEY_TTL_SECONDS     = 30 * 24 * 3600     -- 30 days(auto-evicts idle entries)
 local MAX_ROWS            = 100               -- hard cap
 local OVERFLOW_FETCH      = MAX_ROWS + 1       -- grab one extra to trim
@@ -39,10 +39,7 @@ local function packValue(userId, playerName, points)
 end
 
 local function makeSortKey(points)
-    -- Preserve your "higher score first, recent wins ties" rule
-    --   score ⬆  ⇒ rank ⬆
-    --   newer    ⇒ rank ⬆ on equal score
-    return (points * 2^32) + (0xFFFFFFFF - os.time())
+    return points
 end
 
 local function putInMap(userIdStr, playerName, points)

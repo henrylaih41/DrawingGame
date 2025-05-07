@@ -342,7 +342,7 @@ if Players.LocalPlayer.UserId == 8240890430 then
     LoadTheme.Visible = true
     LoadTheme.MouseButton1Click:Connect(function()
         warn("Loading theme")
-        Events.AdminCommand:FireServer("LoadTheme")
+        Events.AdminCommand:FireServer("UpdateTopPoints")
     end)
 end
 
