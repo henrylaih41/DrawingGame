@@ -15,6 +15,7 @@ local RankingScreen = PlayerGui:WaitForChild("RankingScreen")
 local RankingScreenTopLevelContainer = RankingScreen:WaitForChild("TopLevelContainer")
 local TopLevelContainer = MainMenuScreen:WaitForChild("TopLevelContainer")
 local LoadTheme = TopLevelContainer:WaitForChild("LoadTheme")
+local UpdateLeaderBoard = TopLevelContainer:WaitForChild("UpdateLeaderBoard")
 local BestScores = TopLevelContainer:WaitForChild("BestScores")
 local Buttons = TopLevelContainer:WaitForChild("Buttons")
 local SinglePlayerButton = Buttons:WaitForChild("SinglePlayerButton")
@@ -342,6 +343,12 @@ if Players.LocalPlayer.UserId == 8240890430 then
     LoadTheme.Visible = true
     LoadTheme.MouseButton1Click:Connect(function()
         warn("Loading theme")
+        Events.AdminCommand:FireServer("LoadTheme")
+    end)
+
+    UpdateLeaderBoard.Visible = true
+    UpdateLeaderBoard.MouseButton1Click:Connect(function()
+        warn("Updating leaderboard")
         Events.AdminCommand:FireServer("UpdateTopPoints")
     end)
 end

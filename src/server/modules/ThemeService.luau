@@ -14,6 +14,7 @@ function ThemeService:createTheme(
     local theme = ThemeStore:newTheme(
         name, description, gradingPrompt, duration, createdBy, difficulty)
 
+    print("Loaded theme: " .. name)
     local success, _ = ThemeStore:saveTheme(theme)
 
     if not success then
