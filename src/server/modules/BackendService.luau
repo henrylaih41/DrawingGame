@@ -52,7 +52,9 @@ function BackendService:SendOpenAIRequest(compressedImageData, prompt, theme, pl
         prompt = prompt,
         metadata = {
             playerId = playerId,
-            theme = theme.Name
+            theme = theme.Name,
+            theme_difficulty = theme.Difficulty,
+            theme_uuid = theme.uuid
         }
     }
     
