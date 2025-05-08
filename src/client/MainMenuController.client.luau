@@ -14,8 +14,6 @@ local ThemeListScreen = PlayerGui:WaitForChild("ThemeListScreen")
 local RankingScreen = PlayerGui:WaitForChild("RankingScreen")
 local RankingScreenTopLevelContainer = RankingScreen:WaitForChild("TopLevelContainer")
 local TopLevelContainer = MainMenuScreen:WaitForChild("TopLevelContainer")
-local LoadTheme = TopLevelContainer:WaitForChild("LoadTheme")
-local UpdateLeaderBoard = TopLevelContainer:WaitForChild("UpdateLeaderBoard")
 local BestScores = TopLevelContainer:WaitForChild("BestScores")
 local Buttons = TopLevelContainer:WaitForChild("Buttons")
 local SinglePlayerButton = Buttons:WaitForChild("SinglePlayerButton")
@@ -340,6 +338,10 @@ initialize()
 
 -- Check for Admin
 if Players.LocalPlayer.UserId == 8240890430 then
+    local LoadTheme = TopLevelContainer:WaitForChild("LoadTheme")
+    local UpdateLeaderBoard = TopLevelContainer:WaitForChild("UpdateLeaderBoard")
+    local TrimTopPoints = TopLevelContainer:WaitForChild("TrimTopPoints")
+
     LoadTheme.Visible = true
     LoadTheme.MouseButton1Click:Connect(function()
         warn("Loading theme")
@@ -350,6 +352,12 @@ if Players.LocalPlayer.UserId == 8240890430 then
     UpdateLeaderBoard.MouseButton1Click:Connect(function()
         warn("Updating leaderboard")
         Events.AdminCommand:FireServer("UpdateTopPoints")
+    end)
+    
+    TrimTopPoints.Visible = true
+    TrimTopPoints.MouseButton1Click:Connect(function()
+        warn("Trimming top visits")
+        Events.AdminCommand:FireServer("TrimTopPoints")
     end)
 end
 

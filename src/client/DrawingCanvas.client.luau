@@ -537,6 +537,7 @@ GameStateChangedEvent.OnClientEvent:Connect(function(stateData)
             timerRotateScript.start()
         end
         canvasTopBar.Theme.Text = theme
+        canvasTopBar.Theme.AutoLocalize = true
         takeCanvasSnapshot()
         topLevelContainer.Visible = true
         log("Drawing phase enabled")
