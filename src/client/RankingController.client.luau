@@ -1,10 +1,12 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LeaderBoardBuilder = require(ReplicatedStorage.Modules.Utils.LeaderBoardBuilder)
 local GameConfig = require(ReplicatedStorage.Modules.GameData.GameConfig)
+local TopPlaysCanvas = require(ReplicatedStorage.Modules.Utils.TopPlaysCanvas)
 
 -- Get references to UI elements
 local PlayerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
 local RankingScreen = PlayerGui:WaitForChild("RankingScreen")
+local TopPlaysScreen = PlayerGui:WaitForChild("TopPlaysScreen")
 local TopLevelContainer = RankingScreen:WaitForChild("TopLevelContainer")
 local rowTemplate = ReplicatedStorage:WaitForChild("UI"):WaitForChild("PlayerRankRow")
 
@@ -14,6 +16,8 @@ local ROWS_PER_PAGE = GameConfig.ROWS_PER_PAGE
 -- Set up events
 local Events = ReplicatedStorage:WaitForChild("Events")
 local LocalPlayer = game:GetService("Players").LocalPlayer
+local cachedTopPlays = {}
+local topPlaysContainers = {}
 
 local function createRow(name)
     local row = rowTemplate:Clone()
@@ -29,6 +33,7 @@ end
 local function updateLabel(pageLbl, currentPage, pageCount)
     pageLbl.Text = string.format("%d / %d", currentPage, pageCount)
 end
+
 local function initRankingUI()
     local row_per_page = ROWS_PER_PAGE
     local pageCount = math.ceil(MAX_ROWS / row_per_page)
@@ -78,6 +83,12 @@ local function initRankingUI()
                     row.RankLabel.Text = i
                     row.NameLabel.Text = score.value.name
                     row.ScoreLabel.Text = score.value.points
+                    row.ViewButton.Visible = true
+                    row.ViewButton.MouseButton1Click:Connect(function()
+                        TopPlaysScreen.Enabled = true
+                        TopPlaysScreen:FindFirstChild("TopLevelContainer").Visible = true
+                        -- TODO: Fire event to server to ask for top plays of this player.
+                    end)
                 end
             end
         end
@@ -93,4 +104,20 @@ local function initRankingUI()
     Events.RequestTopScores:FireServer()
 end
 
+local function initTopPlaysUI()
+    local topLevelContainer = TopPlaysScreen:FindFirstChild("TopLevelContainer")
+    -- Set to invisible first before we setup the canvas
+    topLevelContainer.Visible = false
+    TopPlaysCanvas.setupTopPlaysCanvas(
+        topLevelContainer, topPlaysContainers, 
+        function()
+            topLevelContainer.Visible = false
+            TopPlaysScreen.Enabled = false
+        end
+    )
+    -- After setup, disable the screen
+    TopPlaysScreen.Enabled = false
+end
+
 initRankingUI()
+initTopPlaysUI()
