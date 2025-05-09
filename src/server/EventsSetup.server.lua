@@ -38,6 +38,7 @@ createEvent("RequestThemeListPage")
 createEvent("ReceiveThemeListPage")
 createEvent("UpdateLobbyPlayers")
 createEvent("AdminCommand")
+createEvent("TestEvent")
 -- Set the parent of the Events folder
 Events.Parent = ReplicatedStorage
 print("Events setup complete") 

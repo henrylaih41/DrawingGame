@@ -341,6 +341,7 @@ if Players.LocalPlayer.UserId == 8240890430 then
     local LoadTheme = TopLevelContainer:WaitForChild("LoadTheme")
     local UpdateLeaderBoard = TopLevelContainer:WaitForChild("UpdateLeaderBoard")
     local TrimTopPoints = TopLevelContainer:WaitForChild("TrimTopPoints")
+    local TestButton = TopLevelContainer:WaitForChild("TestButton")
 
     LoadTheme.Visible = true
     LoadTheme.MouseButton1Click:Connect(function()
@@ -359,6 +360,14 @@ if Players.LocalPlayer.UserId == 8240890430 then
         warn("Trimming top visits")
         Events.AdminCommand:FireServer("TrimTopPoints")
     end)
+
+    TestButton.Visible = true
+    TestButton.MouseButton1Click:Connect(function()
+        warn("Testing")
+        Events.TestEvent:FireServer()
+    end)
+
+
 end
 
 -- Return cleanup function if needed by a parent system

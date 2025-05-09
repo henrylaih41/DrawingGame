@@ -60,7 +60,7 @@ game.Players.PlayerAdded:Connect(function(plr)
         local playerData = PlayerStore:getPlayer(plr)
         local points = playerData["TotalPoints"]
         -- hard code threshold for now
-        if points > 5 then
+        if points > 10 then
             putInMap(tostring(plr.UserId), plr.Name, points)
         end
     end)

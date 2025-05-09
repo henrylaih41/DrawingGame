@@ -9,6 +9,7 @@ local GameConfig = require(ReplicatedStorage.Modules.GameData.GameConfig)
 local PlayerStore = require(ServerScriptService.modules.PlayerStore)
 local TopPlaysStore = require(ServerScriptService.modules.TopPlaysStore)
 local PlayerBestDrawingsStore = require(ServerScriptService.modules.PlayerBestDrawingsStore)
+local TopDrawingCacheService = require(ServerScriptService.modules.TopDrawingCacheService)
 
 -- Modules
 local CanvasDraw = require(ReplicatedStorage.Modules.Canvas.CanvasDraw)
@@ -633,6 +634,14 @@ local function init()
     Events.SubmitVote.OnServerEvent:Connect(handleVoteSubmission)
     Events.RequestTopPlays.OnServerEvent:Connect(sendTopPlaysToClient)
     Events.RequestThemeListPage.OnServerEvent:Connect(sendThemeListPageToClient)
+
+    Events.TestEvent.OnServerEvent:Connect(function(player)
+        local userId = player.UserId
+        print("Test event received: " .. userId)
+        local topDrawings = TopDrawingCacheService.fetch(userId)
+        print(topDrawings)
+    end)
+
     
     debugPrint("GameManager initialized")
 end
