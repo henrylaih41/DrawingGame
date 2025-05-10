@@ -108,9 +108,7 @@ function TopPlaysStore:saveTopPlays(player, topPlays)
     return true, nil
 end
 
-function TopPlaysStore:getTopPlays(player)
-    assert(player, "Missing player parameter")
-    local playerId = player.UserId
+function TopPlaysStore:getTopPlays(playerId)
     
     -- Try to get top plays data from DataStore with retry logic
     local success, result = DataStoreHelper:_performDataStoreOperationWithRetry(

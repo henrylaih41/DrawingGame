@@ -44,7 +44,12 @@ local selfTopPlaysContainers = {}
 
 
 -- Set up event handler for receiving the drawings
-ReceiveTopPlaysEvent.OnClientEvent:Connect(function(topPlays)
+ReceiveTopPlaysEvent.OnClientEvent:Connect(function(topPlayUserId, topPlays)
+    -- Only update the top plays if it is the local players top plays.
+    if tostring(topPlayUserId) ~= tostring(Players.LocalPlayer.UserId) then
+        return
+    end
+
     for i = 1, GameConfig.TOP_PLAYS_LIMIT do
         local drawingData = topPlays[i]
         TopPlaysCanvas.updateDrawingDisplayForRank(drawingData, i, selfTopPlaysContainers)
@@ -53,7 +58,7 @@ end)
 
 -- Add this function to request best drawings from server
 local function requestTopPlays()
-    RequestTopPlaysEvent:FireServer()
+    RequestTopPlaysEvent:FireServer(Players.LocalPlayer.UserId)
 end
 
 -- Function to handle BestScores button click

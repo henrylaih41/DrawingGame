@@ -228,7 +228,7 @@ end
 local function selfHealPlayer(player)
     local playerData = getPlayerData(player)
     if not playerData.topPlaysWithoutImage or (#playerData.topPlaysWithoutImage < GameConfig.TOP_PLAYS_LIMIT) then
-        local topPlays = TopPlaysStore:getTopPlays(player)
+        local topPlays = TopPlaysStore:getTopPlays(player.UserId)
         local topPlaysWithoutImage = topPlaysWithoutImageFromTopPlays(topPlays)
 
         playerData.topPlaysWithoutImage = topPlaysWithoutImage
@@ -236,19 +236,21 @@ local function selfHealPlayer(player)
     end
 end 
 
-local function sendTopPlaysToClient(player, topPlays)
-    debugPrint("Player %s requested top plays", player.Name)
-    local errorMessage = nil
+local function sendTopPlaysToClient(player, topPlaysUserId, topPlays)
+    debugPrint("Player %s requested top plays of %s", player.Name, topPlaysUserId)
 
     -- If no topPlays are provided, get them from the backend.
     if not topPlays then
-        topPlays, errorMessage = TopPlaysStore:getTopPlays(player)
-        assert(topPlays, "Failed to get top plays for player " .. player.Name .. ": " .. tostring(errorMessage))
-    else 
-        table.sort(topPlays, function(a, b)
-            return a.points > b.points
-        end)
+        topPlays = TopDrawingCacheService.fetch(topPlaysUserId)
+        if topPlays == nil then
+            warn("Failed to fetch top plays for player " .. topPlaysUserId)
+            return
+        end
     end
+
+    table.sort(topPlays, function(a, b)
+        return a.points > b.points
+    end)
 
     -- Create a table to store the best drawing data for each theme
     local bestDrawings = {}
@@ -268,24 +270,27 @@ local function sendTopPlaysToClient(player, topPlays)
         bestDrawings[i] = drawingData
     end
 
-    local playerData = getPlayerData(player)
+    -- Only self heal TotalPoints if the topPlays are for the local player.
+    if tostring(player.UserId) == tostring(topPlaysUserId) then
+        local playerData = getPlayerData(player)
 
-    if(playerPoints ~= playerData.TotalPoints) then
-        warn("Player points do not match")
-        if playerPoints then 
-            warn("Player points: " .. playerPoints)
+        if(playerPoints ~= playerData.TotalPoints) then
+            warn("Player points do not match")
+            if playerPoints then 
+                warn("Player points: " .. playerPoints)
+            end
+            if playerData.TotalPoints then
+                warn("Player points: " .. playerData.TotalPoints)
+            end
+            -- Self Healing
+            playerData.TotalPoints = playerPoints
+            PlayerStore:savePlayer(player, playerData)
+            Events.PlayerDataUpdated:FireClient(player, playerData)
         end
-        if playerData.TotalPoints then
-            warn("Player points: " .. playerData.TotalPoints)
-        end
-        -- Self Healing
-        playerData.TotalPoints = playerPoints
-        PlayerStore:savePlayer(player, playerData)
     end
     
     -- Send the data back to the requesting client
-    Events.ReceiveTopPlays:FireClient(player, bestDrawings)
-    Events.PlayerDataUpdated:FireClient(player, playerData)
+    Events.ReceiveTopPlays:FireClient(player, topPlaysUserId, bestDrawings)
 end
 
 -- imageData is a compressed image data returned by CompressImageDataCustom.
@@ -340,7 +345,7 @@ local function storeHighestScoringDrawing(player, theme, imageData, score, feedb
 
         if shouldAddToTopPlays then
             -- Get the real topPlays with ImageData
-            local topPlays = TopPlaysStore:getTopPlays(player)
+            local topPlays = TopPlaysStore:getTopPlays(player.UserId)
 
             if replaceThemeUuid then
                 -- Replace the old top play with the new one
@@ -367,7 +372,7 @@ local function storeHighestScoringDrawing(player, theme, imageData, score, feedb
             savePlayerData(player, playerData)
             TopPlaysStore:saveTopPlays(player, topPlays)
             -- Send the new top plays to the client.
-            sendTopPlaysToClient(player, topPlays)
+            sendTopPlaysToClient(player, player.UserId, topPlays)
         end
 
         local rawImageData = CanvasDraw.DecompressImageDataCustom(imageData)

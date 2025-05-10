@@ -4,14 +4,16 @@
 --------------------------------------------------------------------
 local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
+local TopPlaysStore = require(ServerScriptService.modules.TopPlaysStore)
 
 --------------------------------------------------------------------
 -- CONFIG – edit to match your deployment
 --------------------------------------------------------------------
--- local WORKER_BASE_URL = "https://api.drawingleague.dev/top30/"   -- trailing slash
-local WORKER_BASE_URL = "http://127.0.0.1:8787/"   -- trailing slash
+local WORKER_BASE_URL = "https://top-drawing-kv-store.henrylaih41.workers.dev"   -- trailing slash
+-- local WORKER_BASE_URL = "http://127.0.0.1:8787/"   -- trailing slash
 local ADMIN_KEY       = "EPvY7rNWR13ONIvxtzof4" -- keep server-side only!
-local MAX_RETRIES     = 3          -- exponential back-off tries
+local MAX_RETRIES     = 4          -- exponential back-off tries
 local BASE_DELAY      = 2          -- seconds; grows per attempt
 
 --------------------------------------------------------------------
@@ -28,7 +30,8 @@ local function requestWithRetry(opts)
                      ok and resp.StatusCode or tostring(resp)))
         task.wait(BASE_DELAY ^ attempt)               -- simple back-off
     end
-    error("[Top30] All retries exhausted for "..opts.Url)
+    warn("[Top30] All retries exhausted for "..opts.Url)
+    return nil
 end
 
 --------------------------------------------------------------------
@@ -40,12 +43,15 @@ local TopDrawingCacheService = {}
 -- @param userId   number | string  Roblox userId
 -- @return table                Lua table decoded from JSON
 function TopDrawingCacheService.fetch(userId)
-    local response = requestWithRetry({
-        Url     = WORKER_BASE_URL .. tostring(userId),
-        Method  = "GET",
-        Headers = { ["Content-Type"] = "application/json" },
-    })
-    return HttpService:JSONDecode(response.Body)
+    local result, _ = TopPlaysStore:getTopPlays(userId)
+    return result
+    -- Getting 520 error from the worker. Let's fallback to datastore for now.
+    -- local response = requestWithRetry({
+    --     Url     = WORKER_BASE_URL .. tostring(userId),
+    --     Method  = "GET",
+    --     Headers = { ["Content-Type"] = "application/json" },
+    -- })
+    -- return HttpService:JSONDecode(response.Body)
 end
 
 --- Purges the userId’s cache entry after they set a new score.

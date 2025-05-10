@@ -18,6 +18,7 @@ local Events = ReplicatedStorage:WaitForChild("Events")
 local LocalPlayer = game:GetService("Players").LocalPlayer
 local cachedTopPlays = {}
 local topPlaysContainers = {}
+local scrollFrame = nil
 
 local function createRow(name)
     local row = rowTemplate:Clone()
@@ -32,6 +33,17 @@ end
 
 local function updateLabel(pageLbl, currentPage, pageCount)
     pageLbl.Text = string.format("%d / %d", currentPage, pageCount)
+end
+
+local function displayTopPlays(topPlays)
+    for i = 1, #topPlaysContainers do
+        if i <= #topPlays then
+            local drawingData = topPlays[i]
+            TopPlaysCanvas.updateDrawingDisplayForRank(drawingData, i, topPlaysContainers)
+        else
+            TopPlaysCanvas.closeDrawingDisplayForRank(i, topPlaysContainers)
+        end
+    end
 end
 
 local function initRankingUI()
@@ -85,9 +97,14 @@ local function initRankingUI()
                     row.ScoreLabel.Text = score.value.points
                     row.ViewButton.Visible = true
                     row.ViewButton.MouseButton1Click:Connect(function()
+                        local userId = score.value.uid
+                        if cachedTopPlays[tostring(userId)] then
+                            displayTopPlays(cachedTopPlays[userId])
+                        else
+                            Events.RequestTopPlays:FireServer(userId)
+                        end
                         TopPlaysScreen.Enabled = true
                         TopPlaysScreen:FindFirstChild("TopLevelContainer").Visible = true
-                        -- TODO: Fire event to server to ask for top plays of this player.
                     end)
                 end
             end
@@ -108,16 +125,37 @@ local function initTopPlaysUI()
     local topLevelContainer = TopPlaysScreen:FindFirstChild("TopLevelContainer")
     -- Set to invisible first before we setup the canvas
     topLevelContainer.Visible = false
-    TopPlaysCanvas.setupTopPlaysCanvas(
+    scrollFrame = TopPlaysCanvas.setupTopPlaysCanvas(
         topLevelContainer, topPlaysContainers, 
         function()
             topLevelContainer.Visible = false
             TopPlaysScreen.Enabled = false
+
+            if topPlaysContainers then
+                for i, containerData in ipairs(topPlaysContainers) do
+                    local container = containerData.container
+                    local canvas = containerData.canvas
+                    canvas:Clear()
+                    local Loading = container:FindFirstChild("CanvasFrame"):FindFirstChild("Loading")
+                    Loading.Visible = true
+                end
+            end
         end
     )
+
+    Events.ReceiveTopPlays.OnClientEvent:Connect(function(topPlaysUserId, topPlays)
+        if topPlays == nil then
+            warn("Top plays are nil for player " .. topPlaysUserId)
+            return
+        end
+
+        cachedTopPlays[topPlaysUserId] = topPlays
+        displayTopPlays(topPlays)
+    end)
+
     -- After setup, disable the screen
     TopPlaysScreen.Enabled = false
 end
 
-initRankingUI()
 initTopPlaysUI()
+initRankingUI()
