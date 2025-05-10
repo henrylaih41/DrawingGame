@@ -4,213 +4,292 @@ local ThemeService = require(ServerScriptService.modules.ThemeService)
 local ThemeLoader = {}
 
 function ThemeLoader:loadThemes()
+    -- =========================
+-- === 1. Lighthouse =======
+-- =========================
 ThemeService:createTheme(
-    "Galaxy",
+    "Lighthouse",
     "",
     [[
-"Paint the vastness of space! A strong galaxy must blend at least **three distinct colors** (e.g., purple, blue, pink), include a **dense star field** (20 + varied-size dots), and feature **one focal object** (spiral arm, glowing planet, comet, or nebula core). Smooth gradients, color harmony, and depth stacking matter. Extra touches—constellation shapes, lens flares, or a tiny spaceship—push scores higher.
+"Beacon of the coast! A hard-mode lighthouse piece must balance architectural precision with dramatic seascape lighting. **Core requirements:**  
+1️⃣ *Structure Accuracy* – cylindrical or tapered tower, balcony (gallery), lantern room (glass top), and access door.  
+2️⃣ *Context* – rocky outcrop or pier, visible waves, and sky condition (sunset, storm, night).  
+3️⃣ *Light Interaction* – defined light beam or glow cone, correctly illuminating nearby rocks/water.  
+4️⃣ *Atmospheric Story* – weather effects (spray, clouds, rain) or narrative element (keeper’s house, ship in distance).
 
-Score 1: Dark scribble; <10 stars; no color depth.  
-Score 2: Black sky w/ sparse stars; one flat color patch.  
-Score 3: Two-tone cloud + 20 stars; focal object missing or crude.  
-Score 4: Three blended colors, 30 stars, simple planet; edges rough.  
-Score 5: Smooth blend (≥3 colors), 40 stars, crisp planet/comet outline.  
-Score 6: Spiral or nebula core with soft glow, layered star density, subtle shadows.  
-Score 7: Consistent light source, rim-lit planet, color gradients refined, minor lens flare.  
-Score 8: Multi-layer dust clouds, distant galaxy cores, faint constellation lines.  
-Score 9: Polished depth, pinpoint highlights, atmospheric haze, tiny spacecraft/astronaut.  
-Score 10: Poster-quality vista—flawless gradients, balanced composition, wow-factor depth."
+Score 1 Random coast doodle; no tower.  
+Score 2 Tower outline only; no balcony or glow; flat sea.  
+Score 3 Tower w/ balcony OR lantern; perspective skewed; waves hinted.  
+Score 4 Full tower pieces, horizon line, single light beam; colors flat; no shadows.  
+Score 5 Correct proportions, textured brick/stripe, wave crests, basic light cone.  
+Score 6 Rock texture, reflected beam on water, sky gradient, doorway detail.  
+Score 7 Weather drama (storm clouds/rain), foam splash, multi-source shadows.  
+Score 8 Golden-hour or moonlit palette, glass glare, subtle atmospheric depth.  
+Score 9 Complex lighting (caustics, rim light on rocks), disciplined perspective, credible weather physics.  
+Score 10 Publish-ready illustration—flawless architecture, cinematic lighting, rich textures, compelling narrative focal point."
+
     ]],
-    "Medium", 15,
+    "Hard", 20,
     "Server")
 
--- === Dragon (medium) ===
+-- =========================
+-- === 2. Spaceship =========
+-- =========================
 ThemeService:createTheme(
-    "Dragon",
+    "Spaceship",
     "",
     [[
-"Summon a legendary beast! Required: recognizable **head, torso, limbs, wings/fins**, and **tail**; at least **three areas of texture** (scales, belly plates, membrane veins); plus a **context cue** (fire, smoke, treasure, or sky). Anatomy and motion count. Western or Eastern style okay—just keep horns and menace clear.
+"Command the void! Hard mode expects a **cohesive spacecraft design** rendered in believable three-dimensional space. **Must include:**  
+1️⃣ *Readable Silhouette* – hull, thrusters, command bridge/cockpit, and antennae or weapon arrays.  
+2️⃣ *Surface Detail* – panel lines, vents, rivets, or greebles across at least three hull zones.  
+3️⃣ *Lighting Logic* – single key light (nearby star, explosion) with secondary rim or bounce; shadows follow.  
+4️⃣ *Scene* – space backdrop with nebula, planet, or debris field conveying depth/scale.
 
-Score 1: Vague creature; limbs/wings missing.  
-Score 2: Full outline but stiff; no textures; flat color.  
-Score 3: Clear wings, claws, tail; one-tone shading; no context.  
-Score 4: Two-tone body, scale dots, smoke or flames added.  
-Score 5: Proper limb joints, basic shadows, glowing eyes OR treasure pile.  
-Score 6: Gradient body, defined belly plates, smoke swirl, simple background.  
-Score 7: Dynamic pose (flying, lunging), fire breath, light-source consistency.  
-Score 8: Scale patterns, atmospheric depth, background terrain (mountains/sky).  
-Score 9: Intricate textures, rim lighting, foreground elements (knight, castle).  
-Score 10: Cinematic scene—perfect anatomy, rich textures, multi-layer lighting."
+Score 1 Random shape; no depth.  
+Score 2 Blobby rocket; no detail; stars as dots.  
+Score 3 Hull and engines, flat color; no shading; empty backdrop.  
+Score 4 Perspective in place, two-tone shading; minimal panel lines.  
+Score 5 Panel patterns, exhaust glow, gradient star field, basic rim light.  
+Score 6 Complex greebles, lens-flare thrusters, foreground debris for parallax.  
+Score 7 Consistent light falloff, planetary terminator glow, subtle bounce on hull.  
+Score 8 Multiple material types (metal, glass), color temperature contrast, depth-of-field hint.  
+Score 9 Dynamic camera angle, micro-detail crispness, atmospheric scattering or particle bloom.  
+Score 10 AAA concept-art tier—innovative design, immaculate lighting, cinematic composition, storytelling action (e.g., battle, docking)."
+
     ]],
-    "Medium", 15,
+    "Hard", 20,
     "Server")
 
--- === Cyberpunk (medium) ===
+-- =========================
+-- === 3. Rollercoaster ====
+-- =========================
 ThemeService:createTheme(
-    "Cyberpunk",
+    "Rollercoaster",
     "",
     [[
-"Neon nights & future grunge. Must show: **two neon color families**, **recognizable tech (cyborg limb, holo ad, drone, or hover car)**, and **urban depth** (at least two building layers). Rain reflections and cable webs add mood. Composition should feel crowded yet readable.
+"Feel the adrenaline! This hard-mode rollercoaster scene must capture **structural logic, motion, and crowd energy.**  
+Requirements:  
+1️⃣ *Track Geometry* – recognizable rails, support beams, and at least one inversion (loop, corkscrew) or steep drop.  
+2️⃣ *Train* – visible cars with seats, safety harnesses, and riders (hands-up screams!).  
+3️⃣ *Perspective* – dynamic angle (low worm’s-eye or aerial), coherent vanishing lines.  
+4️⃣ *Environment* – theme-park context: queue fencing, signage, trees, or adjacent rides. Motion blur or speed lines expected.
 
-Score 1: Flat skyline; no neon or tech.  
-Score 2: One neon sign; plain buildings; perspective off.  
-Score 3: Two neon hues, dark alley, weak tech hint.  
-Score 4: Glow signage, cyborg/vehicle silhouette, basic rain streaks.  
-Score 5: Multi-layer buildings, visor/circuit lines, reflective puddles.  
-Score 6: Consistent light bloom, misty fog, cables or vents, color harmony.  
-Score 7: Dynamic angle, holo projections, signage depth, minor crowd silhouettes.  
-Score 8: Polished reflections, light scattering, detailed gear, balanced palette.  
-Score 9: Atmospheric smog, complex perspective, chrome highlights, bustling details.  
-Score 10: Movie-poster quality—flawless neon, intricate depth, cinematic lighting."
+Score 1 Lines on page; no rollercoaster shape.  
+Score 2 Simple hill; no supports; blank cars.  
+Score 3 Full loop + cars; riders faceless; perspective wobbly.  
+Score 4 Supports added, cart wheels, basic crowd dots; flat colors.  
+Score 5 Correct track thickness, rider poses, park props; motion lines.  
+Score 6 Shadows under track, atmospheric haze, color-coded harnesses.  
+Score 7 Dynamic POV, blurred background, lighting on metal beams.  
+Score 8 Reflected sunlight, crowd reactions, detailed signage, depth layers.  
+Score 9 Complex track path crossing, staged foreground objects, meticulous perspective.  
+Score 10 Magazine-spread quality—immersive motion, flawless anatomy, stainless-steel reflections, vibrant park life."
+
     ]],
-    "Medium", 15,
+    "Hard", 20,
     "Server")
 
--- === Volcano (medium) ===
+-- =========================
+-- === 4. Observatory ======
+-- =========================
 ThemeService:createTheme(
-    "Volcano",
+    "Observatory",
     "",
     [[
-"Feel the heat! Must include: **clearly defined cone**, **lava flow or explosive column**, **ash/smoke plume**, and **reflected light** on surrounding terrain or sky. Reds, oranges, and yellows should have visible gradient. Dynamic motion earns big points.
+"Eyes on the cosmos! Deliver a **scientifically-plausible observatory** with convincing architecture and night-sky integration.  
+Key items:  
+1️⃣ *Dome Structure* – hemispherical roof, slit opening/shutter, rotating base.  
+2️⃣ *Primary Telescope* – optical tube, mount, and eyepiece/camera rig; correct pivot.  
+3️⃣ *Interior vs Exterior* – choose one but light convincingly (red safe lights inside or moonlit exterior).  
+4️⃣ *Context* – mountainous or remote hilltop, starry sky with Milky Way or aurora; subtle light pollution gradient.
 
-Score 1: Basic cone; no lava.  
-Score 2: Cone + red streak; no plume; flat shading.  
-Score 3: Lava river + smoke cloud; gradient minimal.  
-Score 4: Flow glow, cracked ground texture; plume shaded.  
-Score 5: Ember spray, reflected light on clouds/rocks, color blend smooth.  
-Score 6: Flow curves, ash shading, minor background silhouettes (trees/people).  
-Score 7: Eruption blast, debris arcs, sky color transition (sunset/night).  
-Score 8: Atmospheric lighting, layered smoke, lava lighting edges of rocks.  
-Score 9: Realistic lava texture, depth shadows, dynamic composition.  
-Score 10: Blockbuster eruption—multi-layer lighting, debris, polished detail."
+Score 1 Building blob; no dome.  
+Score 2 Dome and telescope, but perspective off, no context.  
+Score 3 Correct dome slit, simple tripod, star dots; flat lighting.  
+Score 4 Stone/metal texture, shadows, background peaks.  
+Score 5 Lens glass sheen, red interior glow or moon rim, sky gradient.  
+Score 6 Star density variation, Milky Way bands, atmospheric perspective on mountains.  
+Score 7 Instrument cables, access stairs, light spill on ground.  
+Score 8 Subtle reflection in lens, sky color shift, mist/fog layer.  
+Score 9 Astro-photography realism—accurate star colors, detailed mount, architectural precision.  
+Score 10 Masterpiece—cinematic nightscape, impeccable lighting physics, tactile textures, narrative element (astronomer at console)."
+
     ]],
-    "Medium", 15,
+    "Hard", 20,
     "Server")
 
--- === Rainbow (medium) ===
+-- =========================
+-- === 5. Submarine ========
+-- =========================
 ThemeService:createTheme(
-    "Rainbow",
+    "Submarine",
     "",
     [[
-"Spread color joy! Medium level expects **seven clean stripes in correct order**, **visible gradient or blending within each band**, and **a setting** (clouds, landscape, or subject interacting with the rainbow). Creativity still rocks, but precision matters.
+"Deep-sea stealth! A hard submarine scene needs **technical hull detail** and **underwater atmosphere**.  
+Mandatory:  
+1️⃣ *Hull Form* – hydrodynamic cylinder, conning tower (sail), dive planes, propeller or pump-jet.  
+2️⃣ *Lighting* – limited ambient light, headlamps or floodlights casting volumetric beams; caustics on metal.  
+3️⃣ *Environment* – depth cues: blue-green gradient, particulate silt, sea life or seafloor.  
+4️⃣ *Scale Reference* – diver, ROV, or comparison fauna to show size.
 
-Score 1: Random color mix; wrong order.  
-Score 2: 4 – 5 stripes; jagged edges.  
-Score 3: Seven stripes but wobbly; no setting.  
-Score 4: Correct stripes, simple clouds, minimal shading.  
-Score 5: Smooth edges, gradient in bands, background sky or hill.  
-Score 6: Soft edge feathering, reflections (water/puddles), sparkle accents.  
-Score 7: Double rainbow or curved perspective, detailed clouds, light rays.  
-Score 8: Creative integration (wings, spiral road), consistent lighting.  
-Score 9: Seamless gradient, atmospheric depth, subtle shadows/highlights.  
-Score 10: Greeting-card art—flawless blend, scenic environment, magical polish."
+Score 1 Oval blob; no water cues.  
+Score 2 Cylinder + tower; flat blue background.  
+Score 3 Propeller, fins, headlights; shading basic; no particles.  
+Score 4 Metal gradient, bubble stream, silhouette fish.  
+Score 5 Volumetric beams, sediment cloud, subtle caustics.  
+Score 6 Pressure hull panel lines, rivets, foreground coral or wreckage.  
+Score 7 Accurate light attenuation, fauna schooling, reflection on hull.  
+Score 8 Dynamic camera angle, depth-of-field blur, color cast realism.  
+Score 9 Detailed textures, sonar pings/glow logos, balanced composition.  
+Score 10 Film-concept quality—photoreal metals, rich particulate depth, compelling narrative (rescue, exploration)."
+
     ]],
-    "Medium", 15,
+    "Hard", 20,
     "Server")
 
--- === Samurai (medium) ===
+-- =========================
+-- === 6. Windmill =========
+-- =========================
 ThemeService:createTheme(
-    "Samurai",
+    "Windmill",
     "",
     [[
-"Honor & steel. Must show **kabuto or headband crest**, **layered armor plates with laces**, **katana with guard detail**, and **context element** (torii gate, cherry blossoms, rival warrior). Pose and cloth flow count.
+"Capture the turning sails! Hard mode demands architectural understanding and motion portrayal.  
+Checklist:  
+1️⃣ *Structure* – stone or wooden tower, rotating cap, four sails with lattice frames.  
+2️⃣ *Mechanics* – gear housing or interior view through door; pivot beams visible.  
+3️⃣ *Environment* – rural landscape (fields, canal) or dramatic weather.  
+4️⃣ *Motion* – angled sails, blur streaks, shadow orientation matching sun.
 
-Score 1: Stick figure w/ sword.  
-Score 2: Armor blob; no plate detail.  
-Score 3: Helmet crest, sword, basic armor; flat color.  
-Score 4: Layered plates, tied sash, cherry petals; shading minimal.  
-Score 5: Proper limb proportion, simple background, light-source obvious.  
-Score 6: Cloth folds, blade reflection, petals or gate, depth shadows.  
-Score 7: Dynamic stance, accurate plate lacing, balanced midtones.  
-Score 8: Atmospheric lighting, fabric patterns, ground reflections.  
-Score 9: Intricate armor texture, cinematic depth, compositional balance.  
-Score 10: Art-print scene—perfect anatomy, textures, dramatic lighting."
+Score 1 Tower doodle; no sails.  
+Score 2 Tower + sails; incorrect proportion; blank fields.  
+Score 3 Proper sail number, door, horizon; flat colors.  
+Score 4 Material texture (stone, wood), cast shadows, sky gradient.  
+Score 5 Gear hint, grass sway, blur on tips, reflected light.  
+Score 6 Perspective accuracy, flower/field detail, light direction consistent.  
+Score 7 Weather element (storm clouds, sunset bloom), strong rim light.  
+Score 8 Interior cog view or cutaway, atmospheric depth fog.  
+Score 9 Fine lattice detail, moving grain dust, balanced composition.  
+Score 10 Storybook art—perfect mechanics, cinematic lighting, dynamic landscape narrative."
+
     ]],
-    "Medium", 15,
+    "Hard", 20,
     "Server")
 
--- === Mirage (medium) ===
+-- =========================
+-- === 7. Pyramid ==========
+-- =========================
 ThemeService:createTheme(
-    "Mirage",
+    "Pyramid",
     "",
     [[
-"Desert illusions. Must include **two dune layers**, **clear heat-wave distortion** (wavy lines, color shift), and **false oasis or city** with reflection. Color gradient sky (warm to cool) is expected.
+"Monument of the ancients. Hard grading looks for **geometric precision** and **environmental storytelling.**  
+Essentials:  
+1️⃣ *Structure* – accurate triangular faces, aligned bricks/blocks, visible erosion or sand buildup.  
+2️⃣ *Lighting* – harsh desert sun, sharp shadows, heat haze.  
+3️⃣ *Surroundings* – dunes, obelisks, sphinx, or excavation gear.  
+4️⃣ *Sky* – gradient (dawn, dusk) or stellar night with Orion’s Belt alignment.
 
-Score 1: Dune scribble; no mirage.  
-Score 2: Simple dune + vague water spot.  
-Score 3: Heat lines, oasis shape; gradient rough.  
-Score 4: Two dune layers, pool reflection, footprints or cactus.  
-Score 5: Strong shimmer, fading edges, traveler silhouette.  
-Score 6: Multiple dunes, sun glare, color transition smooth.  
-Score 7: Distorted reflection detail, dust swirls, sky haze.  
-Score 8: Subtle foreground shadows, atmospheric depth, cloud wisps.  
-Score 9: Realistic shimmer, balanced palette, composition depth.  
-Score 10: Dream-scene masterpiece—flawless distortion, rich textures, cinematic desert."
+Score 1 Triangle blob; no depth.  
+Score 2 Block lines, flat sand, bright sky; no shading.  
+Score 3 Two pyramid faces visible, basic shadow.  
+Score 4 Brick texture, dune lines, warm palette.  
+Score 5 Sunlit rim, long cast shadows, wind-trace ripples.  
+Score 6 Foreground artifact (statue, dig tools), heat shimmer.  
+Score 7 Complex erosion detail, sky gradient, dust motes.  
+Score 8 Night scene with star alignment or torch light, depth layering.  
+Score 9 Photoreal textures, atmospheric perspective, storytelling (explorers, caravan).  
+Score 10 Museum-poster quality—flawless geometry, master lighting, immersive desert narrative."
+
     ]],
-    "Medium", 15,
+    "Hard", 20,
     "Server")
 
--- === Steampunk (medium) ===
+-- =========================
+-- === 8. Ferriswheel ======
+-- =========================
 ThemeService:createTheme(
-    "Steampunk",
+    "Ferriswheel",
     "",
     [[
-"Gear-powered retro-future. Medium demands **visible interconnected gears/pistons**, **Victorian fashion element** (top hat, corset, waistcoat), **steam or smoke**, and **copper/brass highlights**. Airship or cog-filled skyline adds depth.
+"Sky-high carnival lights! Hard mode emphasizes **engineering accuracy** and **night-time illumination.**  
+Must include:  
+1️⃣ *Wheel Framework* – radial spokes, central hub, A-frame supports, cross-bracing.  
+2️⃣ *Gondolas* – evenly spaced cabins with windows/doors, at least some occupants.  
+3️⃣ *Lighting* – LED strips or bulb chains following spokes/rim, glow reflecting on metal.  
+4️⃣ *Park Setting* – ticket booth, crowd, other rides blurred.
 
-Score 1: Random gear shapes.  
-Score 2: Goggles + gear; no steam.  
-Score 3: Outfit w/ goggles, gears, brown palette; flat shading.  
-Score 4: Brass tones, steam puff, basic piping.  
-Score 5: Interlocking gears, leather straps, reflective metal spots.  
-Score 6: Smoke curls, warm light bloom, simple background machinery.  
-Score 7: Airship or clock-tower backdrop, multiple metal textures, dynamic pose.  
-Score 8: Complex mechanism, polished reflections, depth fog.  
-Score 9: Intricate clockwork, textured leather, moody atmosphere.  
-Score 10: Concept-art brilliance—rich detail, cohesive lighting, immersive scene."
+Score 1 Circle; no spokes/cabins.  
+Score 2 Spokes present, cabins blocks; flat lighting.  
+Score 3 Proper supports, even cabins, simple bulbs.  
+Score 4 Metal shading, crowd silhouettes, sky gradient.  
+Score 5 Reflected light, cabin windows/glare, balanced perspective.  
+Score 6 Motion blur on rim, foreground bokeh lights, accurate shadows.  
+Score 7 Complex crowd, lens flare, color harmony.  
+Score 8 Atmospheric haze, depth layering, detailed booth signage.  
+Score 9 Precision engineering lines, dynamic composition, polished reflections.  
+Score 10 Festival-poster finish—immaculate lighting, depth, vibrant storytelling."
+
     ]],
-    "Medium", 15,
+    "Hard", 20,
     "Server")
 
--- === Nebula (medium) ===
+-- =========================
+-- === 9. Greenhouse =======
+-- =========================
 ThemeService:createTheme(
-    "Nebula",
+    "Greenhouse",
     "",
     [[
-"Cosmic gas clouds. Must show **minimum three color transitions**, **star density variation** (tiny specks + bright cores), and **depth illusion** (foreground cloud vs distant glow). One silhouetted object (planet, ship) boosts score.
+"Grow with the glow! Hard guidelines focus on **transparent structure** and **lush interior biodiversity.**  
+Requirements:  
+1️⃣ *Architecture* – glass panels, steel/aluminum framework, roof vents.  
+2️⃣ *Botany* – at least five plant types (vines, flowers, potted trees) with distinct leaf shapes.  
+3️⃣ *Lighting* – noon sun or artificial grow lights casting colored highlights through glass.  
+4️⃣ *Micro-climate Details* – mist/fog, water hoses, hanging planters, gardener or tools.
 
-Score 1: Color blotches; no stars.  
-Score 2: Two-color cloud, sparse dots.  
-Score 3: Three colors, bright core, basic stars.  
-Score 4: Soft gradients, star cluster, faint dark pockets.  
-Score 5: Layered wisps, highlight edges, planet rim.  
-Score 6: Lens flare, shooting star, depth shading.  
-Score 7: Dust lanes, color harmony, subtle transparency.  
-Score 8: Glowing rim light, varied star sizes, balanced composition.  
-Score 9: Hubble-photo vibe—rich depth, nuanced hues, crisp edges.  
-Score 10: Gallery piece—flawless blend, luminous highlights, immersive depth."
+Score 1 Box shape; no glass cues.  
+Score 2 Panel grid, generic plants, flat color.  
+Score 3 Light refraction lines, two plant varieties, perspective uneven.  
+Score 4 Leaf type variety, basic reflections, interior shadows.  
+Score 5 Sunbeam shafts, soil texture, tool bench.  
+Score 6 Condensation droplets on glass, color bounce from leaves.  
+Score 7 Depth rows, mist spray, insect or butterfly, light gradient.  
+Score 8 Translucent glass reflections, soft-focus background beds.  
+Score 9 Detailed leaf veins, multi-source lighting, balanced composition.  
+Score 10 Botanical-magazine quality—hyper-real glass, lush biodiversity, story element (researcher, rare bloom)."
+
     ]],
-    "Medium", 15,
+    "Hard", 20,
     "Server")
 
--- === Circus (medium) ===
+-- =========================
+-- === 10. Aquarium ========
+-- =========================
 ThemeService:createTheme(
-    "Circus",
+    "Aquarium",
     "",
     [[
-"Big-top excitement. Require **striped main tent**, **at least one performer or trained animal**, **audience or decoration** (banners/confetti), and **dynamic lighting** (spotlight or night glow). Colors should be bright and balanced.
+"Underwater showcase! Hard mode demands **convincing water optics** and **ecosystem richness.**  
+Include:  
+1️⃣ *Tank Structure* – glass walls, silicone seams, lighting hood.  
+2️⃣ *Aquascape* – substrate, rocks/driftwood, live plants, at least five fish species with accurate shapes.  
+3️⃣ *Optical Effects* – light caustics on substrate, subtle distortion/refraction through glass, surface ripples.  
+4️⃣ *Viewer Context* – human silhouette, info panel, room reflections.
 
-Score 1: Tent scribble; nothing else.  
-Score 2: Tent + clown; dull colors.  
-Score 3: Bright tent stripes, performer, balloons; flat shading.  
-Score 4: Spotlights, audience silhouettes, basic depth.  
-Score 5: Two active acts (e.g., trapeze + clown), confetti, neat outlines.  
-Score 6: Detailed costumes, balanced color palette, ground shadows.  
-Score 7: Motion blur, atmospheric haze, textured fabrics.  
-Score 8: Multi-ring layout, polished lighting, crowd detail.  
-Score 9: Festival poster vibe—rich light effects, detailed props/costumes.  
-Score 10: Celebration masterpiece—vibrant lights, full crowd, flawless composition."
+Score 1 Fish bowl doodle.  
+Score 2 Rect tank, few fish; no water effects.  
+Score 3 Substrate + plants, simple lighting; glass lines flat.  
+Score 4 Species variety, accurate colors, rock layout.  
+Score 5 Light rays, shadow gradient, subtle glass reflection.  
+Score 6 Caustic patterns, bubble stream, viewer silhouette.  
+Score 7 Refraction distortion, background signage glare.  
+Score 8 Dynamic fish poses, depth-of-field, balanced composition.  
+Score 9 Photoreal texture, convincing optics, storytelling (feeding, research).  
+Score 10 Show-poster excellence—perfect water physics, rich ecosystem, immersive lighting and reflections."
+
     ]],
-    "Medium", 15,
+    "Hard", 20,
     "Server")
 end
 
