@@ -642,9 +642,7 @@ local function init()
 
     Events.TestEvent.OnServerEvent:Connect(function(player)
         local userId = player.UserId
-        print("Test event received: " .. userId)
         local topDrawings = TopDrawingCacheService.fetch(userId)
-        print(topDrawings)
     end)
 
     

@@ -1,10 +1,12 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local PlayerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
 local LeaderBoardBuilder = require(ReplicatedStorage.Modules.Utils.LeaderBoardBuilder)
 local GameConfig = require(ReplicatedStorage.Modules.GameData.GameConfig)
 local TopPlaysCanvas = require(ReplicatedStorage.Modules.Utils.TopPlaysCanvas)
-
+local MainMenuScreen = PlayerGui:WaitForChild("MainMenuScreen")
+local MainMenuButtons = MainMenuScreen:WaitForChild("TopLevelContainer"):WaitForChild("Buttons")
+local BestScoresButton = MainMenuButtons:WaitForChild("BestScoresButton")
 -- Get references to UI elements
-local PlayerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
 local RankingScreen = PlayerGui:WaitForChild("RankingScreen")
 local TopPlaysScreen = PlayerGui:WaitForChild("TopPlaysScreen")
 local TopLevelContainer = RankingScreen:WaitForChild("TopLevelContainer")
@@ -44,6 +46,22 @@ local function displayTopPlays(topPlays)
             TopPlaysCanvas.closeDrawingDisplayForRank(i, topPlaysContainers)
         end
     end
+end
+
+local function openTopPlays(userId)
+
+    if (userId == nil) then
+        warn("openTopPlays:userId is nil")
+        return
+    end
+
+    if cachedTopPlays[tostring(userId)] then
+        displayTopPlays(cachedTopPlays[tostring(userId)])
+    else
+        Events.RequestTopPlays:FireServer(userId)
+    end
+    TopPlaysScreen.Enabled = true
+    TopPlaysScreen:FindFirstChild("TopLevelContainer").Visible = true
 end
 
 local function initRankingUI()
@@ -96,15 +114,8 @@ local function initRankingUI()
                     row.NameLabel.Text = score.value.name
                     row.ScoreLabel.Text = score.value.points
                     row.ViewButton.Visible = true
-                    row.ViewButton.MouseButton1Click:Connect(function()
-                        local userId = score.value.uid
-                        if cachedTopPlays[tostring(userId)] then
-                            displayTopPlays(cachedTopPlays[userId])
-                        else
-                            Events.RequestTopPlays:FireServer(userId)
-                        end
-                        TopPlaysScreen.Enabled = true
-                        TopPlaysScreen:FindFirstChild("TopLevelContainer").Visible = true
+                    row.ViewButton.MouseButton1Click:Connect(function() 
+                        openTopPlays(score.value.uid)
                     end)
                 end
             end
@@ -148,9 +159,14 @@ local function initTopPlaysUI()
             warn("Top plays are nil for player " .. topPlaysUserId)
             return
         end
-
-        cachedTopPlays[topPlaysUserId] = topPlays
+        
+        cachedTopPlays[tostring(topPlaysUserId)] = topPlays
         displayTopPlays(topPlays)
+    end)
+
+    -- Best scores button is just self rank view.
+    BestScoresButton.MouseButton1Click:Connect(function ()
+        openTopPlays(LocalPlayer.UserId)
     end)
 
     -- After setup, disable the screen

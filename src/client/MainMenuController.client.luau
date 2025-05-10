@@ -13,17 +13,14 @@ local ThemeListScreen = PlayerGui:WaitForChild("ThemeListScreen")
 local RankingScreen = PlayerGui:WaitForChild("RankingScreen")
 local RankingScreenTopLevelContainer = RankingScreen:WaitForChild("TopLevelContainer")
 local TopLevelContainer = MainMenuScreen:WaitForChild("TopLevelContainer")
-local BestScores = TopLevelContainer:WaitForChild("BestScores")
 local Buttons = TopLevelContainer:WaitForChild("Buttons")
 local SinglePlayerButton = Buttons:WaitForChild("SinglePlayerButton")
-local BestScoresButton = Buttons:WaitForChild("BestScoresButton")
 local RankingButton = Buttons:WaitForChild("RankingButton")
 
 -- Set up events
 local Events = ReplicatedStorage:WaitForChild("Events")
 local StartGameEvent = Events:WaitForChild("StartGame")
 local GameStateChangedEvent = Events:WaitForChild("GameStateChanged")
-local RequestTopPlaysEvent = Events:WaitForChild("RequestTopPlays")
 local ReceiveTopPlaysEvent = Events:WaitForChild("ReceiveTopPlays")
 local ReceiveNewBestDrawingEvent = Events:WaitForChild("ReceiveNewBestDrawing")
 local PlayerDataUpdatedEvent = Events:WaitForChild("PlayerDataUpdated")
@@ -40,32 +37,6 @@ local GameState = {
 
 -- Store received drawings data
 local cleanupFunctions = {}
-local selfTopPlaysContainers = {}
-
-
--- Set up event handler for receiving the drawings
-ReceiveTopPlaysEvent.OnClientEvent:Connect(function(topPlayUserId, topPlays)
-    -- Only update the top plays if it is the local players top plays.
-    if tostring(topPlayUserId) ~= tostring(Players.LocalPlayer.UserId) then
-        return
-    end
-
-    for i = 1, GameConfig.TOP_PLAYS_LIMIT do
-        local drawingData = topPlays[i]
-        TopPlaysCanvas.updateDrawingDisplayForRank(drawingData, i, selfTopPlaysContainers)
-    end
-end)
-
--- Add this function to request best drawings from server
-local function requestTopPlays()
-    RequestTopPlaysEvent:FireServer(Players.LocalPlayer.UserId)
-end
-
--- Function to handle BestScores button click
-local function onBestScoresClicked()
-    -- Toggle visibility of BestScores frame
-    BestScores.Visible = not BestScores.Visible
-end
 
 local function onRankingClicked()
     RankingScreenTopLevelContainer.Visible = not RankingScreenTopLevelContainer.Visible
@@ -117,7 +88,6 @@ end
 
 -- Apply button effects and on click events
 table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(SinglePlayerButton, onStartClicked))
-table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(BestScoresButton, onBestScoresClicked))
 table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(RankingButton, onRankingClicked))
 -- Need to get a better press image
 -- table.insert(cleanupFunctions, ButtonEffects.applyButtonPressEffect(SinglePlayerButton, "rbxassetid://140453037167378"))
@@ -143,17 +113,6 @@ local function initialize()
     local pModule = require(LocalPlayer:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule"))
     local playerControls = pModule:GetControls()
     playerControls:Disable()
-    
-    -- First setup the UI structure
-    TopPlaysCanvas.setupTopPlaysCanvas(BestScores, selfTopPlaysContainers)
-    
-    -- Then request best drawings data from server
-    requestTopPlays()
-    
-    -- Initially hide the BestScores frame until button is clicked
-    BestScores.Visible = false
-    
-    print("MainMenuController initialized")
 end
 
 -- Cleanup function for when this controller is no longer needed
