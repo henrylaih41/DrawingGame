@@ -623,6 +623,10 @@ local function sendThemeListPageToClient(player)
     Events.ReceiveThemeListPage:FireClient(player, themeList)
 end
 
+local function handleSendFeedback(player, feedback)
+    BackendService:SendFeedbackRequest(player.Name, player.UserId, feedback)
+end
+
 -- Initialize
 local function init()
 
@@ -639,6 +643,7 @@ local function init()
     Events.SubmitVote.OnServerEvent:Connect(handleVoteSubmission)
     Events.RequestTopPlays.OnServerEvent:Connect(sendTopPlaysToClient)
     Events.RequestThemeListPage.OnServerEvent:Connect(sendThemeListPageToClient)
+    Events.SendFeedback.OnServerEvent:Connect(handleSendFeedback)
 
     Events.TestEvent.OnServerEvent:Connect(function(player)
         local userId = player.UserId

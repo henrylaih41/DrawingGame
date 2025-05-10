@@ -21,7 +21,8 @@ end
 BackendService.BaseUrl = "https://drawing-backend.vercel.app"
 -- BackendService.BaseUrl = "http://localhost:3000"
 BackendService.Endpoints = {
-    OPENAI = "/api/openai"
+    OPENAI = "/api/openai",
+    FEEDBACK = "/api/feedback"
 }
 
 -- Default options for requests
@@ -59,6 +60,21 @@ function BackendService:SendOpenAIRequest(compressedImageData, prompt, theme, pl
     }
     
     return self:Post(self.Endpoints.OPENAI, requestBody)
+end
+
+-- Function to send feedback to the feedback endpoint
+function BackendService:SendFeedbackRequest(playerName, playerId, feedback)
+    assert(playerName, "Missing playerName parameter")
+    assert(playerId, "Missing playerId parameter")
+    assert(feedback, "Missing feedback parameter")
+
+    local requestBody = {
+        playerName = tostring(playerName),
+        playerId = tostring(playerId),
+        feedback = feedback
+    }
+    
+    return self:Post(self.Endpoints.FEEDBACK, requestBody)
 end
 
 -- Base function to send a POST request to any endpoint

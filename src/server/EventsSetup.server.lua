@@ -37,6 +37,7 @@ createEvent("ReceiveTopScores")
 createEvent("RequestThemeListPage")
 createEvent("ReceiveThemeListPage")
 createEvent("UpdateLobbyPlayers")
+createEvent("SendFeedback")
 createEvent("AdminCommand")
 createEvent("TestEvent")
 -- Set the parent of the Events folder

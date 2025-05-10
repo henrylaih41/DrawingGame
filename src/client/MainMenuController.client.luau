@@ -3,8 +3,6 @@ local Modules = ReplicatedStorage:WaitForChild("Modules")
 local Utils = Modules:WaitForChild("Utils")
 local ButtonEffects = require(Utils:WaitForChild("ButtonEffects"))
 local Players= game:GetService("Players")
-local TopPlaysCanvas = require(Utils:WaitForChild("TopPlaysCanvas"))
-local GameConfig = require(ReplicatedStorage.Modules.GameData.GameConfig)
 
 -- Get references to UI elements
 local PlayerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
@@ -13,9 +11,17 @@ local ThemeListScreen = PlayerGui:WaitForChild("ThemeListScreen")
 local RankingScreen = PlayerGui:WaitForChild("RankingScreen")
 local RankingScreenTopLevelContainer = RankingScreen:WaitForChild("TopLevelContainer")
 local TopLevelContainer = MainMenuScreen:WaitForChild("TopLevelContainer")
+local FeedbackContainer = TopLevelContainer:WaitForChild("FeedbackContainer")
 local Buttons = TopLevelContainer:WaitForChild("Buttons")
+local FeedbackButton = Buttons:WaitForChild("FeedbackButton")
 local SinglePlayerButton = Buttons:WaitForChild("SinglePlayerButton")
 local RankingButton = Buttons:WaitForChild("RankingButton")
+local FeedbackCancelButton = FeedbackContainer:WaitForChild("CancelButton")
+local FeedbackSubmitButton = FeedbackContainer:WaitForChild("SubmitButton")
+
+-- Add a variable to track last submission time
+local lastFeedbackSubmission = 0
+local FEEDBACK_COOLDOWN = 5 -- 5 seconds cooldown
 
 -- Set up events
 local Events = ReplicatedStorage:WaitForChild("Events")
@@ -70,6 +76,38 @@ local function onStartClicked()
     ThemeListTopLevelContainer.Visible = true 
 end
 
+local function onFeedbackClicked()
+    FeedbackContainer.Visible = true
+end
+
+local function onFeedbackCancelClicked()
+    FeedbackContainer.Visible = false
+end
+
+local function onFeedbackSubmitClicked()
+    -- Check if enough time has passed since last submission
+    local currentTime = os.time()
+    if currentTime - lastFeedbackSubmission < FEEDBACK_COOLDOWN then
+        return -- Silently ignore repeat submissions during cooldown
+    end
+    
+    -- Update last submission time
+    lastFeedbackSubmission = currentTime
+    
+    local TextBox = FeedbackContainer:FindFirstChild("TextBox")
+    if TextBox then
+        Events.SendFeedback:FireServer(TextBox.Text)
+    end
+    local SubmitNotification = FeedbackContainer:FindFirstChild("SubmitNotification")
+    if SubmitNotification then
+        SubmitNotification.Visible = true
+    end
+
+    task.delay(3, function()
+        SubmitNotification.Visible = false
+    end)
+end 
+
 -- Function to handle game state changes
 local function onGameStateChanged(stateData)
     if stateData and stateData.state then
@@ -89,6 +127,9 @@ end
 -- Apply button effects and on click events
 table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(SinglePlayerButton, onStartClicked))
 table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(RankingButton, onRankingClicked))
+table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(FeedbackButton, onFeedbackClicked))
+table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(FeedbackCancelButton, onFeedbackCancelClicked))
+table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(FeedbackSubmitButton, onFeedbackSubmitClicked))
 -- Need to get a better press image
 -- table.insert(cleanupFunctions, ButtonEffects.applyButtonPressEffect(SinglePlayerButton, "rbxassetid://140453037167378"))
 
