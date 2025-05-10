@@ -4,304 +4,213 @@ local ThemeService = require(ServerScriptService.modules.ThemeService)
 local ThemeLoader = {}
 
 function ThemeLoader:loadThemes()
-    ThemeService:createTheme(
-    "Naruto Uzumaki",
+ThemeService:createTheme(
+    "Galaxy",
     "",
     [[
-"Channel your inner shinobi and let the orange whirlwind fly! A solid Naruto drawing nails three signature cues: spiky blond hair, whisker marks, and his orange‑and‑black jumpsuit (headband optional but awesome). Go for energy over perfection—motion lines, swirling chakra, or ramen doodles crank up the hype. Markers, crayons, pencil—any tool works if the attitude screams “Believe It!”   
+"Paint the vastness of space! A strong galaxy must blend at least **three distinct colors** (e.g., purple, blue, pink), include a **dense star field** (20 + varied-size dots), and feature **one focal object** (spiral arm, glowing planet, comet, or nebula core). Smooth gradients, color harmony, and depth stacking matter. Extra touches—constellation shapes, lens flares, or a tiny spaceship—push scores higher.
 
-Score 1: Random scribble; no ninja traits at all.  
-Score 2: Stick figure with maybe spiky hair—nothing else matches Naruto.  
-Score 3: Basic body, hint of whiskers or orange but outfit/details off.  
-Score 4: Recognizable silhouette, hair and jumpsuit blocks; proportions messy.  
-Score 5: Clear Naruto—hair, whiskers, orange suit; simple color or shading.  
-Score 6: Adds Leaf headband symbol or rasengan glow; cleaner lines.  
-Score 7: Good anatomy, full colors, confident grin, small prop (ramen bowl).  
-Score 8: Dynamic pose (running, rasengan), smooth shading, subtle background.  
-Score 9: Near‑anime quality—folds, lighting, chakra aura, action backdrop.  
-Score 10: Studio‑level illustration: perfect pose, textures, dramatic lighting, epic scene."
+Score 1: Dark scribble; <10 stars; no color depth.  
+Score 2: Black sky w/ sparse stars; one flat color patch.  
+Score 3: Two-tone cloud + 20 stars; focal object missing or crude.  
+Score 4: Three blended colors, 30 stars, simple planet; edges rough.  
+Score 5: Smooth blend (≥3 colors), 40 stars, crisp planet/comet outline.  
+Score 6: Spiral or nebula core with soft glow, layered star density, subtle shadows.  
+Score 7: Consistent light source, rim-lit planet, color gradients refined, minor lens flare.  
+Score 8: Multi-layer dust clouds, distant galaxy cores, faint constellation lines.  
+Score 9: Polished depth, pinpoint highlights, atmospheric haze, tiny spacecraft/astronaut.  
+Score 10: Poster-quality vista—flawless gradients, balanced composition, wow-factor depth."
     ]],
-    "Easy", 10,
+    "Medium", 15,
     "Server")
 
+-- === Dragon (medium) ===
 ThemeService:createTheme(
-    "Izuku Midoriya (Deku)",
+    "Dragon",
     "",
     [[
-"Go Plus Ultra! Deku means messy green curls, big freckled smile, teal hero suit, and comfy red kicks. Capture his determined vibe—pose him mid‑smash or studying notes. Small sparks of One‑For‑All energy (crackling lightning) earn bonus points, but clarity beats complexity.   
+"Summon a legendary beast! Required: recognizable **head, torso, limbs, wings/fins**, and **tail**; at least **three areas of texture** (scales, belly plates, membrane veins); plus a **context cue** (fire, smoke, treasure, or sky). Anatomy and motion count. Western or Eastern style okay—just keep horns and menace clear.
 
-Score 1: Unclear doodle; can’t tell who it is.  
-Score 2: Stick figure with green blob hair.  
-Score 3: Curls + freckles OR teal suit, but not both.  
-Score 4: Recognizable Deku, outfit blocky; anatomy off.  
-Score 5: Correct hair, freckles, hero suit colors; basic pose.  
-Score 6: Adds red boots or gloves, cleaner lines, slight shading.  
-Score 7: Power lightning effects or notebook prop; good proportions.  
-Score 8: Dynamic smash pose, motion blur, full shading.  
-Score 9: Anime‑worthy lines, layered highlights, action background.  
-Score 10: Professional splash‑page art—perfect foreshortening, lighting, effects."
+Score 1: Vague creature; limbs/wings missing.  
+Score 2: Full outline but stiff; no textures; flat color.  
+Score 3: Clear wings, claws, tail; one-tone shading; no context.  
+Score 4: Two-tone body, scale dots, smoke or flames added.  
+Score 5: Proper limb joints, basic shadows, glowing eyes OR treasure pile.  
+Score 6: Gradient body, defined belly plates, smoke swirl, simple background.  
+Score 7: Dynamic pose (flying, lunging), fire breath, light-source consistency.  
+Score 8: Scale patterns, atmospheric depth, background terrain (mountains/sky).  
+Score 9: Intricate textures, rim lighting, foreground elements (knight, castle).  
+Score 10: Cinematic scene—perfect anatomy, rich textures, multi-layer lighting."
     ]],
-    "Easy", 10,
+    "Medium", 15,
     "Server")
 
+-- === Cyberpunk (medium) ===
 ThemeService:createTheme(
-    "Monkey D. Luffy",
+    "Cyberpunk",
     "",
     [[
-"Set sail for the Grand Line! Luffy’s essentials: straw hat, red vest, blue shorts, cheeky grin, and rubbery limbs. Exaggerate stretch poses—long arms or Gum‑Gum punch—because goofy action is his brand. A simple Jolly Roger or sunny sea backdrop scores bonus treasure.   
+"Neon nights & future grunge. Must show: **two neon color families**, **recognizable tech (cyborg limb, holo ad, drone, or hover car)**, and **urban depth** (at least two building layers). Rain reflections and cable webs add mood. Composition should feel crowded yet readable.
 
-Score 1: Scribble; no pirate vibe.  
-Score 2: Stick figure with random hat.  
-Score 3: Hat + red vest OR big grin, but missing most.  
-Score 4: Straw‑hat boy obvious, body stiff, colors rough.  
-Score 5: Proper hat, vest, shorts, grin; simple coloring.  
-Score 6: Rubber‑arm pose, shadow under hat, clearer lines.  
-Score 7: Full color, chest scar, tiny background ship.  
-Score 8: Action stretch, motion lines, water splash.  
-Score 9: Detailed anatomy, shading, sky gradient, flag in wind.  
-Score 10: Cinematic poster quality—dynamic lighting, full scene, wow factor."
+Score 1: Flat skyline; no neon or tech.  
+Score 2: One neon sign; plain buildings; perspective off.  
+Score 3: Two neon hues, dark alley, weak tech hint.  
+Score 4: Glow signage, cyborg/vehicle silhouette, basic rain streaks.  
+Score 5: Multi-layer buildings, visor/circuit lines, reflective puddles.  
+Score 6: Consistent light bloom, misty fog, cables or vents, color harmony.  
+Score 7: Dynamic angle, holo projections, signage depth, minor crowd silhouettes.  
+Score 8: Polished reflections, light scattering, detailed gear, balanced palette.  
+Score 9: Atmospheric smog, complex perspective, chrome highlights, bustling details.  
+Score 10: Movie-poster quality—flawless neon, intricate depth, cinematic lighting."
     ]],
-    "Easy", 10,
+    "Medium", 15,
     "Server")
 
+-- === Volcano (medium) ===
 ThemeService:createTheme(
-    "Goku",
+    "Volcano",
     "",
     [[
-"Time to power up! Goku rocks spiky black (or Super Saiyan gold) hair, orange gi, blue undershirt, and that chill‑yet‑tough grin. Show motion—charging Ki, flying, or a Kamehameha. Aura glows or cratered ground boost the wow, but a clean base pose is plenty for mid scores.   
+"Feel the heat! Must include: **clearly defined cone**, **lava flow or explosive column**, **ash/smoke plume**, and **reflected light** on surrounding terrain or sky. Reds, oranges, and yellows should have visible gradient. Dynamic motion earns big points.
 
-Score 1: Random lines; unrecognizable.  
-Score 2: Stick man with spiky hair.  
-Score 3: Orange outfit OR hair right, not both.  
-Score 4: Recognizable Goku; messy body; flat color.  
-Score 5: Proper gi, hair, wristbands; basic shading.  
-Score 6: Adds blue undershirt symbol, better proportions.  
-Score 7: Aura outline, darker shading, confident stance.  
-Score 8: Action beam or flight pose, glowing effects.  
-Score 9: Sharp anatomy, layered highlights, cracked ground.  
-Score 10: Full anime shot—dramatic light, energy flares, epic backdrop."
+Score 1: Basic cone; no lava.  
+Score 2: Cone + red streak; no plume; flat shading.  
+Score 3: Lava river + smoke cloud; gradient minimal.  
+Score 4: Flow glow, cracked ground texture; plume shaded.  
+Score 5: Ember spray, reflected light on clouds/rocks, color blend smooth.  
+Score 6: Flow curves, ash shading, minor background silhouettes (trees/people).  
+Score 7: Eruption blast, debris arcs, sky color transition (sunset/night).  
+Score 8: Atmospheric lighting, layered smoke, lava lighting edges of rocks.  
+Score 9: Realistic lava texture, depth shadows, dynamic composition.  
+Score 10: Blockbuster eruption—multi-layer lighting, debris, polished detail."
     ]],
-    "Easy", 10,
+    "Medium", 15,
     "Server")
 
+-- === Rainbow (medium) ===
 ThemeService:createTheme(
-    "Pikachu",
+    "Rainbow",
     "",
     [[
-"Bring on the cute! Key bits: chubby yellow body, pointy ears with black tips, red cheeks, thunder‑bolt tail, and bright eyes. Simple shapes rule—make it adorable rather than perfect. Lightning bolts, Poké Ball, or grass field are sweet extras.   
+"Spread color joy! Medium level expects **seven clean stripes in correct order**, **visible gradient or blending within each band**, and **a setting** (clouds, landscape, or subject interacting with the rainbow). Creativity still rocks, but precision matters.
 
-Score 1: Scribble; no Pokémon vibe.  
-Score 2: Yellow blob with ears.  
-Score 3: Ears + cheeks but tail wrong shape.  
-Score 4: Recognizable Pikachu; messy lines; flat yellow.  
-Score 5: Right proportions, tail, cheeks; neat outline.  
-Score 6: Adds shading or small Poké Ball.  
-Score 7: Cute pose (jumping), spark effects, smooth color fill.  
-Score 8: Thunder attack, detailed highlights, background patch.  
-Score 9: Near‑official art—soft gradients, crisp edges, scenery.  
-Score 10: Merch‑ready illustration—perfect lighting, textures, dynamic scene."
+Score 1: Random color mix; wrong order.  
+Score 2: 4 – 5 stripes; jagged edges.  
+Score 3: Seven stripes but wobbly; no setting.  
+Score 4: Correct stripes, simple clouds, minimal shading.  
+Score 5: Smooth edges, gradient in bands, background sky or hill.  
+Score 6: Soft edge feathering, reflections (water/puddles), sparkle accents.  
+Score 7: Double rainbow or curved perspective, detailed clouds, light rays.  
+Score 8: Creative integration (wings, spiral road), consistent lighting.  
+Score 9: Seamless gradient, atmospheric depth, subtle shadows/highlights.  
+Score 10: Greeting-card art—flawless blend, scenic environment, magical polish."
     ]],
-    "Easy", 10,
+    "Medium", 15,
     "Server")
 
+-- === Samurai (medium) ===
 ThemeService:createTheme(
-    "Levi Ackerman",
+    "Samurai",
     "",
     [[
-"Humanity’s coolest captain! Levi’s trademarks: under‑cut black hair, calm gray eyes, Survey Corps cape, and dual blades. Focus on sharp angles and poised stance—he’s all precision. Background rooftops or ODM gear cables look awesome but aren’t essential for mid scores.   
+"Honor & steel. Must show **kabuto or headband crest**, **layered armor plates with laces**, **katana with guard detail**, and **context element** (torii gate, cherry blossoms, rival warrior). Pose and cloth flow count.
 
-Score 1: Random figure; no match.  
-Score 2: Stick soldier with sword.  
-Score 3: Cape or blades present, rest generic.  
-Score 4: Recognizable Levi; basic uniform, stiff pose.  
-Score 5: Right hairstyle, cloak, twin blades; simple shading.  
-Score 6: Adds Scouts emblem or determined eyes, cleaner lines.  
-Score 7: Dynamic mid‑air slice, motion lines, cape flow.  
-Score 8: ODM gear detail, city skyline, sharper shadows.  
-Score 9: Realistic anatomy, textured fabric, smoke effects.  
-Score 10: Panel‑quality art—cinematic lighting, full 3‑D depth."
+Score 1: Stick figure w/ sword.  
+Score 2: Armor blob; no plate detail.  
+Score 3: Helmet crest, sword, basic armor; flat color.  
+Score 4: Layered plates, tied sash, cherry petals; shading minimal.  
+Score 5: Proper limb proportion, simple background, light-source obvious.  
+Score 6: Cloth folds, blade reflection, petals or gate, depth shadows.  
+Score 7: Dynamic stance, accurate plate lacing, balanced midtones.  
+Score 8: Atmospheric lighting, fabric patterns, ground reflections.  
+Score 9: Intricate armor texture, cinematic depth, compositional balance.  
+Score 10: Art-print scene—perfect anatomy, textures, dramatic lighting."
     ]],
-    "Easy", 10,
+    "Medium", 15,
     "Server")
 
+-- === Mirage (medium) ===
 ThemeService:createTheme(
-    "SpongeBob SquarePants",
+    "Mirage",
     "",
     [[
-"Who lives in a pineapple under the sea? Make your sponge bright yellow, squishy with holes, white shirt, red tie, brown shorts, and forever‑happy face. Wavy outlines and bubbly backgrounds feel extra ocean‑y. Don’t fuss over perfect squares—goofy charm wins.   
+"Desert illusions. Must include **two dune layers**, **clear heat-wave distortion** (wavy lines, color shift), and **false oasis or city** with reflection. Color gradient sky (warm to cool) is expected.
 
-Score 1: Scribble; no sponge shape.  
-Score 2: Yellow blob; eyes uneven.  
-Score 3: Square body + tie but little else.  
-Score 4: Recognizable SpongeBob; messy color; limbs odd.  
-Score 5: Clear shape, outfit correct; neat linework.  
-Score 6: Adds freckles or big toothy grin, subtle shading.  
-Score 7: Jellyfish net, bubbles, or krabby patty prop.  
-Score 8: Dynamic pose, wavy outlines, ocean floor bits.  
-Score 9: Clean cartoon style, highlights, textured holes.  
-Score 10: Episode‑ready art—vibrant colors, background scene, polished finish."
+Score 1: Dune scribble; no mirage.  
+Score 2: Simple dune + vague water spot.  
+Score 3: Heat lines, oasis shape; gradient rough.  
+Score 4: Two dune layers, pool reflection, footprints or cactus.  
+Score 5: Strong shimmer, fading edges, traveler silhouette.  
+Score 6: Multiple dunes, sun glare, color transition smooth.  
+Score 7: Distorted reflection detail, dust swirls, sky haze.  
+Score 8: Subtle foreground shadows, atmospheric depth, cloud wisps.  
+Score 9: Realistic shimmer, balanced palette, composition depth.  
+Score 10: Dream-scene masterpiece—flawless distortion, rich textures, cinematic desert."
     ]],
-    "Easy", 10,
+    "Medium", 15,
     "Server")
 
+-- === Steampunk (medium) ===
 ThemeService:createTheme(
-    "Patrick Star",
+    "Steampunk",
     "",
     [[
-"Best buddy vibes! Patrick is a pink starfish with sleepy eyes, goofy smile, and green‑purple swim trunks. Keep shapes soft and fun—he’s all about laid‑back cheer. Sea rocks, ice‑cream cones, or a confused expression earn bonus chuckles.   
+"Gear-powered retro-future. Medium demands **visible interconnected gears/pistons**, **Victorian fashion element** (top hat, corset, waistcoat), **steam or smoke**, and **copper/brass highlights**. Airship or cog-filled skyline adds depth.
 
-Score 1: Doodle; star shape unclear.  
-Score 2: Pink star outline only.  
-Score 3: Star + shorts, face missing or off.  
-Score 4: Recognizable Patrick; flat pink; limbs odd.  
-Score 5: Correct body, trunks, happy face; neat lines.  
-Score 6: Adds belly button or drool, simple shading.  
-Score 7: Funny pose, prop (cone), background bubble.  
-Score 8: Bold outlines, smooth colors, rock seat.  
-Score 9: Cartoon‑show polish, light gradients, ocean floor detail.  
-Score 10: Poster‑quality finish—glossy highlights, full scenery, comedic sparkle."
+Score 1: Random gear shapes.  
+Score 2: Goggles + gear; no steam.  
+Score 3: Outfit w/ goggles, gears, brown palette; flat shading.  
+Score 4: Brass tones, steam puff, basic piping.  
+Score 5: Interlocking gears, leather straps, reflective metal spots.  
+Score 6: Smoke curls, warm light bloom, simple background machinery.  
+Score 7: Airship or clock-tower backdrop, multiple metal textures, dynamic pose.  
+Score 8: Complex mechanism, polished reflections, depth fog.  
+Score 9: Intricate clockwork, textured leather, moody atmosphere.  
+Score 10: Concept-art brilliance—rich detail, cohesive lighting, immersive scene."
     ]],
-    "Easy", 10,
+    "Medium", 15,
     "Server")
 
+-- === Nebula (medium) ===
 ThemeService:createTheme(
-    "Scooby‑Doo",
+    "Nebula",
     "",
     [[
-"Ruh‑roh! Scooby is a lanky brown Great Dane with black spots, blue collar, and SD tag. Capture his long snout, goofy grin, and wagging tail. Bonus snacks: Scooby Snacks box, ghost silhouette, or Shaggy cameo.   
+"Cosmic gas clouds. Must show **minimum three color transitions**, **star density variation** (tiny specks + bright cores), and **depth illusion** (foreground cloud vs distant glow). One silhouetted object (planet, ship) boosts score.
 
-Score 1: Scribble; no dog vibe.  
-Score 2: Brown blob dog.  
-Score 3: Dog shape + collar, missing spots/tag.  
-Score 4: Recognizable Scooby; body parts off‑scale.  
-Score 5: Proper shape, collar, grin; simple colors.  
-Score 6: Adds spots or SD tag, cleaner outline.  
-Score 7: Fun pose (tip‑toe scared), light shading.  
-Score 8: Ghost background, motion lines, shine in eyes.  
-Score 9: Smooth cartoon style, texture, haunted backdrop.  
-Score 10: Animation‑cel level—dynamic lighting, spooky scene, polished details."
+Score 1: Color blotches; no stars.  
+Score 2: Two-color cloud, sparse dots.  
+Score 3: Three colors, bright core, basic stars.  
+Score 4: Soft gradients, star cluster, faint dark pockets.  
+Score 5: Layered wisps, highlight edges, planet rim.  
+Score 6: Lens flare, shooting star, depth shading.  
+Score 7: Dust lanes, color harmony, subtle transparency.  
+Score 8: Glowing rim light, varied star sizes, balanced composition.  
+Score 9: Hubble-photo vibe—rich depth, nuanced hues, crisp edges.  
+Score 10: Gallery piece—flawless blend, luminous highlights, immersive depth."
     ]],
-    "Easy", 10,
+    "Medium", 15,
     "Server")
 
+-- === Circus (medium) ===
 ThemeService:createTheme(
-    "Mickey Mouse",
+    "Circus",
     "",
     [[
-"The true OG! Key icons: big round ears, red shorts with white buttons, yellow shoes, white gloves. Keep lines smooth and eyes cheerful. Retro pie‑eyes, magic sparkles, or Castle backdrop can level‑up but aren’t required for mid scores.   
+"Big-top excitement. Require **striped main tent**, **at least one performer or trained animal**, **audience or decoration** (banners/confetti), and **dynamic lighting** (spotlight or night glow). Colors should be bright and balanced.
 
-Score 1: Random circles; unclear.  
-Score 2: Two‑circle head only.  
-Score 3: Head + shorts, missing shoes/gloves.  
-Score 4: Recognizable Mickey; rough lines; flat color.  
-Score 5: Full outfit, neat proportions; simple shading.  
-Score 6: Adds gloves shine, smile angle, tidy linework.  
-Score 7: Fun pose (wave), small sparkle, background gradient.  
-Score 8: Classic steamboat or castle hint, smoother colors.  
-Score 9: Disney‑short caliber, subtle shadows, clean edges.  
-Score 10: Theme‑park poster—perfect curves, lighting, magical backdrop."
+Score 1: Tent scribble; nothing else.  
+Score 2: Tent + clown; dull colors.  
+Score 3: Bright tent stripes, performer, balloons; flat shading.  
+Score 4: Spotlights, audience silhouettes, basic depth.  
+Score 5: Two active acts (e.g., trapeze + clown), confetti, neat outlines.  
+Score 6: Detailed costumes, balanced color palette, ground shadows.  
+Score 7: Motion blur, atmospheric haze, textured fabrics.  
+Score 8: Multi-ring layout, polished lighting, crowd detail.  
+Score 9: Festival poster vibe—rich light effects, detailed props/costumes.  
+Score 10: Celebration masterpiece—vibrant lights, full crowd, flawless composition."
     ]],
-    "Easy", 10,
-    "Server")
-
-ThemeService:createTheme(
-    "Tom and Jerry",
-    "",
-    [[
-"Chaotic cat‑and‑mouse duo! Draw gray Tom (big ears, long tail) and brown Jerry (tiny, round ears) mid‑chase. Cartoon action—cheese wedge, frying pan, or dust trails—sells the gag. Don’t worry about perfect anatomy; playful motion rules.   
-
-Score 1: Scribble; can’t tell who’s who.  
-Score 2: One animal blob; missing other.  
-Score 3: Both present but basic stick figures.  
-Score 4: Recognizable duo; stiff poses; flat color.  
-Score 5: Clear Tom & Jerry, fun expressions; neat lines.  
-Score 6: Motion lines or prop (cheese) added; shading basic.  
-Score 7: Dynamic chase pose, background floor/house.  
-Score 8: Impact effects, layered colors, dust clouds.  
-Score 9: TV‑short quality, detailed fur, polished action scene.  
-Score 10: Cinematic still—perfect timing, lighting, full environment."
-    ]],
-    "Easy", 10,
-    "Server")
-
-ThemeService:createTheme(
-    "Raven (Teen Titans Go!)",
-    "",
-    [[
-"Embrace the dark‑but‑cool vibe. Raven sports a purple cloak with hood, pale skin, and red gem on her forehead. Focus on calm floating pose or spell casting. Dark aura or “Azarath Metrion Zinthos” text boosts mystic points.   
-
-Score 1: Scribble; no character link.  
-Score 2: Purple blob with eyes.  
-Score 3: Cloak + gem, missing face details.  
-Score 4: Recognizable Raven; flat colors; stiff pose.  
-Score 5: Proper cloak, gem, pale face; clean lines.  
-Score 6: Adds shadow wings or book, simple shading.  
-Score 7: Hovering pose, magic circle, gradient cloak.  
-Score 8: Spell energy, starry backdrop, layered colors.  
-Score 9: Show‑quality style, soft highlights, moody lighting.  
-Score 10: Poster‑grade art—dynamic magic, full environment, pro polish."
-    ]],
-    "Easy", 10,
-    "Server")
-
-ThemeService:createTheme(
-    "Robin (Teen Titans Go!)",
-    "",
-    [[
-"Ready to lead the Titans! Robin rocks spiky black hair, green domino mask, red‑yellow‑green suit with “R” badge, and bo staff. Show action—jump kick, birdarang throw, or serious stance. Starfire hearts cameo optional but epic.   
-
-Score 1: Scribble; who even is this?  
-Score 2: Stick hero with mask blob.  
-Score 3: Mask + red suit, missing logo or colors.  
-Score 4: Recognizable Robin; lines rough; flat color.  
-Score 5: Proper costume, mask, badge; neat outline.  
-Score 6: Adds bo staff or cape motion; shading light.  
-Score 7: Dynamic pose, motion swoosh, background blur.  
-Score 8: Birdarang trail, crisp colors, glow.  
-Score 9: TV‑episode still—highlights, detailed folds, scene depth.  
-Score 10: Comic‑cover art—dramatic lighting, action splash, perfect finish."
-    ]],
-    "Easy", 10,
-    "Server")
-
-ThemeService:createTheme(
-    "Kim Possible",
-    "",
-    [[
-"So not the drama! Kim sports fiery red hair, black crop‑top, green cargo pants, gloves, and grappling hook. Capture her confident spy‑stance or mid‑flip kick. Simple background (mission screen or beep communicator) adds extra style.   
-
-Score 1: Scribble; no spy vibe.  
-Score 2: Stick girl with ponytail.  
-Score 3: Red hair + crop‑top, rest off.  
-Score 4: Recognizable Kim; colors flat; pose stiff.  
-Score 5: Proper outfit, hair bounce; neat lines.  
-Score 6: Adds gadget (hook), shading basic.  
-Score 7: Action pose, motion swoosh, background hint.  
-Score 8: Dynamic kick, tech HUD, layered colors.  
-Score 9: Cartoon‑network quality, light gradients, detailed gear.  
-Score 10: Poster‑worthy—cinematic lighting, full spy scene, polished finish."
-    ]],
-    "Easy", 10,
-    "Server")
-
-ThemeService:createTheme(
-    "Ben Tennyson (Ben 10)",
-    "",
-    [[
-"It’s Hero Time! Ben’s staples: messy brown hair, black‑and‑white tee or green jacket, and the Omnitrix on his wrist glowing green. Show him transforming, checking alien menu, or striking hero pose. Alien silhouettes in background boost cosmic cred.   
-
-Score 1: Random kid doodle.  
-Score 2: Stick figure with watch blob.  
-Score 3: Hair + Omnitrix, outfit off.  
-Score 4: Recognizable Ben; flat color; anatomy off.  
-Score 5: Correct watch, shirt/jacket, hair; clean lines.  
-Score 6: Watch glow, basic shading, confident stance.  
-Score 7: Transformation silhouette, motion lines, background flash.  
-Score 8: Alien outline, layered highlights, nebula backdrop.  
-Score 9: Show‑style polish, dynamic lighting, detailed watch.  
-Score 10: Box‑art level—perfect pose, energy burst, full scene."
-    ]],
-    "Easy", 10,
+    "Medium", 15,
     "Server")
 end
 
