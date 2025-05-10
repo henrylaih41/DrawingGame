@@ -23,7 +23,7 @@ local function createRow(name)
     row.Size = UDim2.new(1, 0, 0, YOffset)
     row.Name = name
     row.NameLabel.Text = ""
-    row.DescriptionLabel.Text = ""
+    row.DifficultyLabel.Text = ""
     row.DurationLabel.Text = ""
     return row
 end
@@ -70,6 +70,52 @@ local function selectTheme(row)
     SelectedTheme = row
 end
 
+local function getDifficultyValue(difficulty)
+    if difficulty == "Easy" then
+        return 1
+    elseif difficulty == "Medium" then
+        return 2
+    elseif difficulty == "Hard" then
+        return 3
+    else
+        return 4  -- For any unknown difficulty, place at the end
+    end
+end
+
+local function sortThemesByDifficulty(themeList)
+    table.sort(themeList, function(a, b)
+        local diffA = getDifficultyValue(a.value.Difficulty)
+        local diffB = getDifficultyValue(b.value.Difficulty)
+        
+        -- First sort by difficulty
+        if diffA ~= diffB then
+            return diffA < diffB
+        end
+        
+        -- Then sort by name within same difficulty
+        return a.value.Name < b.value.Name
+    end)
+    return themeList
+end
+
+local function removeDuplicateThemes(themeList)
+    local uniqueThemes = {}
+    local seen = {}
+    
+    for _, theme in ipairs(themeList) do
+        -- Create a unique key based on name and difficulty
+        local key = theme.value.Name .. ":" .. theme.value.Difficulty
+        
+        -- Only keep themes we haven't seen before
+        if not seen[key] then
+            seen[key] = true
+            table.insert(uniqueThemes, theme)
+        end
+    end
+    
+    return uniqueThemes
+end
+
 local function initRankingUI()
     local row_per_page = ROWS_PER_PAGE
     local pageCount = math.ceil(MAX_ROWS / row_per_page)
@@ -99,9 +145,13 @@ local function initRankingUI()
     local pageContainer = TopLevelContainer:FindFirstChild("PageContainer")
     local header = TopLevelContainer:FindFirstChild("Header")
     header.NameLabel.Text = "Theme"
-    header.DescriptionLabel.Text = "Description"
+    header.DifficultyLabel.Text = "Difficulty"
     header.DurationLabel.Text = "Duration"
     Events.ReceiveThemeListPage.OnClientEvent:Connect(function(themeList)
+        -- Remove duplicates and sort themes by difficulty and name before displaying
+        themeList = removeDuplicateThemes(themeList)
+        themeList = sortThemesByDifficulty(themeList)
+        
         local pageFrame = nil 
         for i, theme in ipairs(themeList) do
             theme = theme.value
@@ -127,7 +177,19 @@ local function initRankingUI()
                     end)
 
                     row.NameLabel.Text = theme.Name
-                    row.DescriptionLabel.Text = theme.Description
+                    row.DifficultyLabel.Text = theme.Difficulty
+                    
+                    -- Set color based on difficulty
+                    if theme.Difficulty == "Easy" then
+                        row.DifficultyLabel.TextColor3 = Color3.fromRGB(0, 255, 0)  -- Green
+                    elseif theme.Difficulty == "Medium" then
+                        row.DifficultyLabel.TextColor3 = Color3.fromRGB(255, 255, 0)  -- Yellow
+                    elseif theme.Difficulty == "Hard" then
+                        row.DifficultyLabel.TextColor3 = Color3.fromRGB(255, 0, 0)  -- Red
+                    else
+                        row.DifficultyLabel.TextColor3 = Color3.fromRGB(255, 255, 255)  -- White (default)
+                    end
+                    
                     row.DurationLabel.Text = theme.Duration
                     row:SetAttribute("theme_uuid", theme.uuid)
                 end

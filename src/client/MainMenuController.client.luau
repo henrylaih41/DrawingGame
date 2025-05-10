@@ -63,11 +63,11 @@ local function onStartClicked()
     end
 
     -- Select a random theme from the list
-    local randomIndex = math.random(1, #theme_uuids)
-    local theme_uuid = theme_uuids[randomIndex]
-    StartGameEvent:FireServer(theme_uuid)
-    -- local ThemeListTopLevelContainer = ThemeListScreen:WaitForChild("TopLevelContainer")
-    -- ThemeListTopLevelContainer.Visible = true 
+    -- local randomIndex = math.random(1, #theme_uuids)
+    -- local theme_uuid = theme_uuids[randomIndex]
+    -- StartGameEvent:FireServer(theme_uuid)
+    local ThemeListTopLevelContainer = ThemeListScreen:WaitForChild("TopLevelContainer")
+    ThemeListTopLevelContainer.Visible = true 
 end
 
 -- Function to handle game state changes
