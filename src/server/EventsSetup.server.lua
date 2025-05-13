@@ -40,6 +40,10 @@ createEvent("UpdateLobbyPlayers")
 createEvent("SendFeedback")
 createEvent("AdminCommand")
 createEvent("TestEvent")
+createEvent("RegisterCanvas")
+createEvent("UnregisterCanvas")
+createEvent("DrawCanvas")
+createEvent("ClientStateChange")
 -- Set the parent of the Events folder
 Events.Parent = ReplicatedStorage
 print("Events setup complete") 

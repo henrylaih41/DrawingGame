@@ -67,11 +67,15 @@ end
 local function initRankingUI()
     local row_per_page = ROWS_PER_PAGE
     local pageCount = math.ceil(MAX_ROWS / row_per_page)
-    local prevBtn, nextBtn, pageLbl, pageLayout 
+    local prevBtn, nextBtn, closeBtn, pageLbl, pageLayout 
         = LeaderBoardBuilder.Create(TopLevelContainer, MAX_ROWS, createRow, createRow,row_per_page)
 
     local currentPage = 1
     updateLabel(pageLbl, currentPage, pageCount)
+
+    closeBtn.MouseButton1Click:Connect(function()
+        TopLevelContainer.Visible = false
+    end)
 
     prevBtn.MouseButton1Click:Connect(function()
         if currentPage > 1 then

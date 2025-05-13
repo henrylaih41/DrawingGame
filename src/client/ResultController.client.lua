@@ -30,7 +30,6 @@ local Events = ReplicatedStorage:WaitForChild("Events")
 -- Result display variables
 local resultScreen = nil
 local topLevelContainer = nil
-local resultUIInitialized = false
 local resultCanvas = nil
 local bestScoreCanvas = nil
 local bestScoreContainer = nil
@@ -40,7 +39,6 @@ local bestScoreTrophyContainer = nil
 local feedbackContainer = nil
 local feedbackLabel = nil
 local feedbackButton, menuButton, bestScoreButton = nil, nil, nil
-
 
 -- Function to display the final results
 --- Displays the results for a specific player.
@@ -70,6 +68,7 @@ local function displayResults(playerScore, bestScore)
     CanvasDisplay.updateStarDisplay(resultTrophyContainer, playerScore.score, true)
 
     -- Show result UI once the image is loaded.
+    resultScreen.Enabled = true
     topLevelContainer.Visible = true
 
     -- Update the feedback text
@@ -95,13 +94,6 @@ end
 --- including the canvas, star container, feedback label, and star images.
 --- Creates the CanvasDraw instance. Prevents multiple initializations.
 local function initResultUI()
-    -- Prevent multiple initializations
-    if resultUIInitialized then
-        log("Result UI already initialized")
-        return
-    end
-
-    resultUIInitialized = true
     log("Initializing Result UI")
 
     -- Get result screen
@@ -199,9 +191,6 @@ Events.GameStateChanged.OnClientEvent:Connect(function(stateData)
 
     if stateData.state == "RESULTS" then
         -- Ensure UI is initialized. Init upon the first call.
-        if not resultUIInitialized then
-            initResultUI()
-        end
         -- Initially hide the feedback container until button is clicked
         feedbackContainer.Visible = false
         bestScoreContainer.Visible = false
@@ -210,16 +199,13 @@ Events.GameStateChanged.OnClientEvent:Connect(function(stateData)
         if theme.Difficulty then
             resultCanvasTopBar.Theme.Text = resultCanvasTopBar.Theme.Text .. " [" .. theme.Difficulty .. "]"
         end
-        assert(resultUIInitialized, "ResultUI is not initialized")
-        -- Ensure UI is initialized (might have been initialized above or previously)
-        if not resultUIInitialized then initResultUI() end
         assert(resultScreen ~= nil, "ResultScreen is nil when trying to display results")
 
         -- Check if we have results data
         if stateData.playerScores then
             -- Store the results data
             -- Display the results for current player
-            displayResults(stateData.playerScores[tostring(LocalPlayer.UserId)], stateData.bestScore)
+            displayResults(stateData.playerScores, stateData.bestScore)
         else
             warn("ResultController: Received RESULTS state but no resultsData was provided.")
             -- Display error message or hide elements
@@ -236,6 +222,7 @@ Events.GameStateChanged.OnClientEvent:Connect(function(stateData)
         -- Hide UI for other states (e.g., LOBBY, DRAWING)
         if topLevelContainer then
             topLevelContainer.Visible = false
+            resultScreen.Enabled = false
             log("ResultScreen topLevelContainer hidden")
         end
 
@@ -243,4 +230,5 @@ Events.GameStateChanged.OnClientEvent:Connect(function(stateData)
     end
 end)
 
+initResultUI()
 log("ResultController script loaded") 

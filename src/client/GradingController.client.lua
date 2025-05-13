@@ -29,8 +29,10 @@ local GameState = {
 local function handleGameStateChanged(stateData)
     local state = stateData.state
     if state == GameState.GRADING then
+        GradingScreen.Enabled = true
         topLevelContainer.Visible = true
     else
+        GradingScreen.Enabled = false
         topLevelContainer.Visible = false
     end
 end

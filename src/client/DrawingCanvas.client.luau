@@ -39,9 +39,6 @@ local SubmitDrawingEvent   = Events:WaitForChild("SubmitDrawing")
 local LocalPlayer   = Players.LocalPlayer
 local PlayerGui     = LocalPlayer:WaitForChild("PlayerGui")
 
--- PlayerModule controls reference (for mobile movement / jump UI)
-local playerControls  -- will be initialised lazily
-
 ------------------------------------------------------------------------
 -- 4️⃣  CONFIG / STATE VARS
 ------------------------------------------------------------------------
@@ -327,12 +324,6 @@ end
 ------------------------------------------------------------------------
 -- Note that we want the screenGUI to be enabled before the canvas is initialized
 local function initUI() 
-    -- Disable Roblox mobile move/jump UI
-    if not playerControls then
-        local pModule = require(LocalPlayer:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule"))
-        playerControls = pModule:GetControls()
-    end
-
     drawingScreen   = PlayerGui:WaitForChild("DrawingScreen")
     topLevelContainer = drawingScreen:WaitForChild("TopLevelContainer")
     canvasContainer = topLevelContainer:WaitForChild("CanvasContainer")
@@ -343,13 +334,11 @@ local function initUI()
     timerRotateScript = _G.TimerRotateScriptModule
 end
 
-
 local function initCanvas()
     if canvasInitialized then return end
     canvasInitialized = true
     -- Hide notification by default
     submitNotification.Visible = false
-    playerControls:Disable()
 
     CANVAS_BACKGROUND_COLOR = canvasFrame.BackgroundColor3
 
@@ -524,6 +513,8 @@ end
 ------------------------------------------------------------------------
 -- 1️⃣1️⃣  GAME STATE & COUNTDOWN HANDLERS
 ------------------------------------------------------------------------
+initUI()
+
 GameStateChangedEvent.OnClientEvent:Connect(function(stateData)
     local newState = stateData.state
     local prev = currentGameState
@@ -539,19 +530,20 @@ GameStateChangedEvent.OnClientEvent:Connect(function(stateData)
         canvasTopBar.Theme.Text = theme
         canvasTopBar.Theme.AutoLocalize = true
         takeCanvasSnapshot()
+        drawingScreen.Enabled = true
         topLevelContainer.Visible = true
         log("Drawing phase enabled")
     else
-        if timerRotateScript then
-            timerRotateScript.stop()
-        end
         log("Drawing Canvas received event:" .. newState)
-        if topLevelContainer then topLevelContainer.Visible = false end
-        
-        if newState == "VOTING" and prev == "DRAWING" then submitDrawing() end
-
+        drawingScreen.Enabled = false
+        topLevelContainer.Visible = false
         if prev == "DRAWING" then
             log("Cleaning up drawing phase")
+
+            if timerRotateScript then
+                timerRotateScript.stop()
+            end
+
             -- Clean up when leaving drawing phase
             if canvas then
                 log("Destroying canvas " .. canvas.Id)
@@ -580,11 +572,6 @@ GameStateChangedEvent.OnClientEvent:Connect(function(stateData)
             canvasInitialized = false
             cleanupConnections()
             
-            -- Re-enable player controls
-            if playerControls then
-                playerControls:Enable()
-            end
-            
             -- Clear history stacks
             table.clear(undoStack)
             table.clear(redoStack)
@@ -603,5 +590,3 @@ GameCountdownEvent.OnClientEvent:Connect(function(sec, phase)
         timeLabel.TextColor3 = (sec<=60) and Color3.fromRGB(255,50,50) or Color3.fromRGB(0,0,0)
     end
 end)
-
-initUI()

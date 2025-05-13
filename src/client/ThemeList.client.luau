@@ -49,8 +49,6 @@ local function createFooter()
         local theme_uuid = SelectedTheme:GetAttribute("theme_uuid")
         Events.StartGame:FireServer(theme_uuid)
         resetSelectedTheme(SelectedTheme)
-        -- Entering drawing phase, hide the theme list.
-        TopLevelContainer.Visible = false
         SelectedTheme = nil
     end)
     return footer
@@ -119,12 +117,18 @@ end
 local function initRankingUI()
     local row_per_page = ROWS_PER_PAGE
     local pageCount = math.ceil(MAX_ROWS / row_per_page)
-    local prevBtn, nextBtn, pageLbl, pageLayout 
+    local prevBtn, nextBtn, closeBtn, pageLbl, pageLayout 
         = LeaderBoardBuilder.Create(TopLevelContainer, MAX_ROWS, createRow, createFooter, row_per_page)
 
 
     local currentPage = 1
     updateLabel(pageLbl, currentPage, pageCount)
+
+    closeBtn.MouseButton1Click:Connect(function()
+        ThemeListScreen.Enabled = false
+        TopLevelContainer.Visible = false
+        Events.ClientStateChange:FireServer("IDLE")
+    end)
 
     prevBtn.MouseButton1Click:Connect(function()
         if currentPage > 1 then
@@ -197,8 +201,19 @@ local function initRankingUI()
         end
     end)
 
+    Events.GameStateChanged.OnClientEvent:Connect(function(stateData)
+        if stateData.state == "THEME_LIST" then
+            ThemeListScreen.Enabled = true
+            TopLevelContainer.Visible = true
+        else
+            ThemeListScreen.Enabled = false
+            TopLevelContainer.Visible = false
+        end
+    end)
+
     -- First page start key is nil.
     Events.RequestThemeListPage:FireServer()
+    print("ThemeList initialized")
 end
 
 initRankingUI()

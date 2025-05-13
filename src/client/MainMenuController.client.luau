@@ -7,14 +7,12 @@ local Players= game:GetService("Players")
 -- Get references to UI elements
 local PlayerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
 local MainMenuScreen = PlayerGui:WaitForChild("MainMenuScreen")
-local ThemeListScreen = PlayerGui:WaitForChild("ThemeListScreen")
 local RankingScreen = PlayerGui:WaitForChild("RankingScreen")
 local RankingScreenTopLevelContainer = RankingScreen:WaitForChild("TopLevelContainer")
 local TopLevelContainer = MainMenuScreen:WaitForChild("TopLevelContainer")
 local FeedbackContainer = TopLevelContainer:WaitForChild("FeedbackContainer")
 local Buttons = TopLevelContainer:WaitForChild("Buttons")
 local FeedbackButton = Buttons:WaitForChild("FeedbackButton")
-local SinglePlayerButton = Buttons:WaitForChild("SinglePlayerButton")
 local RankingButton = Buttons:WaitForChild("RankingButton")
 local FeedbackCancelButton = FeedbackContainer:WaitForChild("CancelButton")
 local FeedbackSubmitButton = FeedbackContainer:WaitForChild("SubmitButton")
@@ -25,10 +23,7 @@ local FEEDBACK_COOLDOWN = 5 -- 5 seconds cooldown
 
 -- Set up events
 local Events = ReplicatedStorage:WaitForChild("Events")
-local StartGameEvent = Events:WaitForChild("StartGame")
 local GameStateChangedEvent = Events:WaitForChild("GameStateChanged")
-local ReceiveTopPlaysEvent = Events:WaitForChild("ReceiveTopPlays")
-local ReceiveNewBestDrawingEvent = Events:WaitForChild("ReceiveNewBestDrawing")
 local PlayerDataUpdatedEvent = Events:WaitForChild("PlayerDataUpdated")
 
 -- Game state constants
@@ -60,21 +55,6 @@ Events.ReceiveThemeListPage.OnClientEvent:Connect(function(themeList)
         table.insert(theme_uuids, theme.value.uuid)
     end
 end)
-
--- Function to handle SinglePlayer button click
-local function onStartClicked()
-    if #theme_uuids == 0 then
-        warn("No themes found")
-        return
-    end
-
-    -- Select a random theme from the list
-    -- local randomIndex = math.random(1, #theme_uuids)
-    -- local theme_uuid = theme_uuids[randomIndex]
-    -- StartGameEvent:FireServer(theme_uuid)
-    local ThemeListTopLevelContainer = ThemeListScreen:WaitForChild("TopLevelContainer")
-    ThemeListTopLevelContainer.Visible = true 
-end
 
 local function onFeedbackClicked()
     FeedbackContainer.Visible = true
@@ -125,7 +105,6 @@ local function onGameStateChanged(stateData)
 end
 
 -- Apply button effects and on click events
-table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(SinglePlayerButton, onStartClicked))
 table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(RankingButton, onRankingClicked))
 table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(FeedbackButton, onFeedbackClicked))
 table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(FeedbackCancelButton, onFeedbackCancelClicked))
@@ -150,10 +129,6 @@ PlayerDataUpdatedEvent.OnClientEvent:Connect(onPlayerDataUpdated)
 -- Initialize the controller
 local function initialize()
     math.randomseed(os.time())
-    local LocalPlayer = Players.LocalPlayer
-    local pModule = require(LocalPlayer:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule"))
-    local playerControls = pModule:GetControls()
-    playerControls:Disable()
 end
 
 -- Cleanup function for when this controller is no longer needed

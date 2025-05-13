@@ -183,11 +183,7 @@ function LeaderboardBuilder.Create(container, totalRows, createRow, createFooter
     footer.BackgroundTransparency = headerTransparency
     footer.BackgroundColor3 = headerBackgroundColor 
 
-    closeBtn.MouseButton1Click:Connect(function()
-        container.Visible = false
-    end)
-
-    return prevBtn, nextBtn, pageLbl, pageLayout
+    return prevBtn, nextBtn, closeBtn, pageLbl, pageLayout
 end
 
 return LeaderboardBuilder
