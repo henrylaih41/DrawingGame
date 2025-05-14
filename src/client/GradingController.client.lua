@@ -8,6 +8,7 @@ local Players = game:GetService("Players")
 -- References
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local GameConstants = require(ReplicatedStorage.Modules.GameData.GameConstants)
 
 -- Events
 local Events = ReplicatedStorage:WaitForChild("Events")
@@ -19,10 +20,10 @@ local topLevelContainer = GradingScreen:WaitForChild("TopLevelContainer")
 local GameState = {
     LOBBY = "LOBBY",
     COUNTDOWN = "COUNTDOWN",
-    DRAWING = "DRAWING",
-    GRADING = "GRADING",
+    DRAWING = GameConstants.PlayerStateEnum.DRAWING,
+    GRADING = GameConstants.PlayerStateEnum.GRADING,
     VOTING = "VOTING",
-    RESULTS = "RESULTS"
+    RESULTS = GameConstants.PlayerStateEnum.RESULTS
 }
 
 -- Function to handle game state changes

@@ -10,9 +10,9 @@ local TopPlaysStore = require(ServerScriptService.modules.TopPlaysStore)
 --------------------------------------------------------------------
 -- CONFIG – edit to match your deployment
 --------------------------------------------------------------------
-local WORKER_BASE_URL = "https://top-drawing-kv-store.henrylaih41.workers.dev"   -- trailing slash
+local WORKER_BASE_URL = "http://localhost:3000"   -- trailing slash
+local ENDPOINT = "/api/topPlays/"  -- Will append userId to this path
 -- local WORKER_BASE_URL = "http://127.0.0.1:8787/"   -- trailing slash
-local ADMIN_KEY       = "EPvY7rNWR13ONIvxtzof4" -- keep server-side only!
 local MAX_RETRIES     = 4          -- exponential back-off tries
 local BASE_DELAY      = 2          -- seconds; grows per attempt
 
@@ -43,28 +43,19 @@ local TopDrawingCacheService = {}
 -- @param userId   number | string  Roblox userId
 -- @return table                Lua table decoded from JSON
 function TopDrawingCacheService.fetch(userId)
-    local result, _ = TopPlaysStore:getTopPlays(userId)
-    return result
-    -- Getting 520 error from the worker. Let's fallback to datastore for now.
-    -- local response = requestWithRetry({
-    --     Url     = WORKER_BASE_URL .. tostring(userId),
-    --     Method  = "GET",
-    --     Headers = { ["Content-Type"] = "application/json" },
-    -- })
-    -- return HttpService:JSONDecode(response.Body)
-end
-
---- Purges the userId’s cache entry after they set a new score.
--- Only call this from server code that knows ADMIN_KEY.
--- @return boolean   true if Worker responded 200
-function TopDrawingCacheService.purge(userId)
-    local resp = requestWithRetry({
-        Url     = WORKER_BASE_URL .. tostring(userId),
-        Method  = "DELETE",                   -- matches Worker snippet
-        Headers = { ["X-Admin-Key"] = ADMIN_KEY },
-        Timeout = 10,
+    local response = requestWithRetry({
+        Url     = WORKER_BASE_URL .. ENDPOINT,
+        Method  = "POST",
+        Headers = { ["Content-Type"] = "application/json" },
+        Body    = HttpService:JSONEncode({ userId = userId }),
     })
-    return resp.StatusCode == 200
+    
+    if not response then
+        warn("[Top30] Failed to fetch top plays for user " .. userId)
+        return nil
+    end
+    
+    return HttpService:JSONDecode(response.Body)
 end
 
 return TopDrawingCacheService

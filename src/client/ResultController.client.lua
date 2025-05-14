@@ -9,7 +9,6 @@ local DebugUtils = require(ReplicatedStorage.Modules.Services.DebugUtils)
 
 -- Debug logging function using DebugUtils
 --- Logs a message to the console if DebugFlag is enabled.
---- @param ... any The message parts to log.
 local function log(...)
     if DebugFlag then
         DebugUtils.print("ResultController:", ...)
@@ -23,7 +22,7 @@ local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local CanvasDraw = require(ReplicatedStorage.Modules.Canvas.CanvasDraw)
 local CanvasDisplay = require(ReplicatedStorage.Modules.Canvas.CanvasDisplay)
-
+local GameConstants = require(ReplicatedStorage.Modules.GameData.GameConstants)
 -- Remote events
 local Events = ReplicatedStorage:WaitForChild("Events")
 
@@ -189,7 +188,7 @@ Events.GameStateChanged.OnClientEvent:Connect(function(stateData)
     log("ResultController: Game State Changed: ", stateData.state)
 
 
-    if stateData.state == "RESULTS" then
+    if stateData.state == GameConstants.PlayerStateEnum.RESULTS then
         -- Ensure UI is initialized. Init upon the first call.
         -- Initially hide the feedback container until button is clicked
         feedbackContainer.Visible = false

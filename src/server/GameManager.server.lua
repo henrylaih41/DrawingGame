@@ -6,6 +6,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 local GameConfig = require(ReplicatedStorage.Modules.GameData.GameConfig)
+local GameConstants = require(ReplicatedStorage.Modules.GameData.GameConstants)
 local PlayerStore = require(ServerScriptService.modules.PlayerStore)
 local TopPlaysStore = require(ServerScriptService.modules.TopPlaysStore)
 local PlayerBestDrawingsStore = require(ServerScriptService.modules.PlayerBestDrawingsStore)
@@ -75,10 +76,16 @@ local function debugPrint(message, ...)
     end
 end
 
-local function UpdatePlayerStateAndNotifyClient(player: Player, newState: string, additionalData: {}?)
+local function UpdatePlayerStateAndNotifyClient(player: Player, newState: string, additionalData)
     local playerState = ServerStates.PlayerState[player]
     debugPrint("Transitioning from %s to %s", playerState.state, newState)
     playerState.state = newState
+
+    if newState == GameConstants.PlayerStateEnum.THEME_LIST then
+        warn(newState, additionalData)
+        -- This is the canvas that the player is currently on.
+        playerState.canvas = additionalData.canvas
+    end
     
     local stateData = additionalData or {}
     stateData.state = newState
@@ -88,12 +95,12 @@ end
 
 -- Player Management
 local function handlePlayerJoined(player)
-
+    warn(player.UserId)
     -- Update the player state.
     ServerStates.PlayerState[player] = {
         ownedCanvas = {},
         maximumOwnedCanvas = 1,
-        state = ServerStates.PlayerStateEnum.IDLE,
+        state = GameConstants.PlayerStateEnum.IDLE,
         playerDrawings = nil,
         playerScores = nil,
         waitSignal = Instance.new("BindableEvent"),
@@ -106,7 +113,7 @@ local function handlePlayerJoined(player)
 
     -- Tell the new player the current game state
     Events.GameStateChanged:FireClient(player, {
-        state = ServerStates.PlayerStateEnum.IDLE
+        state = GameConstants.PlayerStateEnum.IDLE
     })
 
     -- Tell the new player the current player data
@@ -313,7 +320,7 @@ local function storeHighestScoringDrawing(player:Player, theme, imageData, score
     end
 end
 
-local function runGradingPhase(player, currentTheme)
+local function runGradingPhase(player: Player, currentTheme: string)
     local playerState = ServerStates.PlayerState[player]
     local userId = player.UserId
     local imageData = playerState.playerDrawings
@@ -345,6 +352,9 @@ local function runGradingPhase(player, currentTheme)
                 -- We need to be careful since this function is called using a task spawn.
                 -- We either have to make this blocking or use some synchronization mechanism.
                 storeHighestScoringDrawing(player, currentTheme, compressedImageData, scoreValue, result.result.Feedback)
+
+                -- TODO, once the grading is done, we check if the image is appropriate to be displayed.
+                Events.DrawToCanvas:FireAllClients(imageData, currentTheme, playerState.canvas)
             else
                 warn("Grading failed")
                 playerState.playerScores[userId] = { 
@@ -369,11 +379,11 @@ local function startGame(player: Player, theme_uuid: string)
     local currentTheme = ThemeStore:getTheme(theme_uuid)
 
     -- === DRAWING PHASE ===
-    UpdatePlayerStateAndNotifyClient(player, ServerStates.PlayerStateEnum.DRAWING, {theme = currentTheme})
+    UpdatePlayerStateAndNotifyClient(player, GameConstants.PlayerStateEnum.DRAWING, {theme = currentTheme})
     runDrawingPhase(player, currentTheme)
     
         -- === GRADING PHASE (Single Player) ===
-    UpdatePlayerStateAndNotifyClient(player, ServerStates.PlayerStateEnum.GRADING)
+    UpdatePlayerStateAndNotifyClient(player, GameConstants.PlayerStateEnum.GRADING)
     runGradingPhase(player, currentTheme)
 
     -- Get the current best score for the theme
@@ -399,7 +409,7 @@ local function startGame(player: Player, theme_uuid: string)
     end
 
     -- === RESULTS PHASE ===
-    UpdatePlayerStateAndNotifyClient(player, ServerStates.PlayerStateEnum.RESULTS, 
+    UpdatePlayerStateAndNotifyClient(player, GameConstants.PlayerStateEnum.RESULTS, 
         {bestScore = bestScore, playerScores = ServerStates.PlayerState[player].playerScores, theme = currentTheme})
     debugPrint("Displaying single-player results. Waiting for player to click menu button.")
     
@@ -417,7 +427,7 @@ local function startGame(player: Player, theme_uuid: string)
         connection:Disconnect()
     end
     
-    UpdatePlayerStateAndNotifyClient(player, ServerStates.PlayerStateEnum.IDLE)
+    UpdatePlayerStateAndNotifyClient(player, GameConstants.PlayerStateEnum.IDLE)
 end
 
 local function handleDrawingSubmission(player, imageData)
@@ -448,7 +458,83 @@ local function handleSendFeedback(player, feedback)
 end
 
 local function handleClientStateChange(player, newState, additionalData)
-    UpdatePlayerStateAndNotifyClient(player, newState)
+    UpdatePlayerStateAndNotifyClient(player, newState, additionalData)
+end
+
+-- ServerScriptService/CanvasSurface.lua
+local function attachSurfaceGui(canvasModel : Model,
+                                pixelsPerStud : number,
+                                maxPixels     : number,
+                                face          : Enum.NormalId?)
+
+    ----------------------------------------------------------------
+    -- 0. Validate inputs
+    ----------------------------------------------------------------
+    local board = canvasModel.PrimaryPart
+    if not board then
+        error(("attachSurfaceGui: %q has no PrimaryPart"):format(canvasModel:GetFullName()))
+    end
+
+    if board:FindFirstChild("CanvasGui") then
+        return board.CanvasGui                      -- already attached
+    end
+
+    pixelsPerStud = pixelsPerStud or 50
+    maxPixels     = maxPixels     or 2048
+    face          = face          or Enum.NormalId.Front   -- default
+
+    ----------------------------------------------------------------
+    -- 1. Build the SurfaceGui
+    ----------------------------------------------------------------
+    local gui               = Instance.new("SurfaceGui")
+    gui.Name                = "CanvasGui"
+    gui.ResetOnSpawn        = false
+    gui.LightInfluence      = 0
+    gui.ZIndexBehavior      = Enum.ZIndexBehavior.Global
+    gui.SizingMode          = Enum.SurfaceGuiSizingMode.PixelsPerStud
+    gui.PixelsPerStud       = pixelsPerStud
+    gui.Face                = face
+    gui.ClipsDescendants    = true
+    gui.Adornee             = board
+    gui.Parent              = board     -- replication happens here
+
+    ----------------------------------------------------------------
+    -- 2. Compute the board’s width / height *on that face*
+    ----------------------------------------------------------------
+    local size = board.Size
+    local widthStuds, heightStuds
+
+    if face == Enum.NormalId.Front or face == Enum.NormalId.Back then
+        widthStuds, heightStuds = size.X, size.Y          -- X-by-Y
+    elseif face == Enum.NormalId.Left or face == Enum.NormalId.Right then
+        widthStuds, heightStuds = size.Z, size.Y          -- Z-by-Y
+    else -- Top / Bottom
+        widthStuds, heightStuds = size.X, size.Z          -- X-by-Z
+    end
+
+    local pxW = math.clamp(math.floor(widthStuds  * pixelsPerStud), 32, maxPixels)
+    local pxH = math.clamp(math.floor(heightStuds * pixelsPerStud), 32, maxPixels)
+    gui.CanvasSize = Vector2.new(pxW, pxH)
+
+    ----------------------------------------------------------------
+    -- 3. Add an ImageLabel that fills the surface
+    ----------------------------------------------------------------
+    local img             = Instance.new("ImageLabel")
+    img.Name              = "DrawingImage"
+    img.BackgroundTransparency = 1
+    img.BorderSizePixel   = 0
+    img.Size              = UDim2.fromScale(1, 1)
+    img.ScaleType         = Enum.ScaleType.Fit        -- keeps aspect
+    img.Parent            = gui
+
+    -- Only add an aspect-ratio constraint if the board isn’t square
+    if math.abs(widthStuds - heightStuds) > 0.01 then
+        local ar          = Instance.new("UIAspectRatioConstraint")
+        ar.AspectRatio    = widthStuds / heightStuds
+        ar.Parent         = img
+    end
+
+    return gui
 end
 
 -- Initialize
@@ -460,11 +546,19 @@ local function init()
     end
 
     -- Initialize the canvas state for all canvas in the workspace.
-    for _, c in ipairs(workspace:WaitForChild(ServerStates.DrawingCanvasFolderName):GetChildren()) do
+    for _, c in ipairs(workspace:WaitForChild(GameConstants.DrawingCanvasFolderName):GetChildren()) do
         ServerStates.CanvasState[c] = {
             registered = false,
             ownerPlayer = nil
         }
+
+        local faceAttr = c:GetAttribute("CanvasFace")
+        if faceAttr then
+            local faceEnum = Enum.NormalId[faceAttr] 
+            attachSurfaceGui(c, 50, 2048, faceEnum)
+        else
+            attachSurfaceGui(c, 50, 2048)
+        end
     end
 
     -- Connect event handlers
@@ -482,6 +576,17 @@ end
 
 -- Start the module
 init()
+
+task.spawn(function()
+    task.wait(3)
+    local topPlays = TopDrawingCacheService.fetch(8240890430)
+    for i, c in ipairs(workspace:WaitForChild(GameConstants.DrawingCanvasFolderName):GetChildren()) do
+        local theme = topPlays[i].theme
+    local imageData = CanvasDraw.DecompressImageDataCustom(topPlays[i].imageData)
+    warn(theme)
+    Events.DrawToCanvas:FireAllClients(imageData, theme, c)
+    end
+end)
 
 -- local ThemeLoader = require(ServerScriptService.modules.ThemeLoader)
 -- ThemeLoader:loadThemes()

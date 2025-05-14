@@ -1,6 +1,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LeaderBoardBuilder = require(ReplicatedStorage.Modules.Utils.LeaderBoardBuilder)
 local GameConfig = require(ReplicatedStorage.Modules.GameData.GameConfig)
+local GameConstants = require(ReplicatedStorage.Modules.GameData.GameConstants)
 
 -- Get references to UI elements
 local PlayerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
@@ -127,7 +128,7 @@ local function initRankingUI()
     closeBtn.MouseButton1Click:Connect(function()
         ThemeListScreen.Enabled = false
         TopLevelContainer.Visible = false
-        Events.ClientStateChange:FireServer("IDLE")
+        Events.ClientStateChange:FireServer(GameConstants.PlayerStateEnum.IDLE)
     end)
 
     prevBtn.MouseButton1Click:Connect(function()
@@ -202,7 +203,7 @@ local function initRankingUI()
     end)
 
     Events.GameStateChanged.OnClientEvent:Connect(function(stateData)
-        if stateData.state == "THEME_LIST" then
+        if stateData.state == GameConstants.PlayerStateEnum.THEME_LIST then
             ThemeListScreen.Enabled = true
             TopLevelContainer.Visible = true
         else

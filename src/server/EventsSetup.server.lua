@@ -44,6 +44,7 @@ createEvent("RegisterCanvas")
 createEvent("UnregisterCanvas")
 createEvent("DrawCanvas")
 createEvent("ClientStateChange")
+createEvent("DrawToCanvas")
 -- Set the parent of the Events folder
 Events.Parent = ReplicatedStorage
 print("Events setup complete") 

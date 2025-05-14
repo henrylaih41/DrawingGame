@@ -2,7 +2,7 @@ local DataStoreService = game:GetService("DataStoreService")
 local ServerScriptService = game:GetService("ServerScriptService")
 local DataStoreHelper = require(ServerScriptService.modules.DataStoreHelper)
 local SchemaValidator = require(ServerScriptService.modules.SchemaValidator)
-
+local HttpService = game:GetService("HttpService")
 local PlayerStore = {}
 local PlayersDataStore = DataStoreService:GetDataStore("Players")
 

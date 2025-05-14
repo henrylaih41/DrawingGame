@@ -38,6 +38,7 @@ local SubmitDrawingEvent   = Events:WaitForChild("SubmitDrawing")
 
 local LocalPlayer   = Players.LocalPlayer
 local PlayerGui     = LocalPlayer:WaitForChild("PlayerGui")
+local GameConstants = require(ReplicatedStorage.Modules.GameData.GameConstants)
 
 ------------------------------------------------------------------------
 -- 4️⃣  CONFIG / STATE VARS
@@ -450,7 +451,7 @@ local function initCanvas()
     local uisInputEndedConnection
 
     uisInputBeganConnection = UserInputService.InputBegan:Connect(function(i)
-        if currentGameState=="DRAWING" and (i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch) then
+        if currentGameState==GameConstants.PlayerStateEnum.DRAWING and (i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch) then
             local pos = Vector2.new(i.Position.X, i.Position.Y)
             local inset = drawingScreen.IgnoreGuiInset and Vector2.new(0,0) or GuiService:GetGuiInset()
             pos -= Vector2.new(0, inset.Y)
@@ -468,7 +469,7 @@ local function initCanvas()
         if IS_DRAWING and 
             (i.UserInputType==Enum.UserInputType.MouseMovement or
              i.UserInputType==Enum.UserInputType.Touch) and
-            currentGameState=="DRAWING" then
+            currentGameState==GameConstants.PlayerStateEnum.DRAWING then
             handleDrawing(i)
         end
     end)
@@ -520,7 +521,7 @@ GameStateChangedEvent.OnClientEvent:Connect(function(stateData)
     local prev = currentGameState
     currentGameState = newState
 
-    if newState == "DRAWING" then
+    if newState == GameConstants.PlayerStateEnum.DRAWING then
         local theme = stateData.theme.Name .. " [" .. stateData.theme.Difficulty .. "]"
         log("Drawing phase started")
         if not canvasInitialized then initCanvas() end
@@ -537,7 +538,7 @@ GameStateChangedEvent.OnClientEvent:Connect(function(stateData)
         log("Drawing Canvas received event:" .. newState)
         drawingScreen.Enabled = false
         topLevelContainer.Visible = false
-        if prev == "DRAWING" then
+        if prev == GameConstants.PlayerStateEnum.DRAWING then
             log("Cleaning up drawing phase")
 
             if timerRotateScript then
@@ -582,8 +583,8 @@ GameStateChangedEvent.OnClientEvent:Connect(function(stateData)
 end)
 
 GameCountdownEvent.OnClientEvent:Connect(function(sec, phase)
-    if phase ~= "DRAWING" then return end
-    if sec<=0 and currentGameState=="DRAWING" then submitDrawing() end
+    if phase ~= GameConstants.PlayerStateEnum.DRAWING then return end
+    if sec<=0 and currentGameState==GameConstants.PlayerStateEnum.DRAWING then submitDrawing() end
     if timeLabel then
         local m, s = math.floor(sec / 60), sec % 60
         timeLabel.Text = string.format("%02d:%02d", m,s)

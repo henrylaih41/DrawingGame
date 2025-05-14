@@ -1,4 +1,5 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local GameConstants = require(ReplicatedStorage.Modules.GameData.GameConstants)
 local Modules = ReplicatedStorage:WaitForChild("Modules")
 local Utils = Modules:WaitForChild("Utils")
 local ButtonEffects = require(Utils:WaitForChild("ButtonEffects"))
@@ -30,10 +31,10 @@ local PlayerDataUpdatedEvent = Events:WaitForChild("PlayerDataUpdated")
 local GameState = {
     MAIN_MENU = "MAIN_MENU",
     COUNTDOWN = "COUNTDOWN",
-    DRAWING = "DRAWING",
-    GRADING = "GRADING",
+    DRAWING = GameConstants.PlayerStateEnum.DRAWING,
+    GRADING = GameConstants.PlayerStateEnum.GRADING,
     VOTING = "VOTING",
-    RESULTS = "RESULTS"
+    RESULTS = GameConstants.PlayerStateEnum.RESULTS
 }
 
 -- Store received drawings data
