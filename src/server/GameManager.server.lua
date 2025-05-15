@@ -118,6 +118,24 @@ local function handlePlayerJoined(player)
 
     -- Tell the new player the current player data
     Events.PlayerDataUpdated:FireClient(player, playerData)
+
+
+    task.spawn(function()
+        task.wait(3)
+        print("Fetching top plays")
+        local topPlays = TopDrawingCacheService.fetch(1523877105)
+        print("Top plays fetched")
+        print(topPlays)
+        for i, c in ipairs(workspace:WaitForChild(GameConstants.DrawingCanvasFolderName):GetChildren()) do
+            local topPlay = topPlays[i % (#topPlays - 1)]
+            if (topPlay == nil) then
+                continue
+            end
+            local theme = topPlay.theme
+            local imageData = CanvasDraw.DecompressImageDataCustom(topPlay.imageData)
+            Events.DrawToCanvas:FireAllClients(imageData, theme, c)
+        end
+    end)
 end
 
 local function handlePlayerLeft(player: Player)
@@ -577,16 +595,6 @@ end
 -- Start the module
 init()
 
-task.spawn(function()
-    task.wait(3)
-    local topPlays = TopDrawingCacheService.fetch(8240890430)
-    for i, c in ipairs(workspace:WaitForChild(GameConstants.DrawingCanvasFolderName):GetChildren()) do
-        local theme = topPlays[i].theme
-    local imageData = CanvasDraw.DecompressImageDataCustom(topPlays[i].imageData)
-    warn(theme)
-    Events.DrawToCanvas:FireAllClients(imageData, theme, c)
-    end
-end)
 
 -- local ThemeLoader = require(ServerScriptService.modules.ThemeLoader)
 -- ThemeLoader:loadThemes()
