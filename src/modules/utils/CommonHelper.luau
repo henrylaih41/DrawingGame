@@ -28,4 +28,42 @@ function CommonHelper.destroyEditableImage(editableImage: EditableImage)
     end
 end
 
+function CommonHelper.renderImage(
+    imageLabel: ImageLabel, 
+    imageData: {ImageBuffer: buffer, 
+                ImageResolution: Vector2, 
+                Width: number, Height: number}) 
+:EditableImage?
+    local imageResolution = imageData.ImageResolution or Vector2.new(imageData.Width, imageData.Height)
+    local src = CommonHelper.createEditableImage(imageResolution)
+
+    -- If we can't create the editable image, we should return.
+    if src == nil then
+        return nil
+    end
+
+    local dest = CommonHelper.createEditableImage(imageLabel.AbsoluteSize) 
+
+    -- If we can't create the editable image, we should return.
+    if dest == nil then
+        CommonHelper.destroyEditableImage(src)
+        return nil
+    end
+
+    src:WritePixelsBuffer(Vector2.zero, imageResolution, imageData.ImageBuffer)
+    local scale = Vector2.new(imageLabel.AbsoluteSize.X / imageResolution.X, imageLabel.AbsoluteSize.Y / imageResolution.Y)
+    dest:DrawImageTransformed(
+        Vector2.zero,                         -- put TOP‑LEFT at (0,0)
+        scale,                                -- shrink
+        0,                                    -- no rotation
+        src,
+        { PivotPoint = Vector2.zero, CombineType = Enum.ImageCombineType.Overwrite } )
+    -- Destroy the source editable image to release memory.
+    CommonHelper.destroyEditableImage(src)
+    -- render the image .
+    imageLabel.ImageContent = Content.fromObject(dest)
+
+    return dest
+end
+
 return CommonHelper

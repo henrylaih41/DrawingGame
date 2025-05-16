@@ -22,43 +22,20 @@ end
 
 local function unrenderCanvas(canvas: Model)
     CommonHelper.destroyEditableImage(ClientState.DrawingCanvas[canvas].editableImage)
+    ClientState.DrawingCanvas[canvas].editableImage = nil
     ClientState.DrawingCanvas[canvas].rendered = false
 end
 
 local function renderToCanvas(canvas: Model, data: {imageData: {ImageBuffer: buffer, ImageResolution: Vector2, Width: number, Height: number}, rendered: boolean})
-    local imageData = data.imageData
-    local imageLabel = canvas.PrimaryPart:FindFirstChild("CanvasGui"):FindFirstChild("DrawingImage")
-    local imageResolution = imageData.ImageResolution or Vector2.new(imageData.Width, imageData.Height)
-    local src = CommonHelper.createEditableImage(imageResolution)
-
-    -- If we can't create the editable image, we should return.
-    if src == nil then
-        return
+    local dest = CommonHelper.renderImage(
+        canvas.PrimaryPart:FindFirstChild("CanvasGui"):FindFirstChild("DrawingImage"),
+        data.imageData
+    )
+    -- If we successfully created the editable image, we should store it.
+    if dest then
+        ClientState.DrawingCanvas[canvas].editableImage = dest
+        data.rendered = true
     end
-
-    local dest = CommonHelper.createEditableImage(imageLabel.AbsoluteSize) 
-
-    -- If we can't create the editable image, we should return.
-    if dest == nil then
-        CommonHelper.destroyEditableImage(src)
-        return
-    end
-
-    src:WritePixelsBuffer(Vector2.zero, imageResolution, imageData.ImageBuffer)
-    local scale = Vector2.new(imageLabel.AbsoluteSize.X / imageResolution.X, imageLabel.AbsoluteSize.Y / imageResolution.Y)
-    dest:DrawImageTransformed(
-        Vector2.zero,                         -- put TOP‑LEFT at (0,0)
-        scale,                                -- shrink
-        0,                                    -- no rotation
-        src,
-        { PivotPoint = Vector2.zero, CombineType = Enum.ImageCombineType.Overwrite } )
-    -- Destroy the source editable image to release memory.
-    CommonHelper.destroyEditableImage(src)
-    -- render the image .
-    imageLabel.ImageContent = Content.fromObject(dest)
-    -- Store this so we can destroy it later.
-    ClientState.DrawingCanvas[canvas].editableImage = dest
-    data.rendered = true
 end
 
 local function init()
