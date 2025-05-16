@@ -13,15 +13,27 @@ local RankingScreenTopLevelContainer = RankingScreen:WaitForChild("TopLevelConta
 local TopLevelContainer = MainMenuScreen:WaitForChild("TopLevelContainer")
 local FeedbackContainer = TopLevelContainer:WaitForChild("FeedbackContainer")
 local Buttons = TopLevelContainer:WaitForChild("Buttons")
+local TrophyCount = TopLevelContainer:WaitForChild("TrophyCount")
 local FeedbackButton = Buttons:WaitForChild("FeedbackButton")
 local RankingButton = Buttons:WaitForChild("RankingButton")
+local GalleryButton = Buttons:WaitForChild("GalleryButton")
+local UiToggleButton = Buttons:WaitForChild("UiToggleButton")
 local FeedbackCancelButton = FeedbackContainer:WaitForChild("CancelButton")
 local FeedbackSubmitButton = FeedbackContainer:WaitForChild("SubmitButton")
 
 -- Add a variable to track last submission time
 local lastFeedbackSubmission = 0
 local FEEDBACK_COOLDOWN = 5 -- 5 seconds cooldown
+local showUI = true
 
+local ui_on_image = "rbxassetid://122331809041801"
+local ui_off_image = "rbxassetid://122240681959714"
+local toggle_objects = {
+    FeedbackButton,
+    GalleryButton,
+    RankingButton,
+    TrophyCount
+}
 -- Set up events
 local Events = ReplicatedStorage:WaitForChild("Events")
 local GameStateChangedEvent = Events:WaitForChild("GameStateChanged")
@@ -46,6 +58,25 @@ local function onRankingClicked()
         RankingScreen.Enabled = true
     else
         RankingScreen.Enabled = false
+    end
+end
+
+local function onGalleryClicked()
+    -- GalleryScreen.Enabled = not GalleryScreen.Enabled
+end
+
+local function onUiToggleClicked()
+    showUI = not showUI
+    if showUI then
+        UiToggleButton.Image = ui_on_image
+        for _, object in ipairs(toggle_objects) do
+            object.Visible = true
+        end
+    else
+        UiToggleButton.Image = ui_off_image
+        for _, object in ipairs(toggle_objects) do
+            object.Visible = false
+        end
     end
 end
 
@@ -95,7 +126,7 @@ local function onGameStateChanged(stateData)
         print("Game state changed to:", stateData.state)
         
         -- Show main menu only when in MAIN_MENU state, hide otherwise
-        if stateData.state == GameState.MAIN_MENU then
+        if stateData.state == GameConstants.PlayerStateEnum.IDLE then
             MainMenuScreen.Enabled = true
             TopLevelContainer.Visible = true
         else
@@ -110,6 +141,8 @@ table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(RankingButton, on
 table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(FeedbackButton, onFeedbackClicked))
 table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(FeedbackCancelButton, onFeedbackCancelClicked))
 table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(FeedbackSubmitButton, onFeedbackSubmitClicked))
+table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(GalleryButton, onGalleryClicked))
+table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(UiToggleButton, onUiToggleClicked))
 -- Need to get a better press image
 -- table.insert(cleanupFunctions, ButtonEffects.applyButtonPressEffect(SinglePlayerButton, "rbxassetid://140453037167378"))
 
@@ -117,7 +150,7 @@ table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(FeedbackSubmitBut
 GameStateChangedEvent.OnClientEvent:Connect(onGameStateChanged)
 
 local function onPlayerDataUpdated(playerData)
-    local count = Buttons.TrophyCount.count
+    local count = TrophyCount.count
     if playerData then
         count.Text = tostring(playerData.TotalPoints)
     else

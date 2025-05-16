@@ -145,28 +145,127 @@ def wipe_store(store: str) -> None:
 
     logging.info("✔ datastore '%s' is now empty (%d keys removed)", store, total_deleted)
 
+def update_topplays() -> None:
+    """
+    Scan all entries in TopPlays, update points based on difficulty,
+    sort by points, keep top 5, and save back to the datastore.
+    """
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+    logging.info("▶ Updating TopPlays entries...")
+    
+    store_name = "TopPlays"
+    cursor = None
+    total_updated = 0
+    
+    # Define difficulty multipliers
+    difficulty_multipliers = {
+        "easy": 1,
+        "medium": 2,
+        "hard": 3
+    }
+    
+    while True:
+        try:
+            # Get a page of entries
+            page = list_keys(store_name, cursor)
+            keys = [k["key"] for k in page.get("keys", [])]
+            
+            if not keys:
+                break  # no more data
+            
+            logging.info(f"Processing batch of {len(keys)} keys")
+            
+            for key in keys:
+                try:
+                    # Get the entry value (list of TopPlays)
+                    topplays = get_key_value(store_name, key)
+                    
+                    if not isinstance(topplays, list):
+                        logging.warning(f"Entry {key} is not a list, skipping")
+                        continue
+                    
+                    # Update points based on difficulty
+                    for play in topplays:
+                        difficulty = play.get('theme_difficulty', 'medium').lower()
+                        multiplier = difficulty_multipliers.get(difficulty, 1)
+                        play['points'] = play['score'] * multiplier
+                    
+                    # Sort by points in descending order
+                    topplays.sort(key=lambda x: x.get('points', 0), reverse=True)
+                    
+                    # Keep only top 5
+                    topplays = topplays[:5]
+                    
+                    # Save back to the datastore
+                    update_key(store_name, key, topplays)
+                    
+                    total_updated += 1
+                    
+                except Exception as e:
+                    logging.error(f"Error processing key {key}: {e}")
+                
+                # Add a small delay between individual key updates
+                time.sleep(0.5)
+            
+            logging.info(f"Updated {total_updated} keys so far")
+            
+            cursor = page.get("nextPageCursor")
+            if not cursor:
+                break  # reached final page
+            
+            # Add a delay between pages to avoid rate limits
+            time.sleep(2)
+            
+        except requests.HTTPError as e:
+            logging.error(f"HTTP error during batch processing: {e}")
+            # Back off for a longer period if we hit rate limits
+            if e.response.status_code == 429:
+                logging.info("Rate limit hit, waiting 30 seconds...")
+                time.sleep(30)
+            else:
+                raise
+    
+    logging.info(f"✔ TopPlays update complete. Updated {total_updated} entries.")
+
+def update_key(store: str, key: str, value: any) -> None:
+    """Update an entry with a new value."""
+    params = {
+        "datastoreName": store,
+        "entryKey": key,
+    }
+    url = f"{BASE}/datastore/entries/entry"
+    headers = HEADERS.copy()
+    headers["Content-Type"] = "application/json"
+    
+    r = requests.post(url, headers=headers, params=params, json=value, timeout=REQUEST_TIMEOUT)
+    r.raise_for_status()
+
 def main() -> None:
     if not (UNIVERSE_ID and API_KEY):
         sys.exit("ERROR: set ROBLOX_UNIVERSE_ID and ROBLOX_API_KEY env vars first")
 
     logging.basicConfig(level=logging.INFO, format="%(message)s")
-    for name in STORE_NAMES:
-        try:
-            wipe_store(name)
-        except requests.HTTPError as e:
-            logging.error("✖ failed on datastore '%s': %s", name, e)
-        except KeyboardInterrupt:
-            sys.exit("\nAborted by user")
-
+    
+    # Add option to run the update_topplays function
+    action = input("Select action (1: Wipe datastores, 2: Update TopPlays): ")
+    
+    if action == "1":
+        enable_wipe = input("Enable wipe? (y/n): ")
+        if enable_wipe == "y":
+            for name in STORE_NAMES:
+                try:
+                    wipe_store(name)
+                except requests.HTTPError as e:
+                    logging.error("✖ failed on datastore '%s': %s", name, e)
+                except KeyboardInterrupt:
+                    sys.exit("\nAborted by user")
+    
+    elif action == "2":
+        confirm = input("Update TopPlays points calculation? (y/n): ")
+        if confirm == "y":
+            update_topplays()
+    
     logging.info("🏁 all done")
 
-# This is modifying production data, be very careful when running this script
-# if __name__ == "__main__":
-#     enable_wipe = input("Enable wipe? (y/n): ")
-#     if enable_wipe == "y":
-#         main()
-
-entries = list_key_values("Themes")
-
-for e in entries["entries"]:
-    print(e["value"]["Name"] + " " + e["value"]["Difficulty"])
+if __name__ == "__main__":
+    main()

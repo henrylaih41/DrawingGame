@@ -5,7 +5,7 @@ local GameConfig = require(ReplicatedStorage.Modules.GameData.GameConfig)
 local TopPlaysCanvas = require(ReplicatedStorage.Modules.Utils.TopPlaysCanvas)
 local MainMenuScreen = PlayerGui:WaitForChild("MainMenuScreen")
 local MainMenuButtons = MainMenuScreen:WaitForChild("TopLevelContainer"):WaitForChild("Buttons")
-local BestScoresButton = MainMenuButtons:WaitForChild("BestScoresButton")
+local GalleryButton = MainMenuButtons:WaitForChild("GalleryButton")
 -- Get references to UI elements
 local RankingScreen = PlayerGui:WaitForChild("RankingScreen")
 local TopPlaysScreen = PlayerGui:WaitForChild("TopPlaysScreen")
@@ -169,7 +169,7 @@ local function initTopPlaysUI()
     end)
 
     -- Best scores button is just self rank view.
-    BestScoresButton.MouseButton1Click:Connect(function ()
+    GalleryButton.MouseButton1Click:Connect(function ()
         openTopPlays(LocalPlayer.UserId)
     end)
 

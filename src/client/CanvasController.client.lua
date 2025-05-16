@@ -6,6 +6,8 @@ local Events = ReplicatedStorage:WaitForChild("Events")
 local AssetService = game:GetService("AssetService")
 local CommonHelper = require(ReplicatedStorage.Modules.Utils.CommonHelper)
 
+local stopRendering = false
+
 local function GetDeviceTier()
     local screenSize = workspace.CurrentCamera.ViewportSize
 
@@ -18,23 +20,45 @@ local function GetDeviceTier()
     end
 end
 
-local function createEditableImage(size: Vector2)
-    warn("Creating editable image", size)
-    local editableImage = AssetService:CreateEditableImage({Size = size})
-    CommonHelper.addEditableImageMemoryUsage(editableImage)
-    return editableImage
-end
-
-local function destroyEditableImage(editableImage: EditableImage)
-    if editableImage then
-        CommonHelper.substractEditableImageMemoryUsage(editableImage)
-        editableImage:Destroy()
-    end
-end
-
 local function unrenderCanvas(canvas: Model)
-    destroyEditableImage(ClientState.DrawingCanvas[canvas].editableImage)
+    CommonHelper.destroyEditableImage(ClientState.DrawingCanvas[canvas].editableImage)
     ClientState.DrawingCanvas[canvas].rendered = false
+end
+
+local function renderToCanvas(canvas: Model, data: {imageData: {ImageBuffer: buffer, ImageResolution: Vector2, Width: number, Height: number}, rendered: boolean})
+    local imageData = data.imageData
+    local imageLabel = canvas.PrimaryPart:FindFirstChild("CanvasGui"):FindFirstChild("DrawingImage")
+    local imageResolution = imageData.ImageResolution or Vector2.new(imageData.Width, imageData.Height)
+    local src = CommonHelper.createEditableImage(imageResolution)
+
+    -- If we can't create the editable image, we should return.
+    if src == nil then
+        return
+    end
+
+    local dest = CommonHelper.createEditableImage(imageLabel.AbsoluteSize) 
+
+    -- If we can't create the editable image, we should return.
+    if dest == nil then
+        CommonHelper.destroyEditableImage(src)
+        return
+    end
+
+    src:WritePixelsBuffer(Vector2.zero, imageResolution, imageData.ImageBuffer)
+    local scale = Vector2.new(imageLabel.AbsoluteSize.X / imageResolution.X, imageLabel.AbsoluteSize.Y / imageResolution.Y)
+    dest:DrawImageTransformed(
+        Vector2.zero,                         -- put TOP‑LEFT at (0,0)
+        scale,                                -- shrink
+        0,                                    -- no rotation
+        src,
+        { PivotPoint = Vector2.zero, CombineType = Enum.ImageCombineType.Overwrite } )
+    -- Destroy the source editable image to release memory.
+    CommonHelper.destroyEditableImage(src)
+    -- render the image .
+    imageLabel.ImageContent = Content.fromObject(dest)
+    -- Store this so we can destroy it later.
+    ClientState.DrawingCanvas[canvas].editableImage = dest
+    data.rendered = true
 end
 
 local function init()
@@ -63,49 +87,13 @@ local function init()
             unrenderCanvas(canvas)
         end
 
-        warn("DrawToCanvas", imageData, currentTheme, canvas)
-
         -- Let's Render the image immediately for now. 
         -- TODO: We should add our own rendering system so we only render image close to the players.
         -- Create the editable from the original image data.
+        renderToCanvas(canvas, ClientState.DrawingCanvas[canvas])
     end)
 end
 
-local function renderToCanvas(canvas: Model, data: {imageData: {ImageBuffer: buffer, ImageResolution: Vector2, Width: number, Height: number}, rendered: boolean})
-    local imageData = data.imageData
-    local imageLabel = canvas.PrimaryPart:FindFirstChild("CanvasGui"):FindFirstChild("DrawingImage")
-    local imageResolution = imageData.ImageResolution or Vector2.new(imageData.Width, imageData.Height)
-    local src = createEditableImage(imageResolution)
-
-    -- If we can't create the editable image, we should return.
-    if src == nil then
-        return
-    end
-
-    local dest = createEditableImage(imageLabel.AbsoluteSize) 
-
-    -- If we can't create the editable image, we should return.
-    if dest == nil then
-        destroyEditableImage(src)
-        return
-    end
-
-    src:WritePixelsBuffer(Vector2.zero, imageResolution, imageData.ImageBuffer)
-    local scale = Vector2.new(imageLabel.AbsoluteSize.X / imageResolution.X, imageLabel.AbsoluteSize.Y / imageResolution.Y)
-    dest:DrawImageTransformed(
-        Vector2.zero,                         -- put TOP‑LEFT at (0,0)
-        scale,                                -- shrink
-        0,                                    -- no rotation
-        src,
-        { PivotPoint = Vector2.zero, CombineType = Enum.ImageCombineType.Overwrite } )
-    -- Destroy the source editable image to release memory.
-    destroyEditableImage(src)
-    -- render the image .
-    imageLabel.ImageContent = Content.fromObject(dest)
-    -- Store this so we can destroy it later.
-    ClientState.DrawingCanvas[canvas].editableImage = dest
-    data.rendered = true
-end
 
 -- ░░ adjustable knobs ░░ ------------------------------------
 local RENDER_RADIUS        = GameConstants.RENDER_RADIUS
@@ -184,6 +172,10 @@ local function renderCanvasController()
     local hrpLastPos = nil
 
     while true do
+        -- This is set when the player is viewing the gallery.
+        if stopRendering then
+            continue
+        end
         local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
         if hrp then
             local moved = not hrpLastPos or (hrp.Position - hrpLastPos).Magnitude > 0
@@ -210,6 +202,17 @@ local function renderCanvasController()
         warn(CommonHelper.getEditableImageMemoryUsage())
         task.wait(RENDER_CHECK_INTERVAL)
     end
+end
+
+function stopRenderingCanvas()
+    stopRendering = true
+    for _, canvas in ipairs(ClientState.DrawingCanvas) do
+        unrenderCanvas(canvas)
+    end
+end
+
+function resumeRenderingCanvas()
+    stopRendering = false
 end
 
 task.spawn(renderCanvasController)

@@ -119,7 +119,7 @@ local function handlePlayerJoined(player)
     -- Tell the new player the current player data
     Events.PlayerDataUpdated:FireClient(player, playerData)
 
-
+    -- TODO: This is just for testing purpose. In prod, we should use drawings in player's gallery.
     task.spawn(function()
         task.wait(3)
         print("Fetching top plays")
