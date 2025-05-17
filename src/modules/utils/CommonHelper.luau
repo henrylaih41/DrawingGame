@@ -36,6 +36,12 @@ function CommonHelper.renderImage(
                 ImageResolution: Vector2, 
                 Width: number, Height: number}) 
 :EditableImage?
+
+    if imageData == nil then
+        warn("imageData is nil")
+        return nil
+    end
+
     local imageResolution = imageData.ImageResolution or Vector2.new(imageData.Width, imageData.Height)
     local src = CommonHelper.createEditableImage(imageResolution)
 
@@ -44,7 +50,10 @@ function CommonHelper.renderImage(
         return nil
     end
 
-    local dest = CommonHelper.createEditableImage(imageLabel.AbsoluteSize) 
+    -- Scale the image size based on the resolution
+    local destSize = imageLabel.AbsoluteSize
+
+    local dest = CommonHelper.createEditableImage(destSize) 
 
     -- If we can't create the editable image, we should return.
     if dest == nil then
@@ -53,7 +62,7 @@ function CommonHelper.renderImage(
     end
 
     src:WritePixelsBuffer(Vector2.zero, imageResolution, imageData.ImageBuffer)
-    local scale = Vector2.new(imageLabel.AbsoluteSize.X / imageResolution.X, imageLabel.AbsoluteSize.Y / imageResolution.Y)
+    local scale = Vector2.new(destSize.X / imageResolution.X, destSize.Y / imageResolution.Y)
     dest:DrawImageTransformed(
         Vector2.zero,                         -- put TOP‑LEFT at (0,0)
         scale,                                -- shrink

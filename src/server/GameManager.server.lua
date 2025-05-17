@@ -176,7 +176,7 @@ end
 
 local function selfHealPlayer(player: Player)
     local playerData = getPlayerData(player)
-    if not playerData.topPlaysWithoutImage or (#playerData.topPlaysWithoutImage < GameConfig.TOP_PLAYS_LIMIT) then
+    if not playerData.topPlaysWithoutImage or (#playerData.topPlaysWithoutImage < GameConfig.GALLERY_SLOTS) then
         local topPlays = TopPlaysStore:getTopPlays(player.UserId)
         local topPlaysWithoutImage = topPlaysWithoutImageFromTopPlays(topPlays)
 

@@ -14,6 +14,8 @@ local TopLevelContainer = MainMenuScreen:WaitForChild("TopLevelContainer")
 local FeedbackContainer = TopLevelContainer:WaitForChild("FeedbackContainer")
 local Buttons = TopLevelContainer:WaitForChild("Buttons")
 local TrophyCount = TopLevelContainer:WaitForChild("TrophyCount")
+local CoinFrame = TopLevelContainer:WaitForChild("CoinFrame")
+local PencilFrame = TopLevelContainer:WaitForChild("PencilFrame")
 local FeedbackButton = Buttons:WaitForChild("FeedbackButton")
 local RankingButton = Buttons:WaitForChild("RankingButton")
 local GalleryButton = Buttons:WaitForChild("GalleryButton")
@@ -32,7 +34,9 @@ local toggle_objects = {
     FeedbackButton,
     GalleryButton,
     RankingButton,
-    TrophyCount
+    TrophyCount,
+    CoinFrame,
+    PencilFrame
 }
 -- Set up events
 local Events = ReplicatedStorage:WaitForChild("Events")

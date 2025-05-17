@@ -67,7 +67,7 @@ function TopPlaysStore:checkIfNewBestDrawingChangesTopPlays(originTopPlaysWithou
     -- CASE 2: Theme doesn't exist in top plays
     else
         -- If under limit, we can just append
-        if #originTopPlaysWithoutImageData < GameConfig.TOP_PLAYS_LIMIT then
+        if #originTopPlaysWithoutImageData < GameConfig.GALLERY_SLOTS then
             shouldAdd = true
         -- If at limit, replace lowest score if new score is higher
         elseif newTopPlay.points > lowestPoints then

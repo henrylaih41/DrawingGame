@@ -3,6 +3,7 @@ local PlayerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui
 local LeaderBoardBuilder = require(ReplicatedStorage.Modules.Utils.LeaderBoardBuilder)
 local GameConfig = require(ReplicatedStorage.Modules.GameData.GameConfig)
 local GalleryCanvas = require(ReplicatedStorage.Modules.Utils.GalleryCanvas)
+local CommonHelper = require(ReplicatedStorage.Modules.Utils.CommonHelper)
 local MainMenuScreen = PlayerGui:WaitForChild("MainMenuScreen")
 local MainMenuButtons = MainMenuScreen:WaitForChild("TopLevelContainer"):WaitForChild("Buttons")
 local GalleryButton = MainMenuButtons:WaitForChild("GalleryButton")
@@ -20,9 +21,9 @@ local ROWS_PER_PAGE = GameConfig.ROWS_PER_PAGE
 local Events = ReplicatedStorage:WaitForChild("Events")
 local LocalPlayer = game:GetService("Players").LocalPlayer
 local CanvasControllerFunction = LocalPlayer:WaitForChild("PlayerScripts"):WaitForChild("CanvasControllerFunction")
+local galleryInitialized = false
 local cachedTopPlays = {}
-local topPlaysContainers = {}
-local scrollFrame = nil
+local galleryContainers = {}
 
 local function createRow(name)
     local row = rowTemplate:Clone()
@@ -39,32 +40,43 @@ local function updateLabel(pageLbl, currentPage, pageCount)
     pageLbl.Text = string.format("%d / %d", currentPage, pageCount)
 end
 
-local function displayTopPlays(topPlays)
-    for i = 1, #topPlaysContainers do
-        if i <= #topPlays then
-            local drawingData = topPlays[i]
-            GalleryCanvas.updateDrawingDisplayForRank(drawingData, i, topPlaysContainers)
-        else
-            GalleryCanvas.closeDrawingDisplayForRank(i, topPlaysContainers)
-        end
-    end
-end
-
-local function openTopPlays(userId)
-
-    if (userId == nil) then
+local function openTopPlays(topPlays)
+    if (topPlays == nil) then
         warn("openTopPlays:userId is nil")
         return
     end
 
-    if cachedTopPlays[tostring(userId)] then
-        displayTopPlays(cachedTopPlays[tostring(userId)])
-    else
-        Events.RequestTopPlays:FireServer(userId)
+    if (#topPlays > #galleryContainers) then
+        warn("Top plays are greater than the number of gallery containers " .. #topPlays .. " > " .. #galleryContainers)
     end
+
+    -- Hide all the containers to start from a clean state.
+    for i = 1, #galleryContainers do
+        local container = galleryContainers[i]
+        container.containerFrame.Visible = false
+    end
+
+    for i = 1, math.min(#topPlays, #galleryContainers) do
+        local drawingData = topPlays[i]
+        local container = galleryContainers[i]
+        -- Update the container with the new drawing data
+        GalleryCanvas.updateDrawingDisplayForRank(drawingData, container)
+        container.containerFrame.Visible = true
+    end
+
     GalleryScreen.Enabled = true
     GalleryScreen:FindFirstChild("TopLevelContainer").Visible = true
     CanvasControllerFunction:Invoke("StopRendering")
+end
+
+local function displayPlayerGallery(playerUserId: string)
+    -- check cache first
+    if cachedTopPlays[playerUserId] then
+        openTopPlays(cachedTopPlays[playerUserId])
+    else
+        -- request from server
+        Events.RequestTopPlays:FireServer(playerUserId)
+    end
 end
 
 local function initRankingUI()
@@ -122,7 +134,7 @@ local function initRankingUI()
                     row.ScoreLabel.Text = score.value.points
                     row.ViewButton.Visible = true
                     row.ViewButton.MouseButton1Click:Connect(function() 
-                        openTopPlays(score.value.uid)
+                        displayPlayerGallery(score.value.uid)
                     end)
                 end
             end
@@ -139,47 +151,56 @@ local function initRankingUI()
     Events.RequestTopScores:FireServer()
 end
 
-local function initTopPlaysUI()
+local function initGalleryUI(gallerySlots: number)
     local topLevelContainer = GalleryScreen:FindFirstChild("TopLevelContainer")
     -- Set to invisible first before we setup the canvas
     topLevelContainer.Visible = false
-    scrollFrame = GalleryCanvas.setupGalleryCanvas(
-        topLevelContainer, topPlaysContainers, 
+    GalleryCanvas.setupGalleryCanvas(
+        topLevelContainer, galleryContainers, gallerySlots,
         function()
             CanvasControllerFunction:Invoke("ResumeRendering")
             topLevelContainer.Visible = false
             GalleryScreen.Enabled = false
 
-            if topPlaysContainers then
-                for i, containerData in ipairs(topPlaysContainers) do
-                    local container = containerData.container
-                    local canvas = containerData.canvas
-                    canvas:Clear()
-                    local Loading = container:FindFirstChild("CanvasFrame"):FindFirstChild("Loading")
+            if galleryContainers then
+                for i, containerData in ipairs(galleryContainers) do
+                    local containerFrame = containerData.containerFrame
+                    local editableImage = containerData.editableImage
+                    CommonHelper.destroyEditableImage(editableImage)
+                    containerData.editableImage = nil
+                    local Loading = containerFrame:FindFirstChild("CanvasFrame"):FindFirstChild("Loading")
                     Loading.Visible = true
                 end
             end
         end
     )
 
-    Events.ReceiveTopPlays.OnClientEvent:Connect(function(topPlaysUserId, topPlays)
-        if topPlays == nil then
-            warn("Top plays are nil for player " .. topPlaysUserId)
-            return
-        end
-        
-        cachedTopPlays[tostring(topPlaysUserId)] = topPlays
-        displayTopPlays(topPlays)
-    end)
-
     -- Best scores button is just self rank view.
-    GalleryButton.MouseButton1Click:Connect(function ()
-        openTopPlays(LocalPlayer.UserId)
-    end)
 
     -- After setup, disable the screen
     GalleryScreen.Enabled = false
 end
 
-initTopPlaysUI()
 initRankingUI()
+
+-- Init the button. The gallery is initalized after the player clicks the button.
+GalleryButton.MouseButton1Click:Connect(function ()
+    displayPlayerGallery(tostring(LocalPlayer.UserId))
+end)
+
+Events.ReceiveTopPlays.OnClientEvent:Connect(function(topPlaysUserId: string, topPlays)
+    if topPlays == nil then
+        warn("Top plays are nil for player " .. topPlaysUserId)
+        return
+    end
+    
+    if not galleryInitialized then
+        -- The maximum number of gallery slots is set in the GameConfig.
+        initGalleryUI(GameConfig.GALLERY_SLOTS)
+        galleryInitialized = true
+    end
+
+    cachedTopPlays[topPlaysUserId] = topPlays
+    openTopPlays(topPlays)
+end)
+

@@ -2,10 +2,11 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CanvasDraw = require(ReplicatedStorage.Modules.Canvas.CanvasDraw)
 local CanvasDisplay = require(ReplicatedStorage.Modules.Canvas.CanvasDisplay)
 local GameConfig = require(ReplicatedStorage.Modules.GameData.GameConfig)
+local CommonHelper = require(ReplicatedStorage.Modules.Utils.CommonHelper)
 
 local GalleryCanvas = {}-- Function to set up the Best-Scores scrolling frame completely in SCALE units
 
-function GalleryCanvas.setupGalleryCanvas(parentContainer, containers, closeButtonCallback)
+function GalleryCanvas.setupGalleryCanvas(parentContainer, containers, numberOfSlots, closeButtonCallback)
     --------------------------------------------------
     -- 1. Create top bar for title and close button
     --------------------------------------------------
@@ -25,7 +26,7 @@ function GalleryCanvas.setupGalleryCanvas(parentContainer, containers, closeButt
     titleLabel.Position = UDim2.new(0.1, 0, 0.1, 0)
     titleLabel.BackgroundTransparency = 1
     titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    titleLabel.Text = string.format("Best Drawings (Top %d)", GameConfig.TOP_PLAYS_LIMIT)
+    titleLabel.Text = string.format("Gallery")
     titleLabel.TextScaled = true
     titleLabel.Font = Enum.Font.GothamBold
     titleLabel.ZIndex = 11
@@ -107,7 +108,7 @@ function GalleryCanvas.setupGalleryCanvas(parentContainer, containers, closeButt
     --------------------------------------------------
     -- 5.  Create empty containers for each theme
     --------------------------------------------------
-    for i = 1, GameConfig.TOP_PLAYS_LIMIT do
+    for i = 1, numberOfSlots do
         local container = template:Clone()
         container.Name  = ("ThemeContainer_%s"):format(tostring(i))
         -- Set the parent so we initialize this container faster.
@@ -123,9 +124,15 @@ function GalleryCanvas.setupGalleryCanvas(parentContainer, containers, closeButt
         end
 
         local canvasFrame = container:FindFirstChild("CanvasFrame")
-        local canvas = CanvasDraw.new(canvasFrame, Vector2.new(math.ceil(canvasFrame.AbsoluteSize.X), math.ceil(canvasFrame.AbsoluteSize.Y)))
-        canvas.AutoRenderFpsLimit = 1
-        containers[i] = {container = container, canvas = canvas}
+        local img             = Instance.new("ImageLabel")
+        img.Name              = "DrawingImage"
+        img.BackgroundTransparency = 1
+        img.BorderSizePixel   = 0
+        img.Size              = UDim2.fromScale(1, 1)
+        img.ScaleType         = Enum.ScaleType.Fit        -- keeps aspect
+        img.Parent            = canvasFrame
+
+        containers[i] = {containerFrame = container, imageLabel = img, editableImage = nil}
     end
 
     if closeButtonCallback then
@@ -139,39 +146,31 @@ function GalleryCanvas.setupGalleryCanvas(parentContainer, containers, closeButt
     return scoreScrollFrame
 end
 
-function GalleryCanvas.updateDrawingDisplayForRank(drawingData, rank, containers)
-    local container = containers[rank].container
-    local canvas = containers[rank].canvas
-    local label = container:FindFirstChild("TopBar"):FindFirstChild("BestScoreTitle")
-
+function GalleryCanvas.updateDrawingDisplayForRank(
+    drawingData, 
+    container)
+    local containerFrame = container.containerFrame
+    local imageLabel = container.imageLabel
+    local editableImage = container.editableImage
+    local label = containerFrame:FindFirstChild("TopBar"):FindFirstChild("BestScoreTitle")
     -- Hide the loading
-    local Loading = container:FindFirstChild("CanvasFrame"):FindFirstChild("Loading")
+    local Loading = containerFrame:FindFirstChild("CanvasFrame"):FindFirstChild("Loading")
     Loading.Visible = false
-    container.Visible = false
-    -- Update the container with drawing data if available
-    -- If there is no previous scores, the drawingData will be nil
     if drawingData and drawingData.imageData then
         local title = drawingData.theme
         if drawingData.theme_difficulty then
             title = title .. " [" .. drawingData.theme_difficulty .. "]"
         end
         label.Text = title
-        -- 1. Fetch the containerFrames and other UI elements
-        local trophyContainer = container:FindFirstChild("TrophyFrame"):FindFirstChild("TrophyContainer")
-        -- 2. Display the drawing
-        CanvasDisplay.displayDrawingData(canvas, drawingData.imageData)
-        -- 3. Update the star rating
+        local trophyContainer = containerFrame:FindFirstChild("TrophyFrame"):FindFirstChild("TrophyContainer")
+        -- Destroy the previous editable image if it exists 
+        if editableImage then
+            CommonHelper.destroyEditableImage(editableImage)
+        end
+        -- Save the editable image to the container so we can destroy it later.
+        container.editableImage = CommonHelper.renderImage(imageLabel, drawingData.imageData)
         CanvasDisplay.updateStarDisplay(trophyContainer, drawingData.score, false)
-        container.Visible = true
     end
-end
-
-function GalleryCanvas.closeDrawingDisplayForRank(rank, containers)
-    local container = containers[rank].container
-    -- Hide the loading
-    local Loading = container:FindFirstChild("CanvasFrame"):FindFirstChild("Loading")
-    Loading.Visible = false
-    container.Visible = false
 end
 
 return GalleryCanvas

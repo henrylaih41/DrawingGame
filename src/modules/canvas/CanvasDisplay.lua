@@ -98,6 +98,7 @@ end
 --- Clears the target canvas and draws the provided image data onto it, scaling to fit.
 --- @param targetCanvas CanvasDraw The CanvasDraw instance to draw on.
 --- @param imageData table The image data containing Width, Height, and ImageBuffer.
+-- TODO Revisit this. Should we use imageLabel instead?
 function CanvasDisplay.displayDrawingData(targetCanvas, imageData)
     assert(targetCanvas ~= nil, "Canvas is nil")
     assert(imageData ~= nil, "ImageData is nil")

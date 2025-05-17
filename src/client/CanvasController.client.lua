@@ -37,20 +37,13 @@ local function init()
         imageData: {ImageBuffer: buffer, ImageResolution: Vector2, Width: number, Height: number}, 
         currentTheme: string, 
         canvas)
+        CommonHelper.unrenderCanvas(canvas)
         -- Set the image data for the canvas.
         if imageData then
-            CommonHelper.unrenderCanvas(canvas)
             ClientState.DrawingCanvas[canvas].imageData = imageData
         else
-            -- When we set the image data to nil, we should also unrender the canvas.
             ClientState.DrawingCanvas[canvas].imageData = nil
-            CommonHelper.unrenderCanvas(canvas)
         end
-
-        -- Let's Render the image immediately for now. 
-        -- TODO: We should add our own rendering system so we only render image close to the players.
-        -- Create the editable from the original image data.
-        CommonHelper.renderToCanvas(canvas, ClientState.DrawingCanvas[canvas])
     end)
 end
 
@@ -168,6 +161,8 @@ function stopRenderingCanvas()
     for canvasModel, _ in pairs(ClientState.DrawingCanvas) do 
         CommonHelper.unrenderCanvas(canvasModel)
     end
+    -- Clean the queue.
+    queue = {}
 end
 
 function resumeRenderingCanvas()
