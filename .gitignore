@@ -5,6 +5,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 dev-debug.log
+sourcemap.json
 
 # Dependency directories
 node_modules/

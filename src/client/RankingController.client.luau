@@ -12,12 +12,14 @@ local TopPlaysScreen = PlayerGui:WaitForChild("TopPlaysScreen")
 local TopLevelContainer = RankingScreen:WaitForChild("TopLevelContainer")
 local rowTemplate = ReplicatedStorage:WaitForChild("UI"):WaitForChild("PlayerRankRow")
 
+
 local MAX_ROWS = GameConfig.RANKING_LIMIT
 local ROWS_PER_PAGE = GameConfig.ROWS_PER_PAGE
 
 -- Set up events
 local Events = ReplicatedStorage:WaitForChild("Events")
 local LocalPlayer = game:GetService("Players").LocalPlayer
+local CanvasControllerFunction = LocalPlayer:WaitForChild("PlayerScripts"):WaitForChild("CanvasControllerFunction")
 local cachedTopPlays = {}
 local topPlaysContainers = {}
 local scrollFrame = nil
@@ -62,6 +64,7 @@ local function openTopPlays(userId)
     end
     TopPlaysScreen.Enabled = true
     TopPlaysScreen:FindFirstChild("TopLevelContainer").Visible = true
+    CanvasControllerFunction:Invoke("StopRendering")
 end
 
 local function initRankingUI()
@@ -143,6 +146,7 @@ local function initTopPlaysUI()
     scrollFrame = TopPlaysCanvas.setupTopPlaysCanvas(
         topLevelContainer, topPlaysContainers, 
         function()
+            CanvasControllerFunction:Invoke("ResumeRendering")
             topLevelContainer.Visible = false
             TopPlaysScreen.Enabled = false
 
