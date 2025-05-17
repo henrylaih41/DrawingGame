@@ -16,6 +16,8 @@ local ENDPOINT = "/api/topPlays/"  -- Will append userId to this path
 local MAX_RETRIES     = 4          -- exponential back-off tries
 local BASE_DELAY      = 2          -- seconds; grows per attempt
 
+local topPlaysCache = {}
+
 --------------------------------------------------------------------
 -- INTERNAL UTILITY – robust RequestAsync with retries
 --------------------------------------------------------------------
@@ -42,7 +44,7 @@ local TopDrawingCacheService = {}
 --- Fetches the cached top-30 record for a userId.
 -- @param userId   number | string  Roblox userId
 -- @return table                Lua table decoded from JSON
-function TopDrawingCacheService.fetch(userId)
+function TopDrawingCacheService.fetchFromExternalBackend(userId: string)
     local response = requestWithRetry({
         Url     = WORKER_BASE_URL .. ENDPOINT,
         Method  = "POST",
@@ -56,6 +58,33 @@ function TopDrawingCacheService.fetch(userId)
     end
     
     return HttpService:JSONDecode(response.Body)
+end
+
+function TopDrawingCacheService.fetchFromDatastore(userId: string)
+    return TopPlaysStore:getTopPlays(userId)
+end
+
+--- Fetches the cached top-30 record for a userId.
+-- @param userId   number | string  Roblox userId
+-- @return table                Lua table decoded from JSON
+function TopDrawingCacheService.fetch(userId)
+    -- Check cache first
+    if topPlaysCache[userId] then
+        return topPlaysCache[userId]
+    end
+
+    -- Fetch from datastore
+    local topPlays = TopDrawingCacheService.fetchFromDatastore(userId)
+
+    if topPlays then
+        topPlaysCache[userId] = topPlays
+    end 
+
+    return topPlays
+end
+
+function TopDrawingCacheService.purgeCache(userId: string)
+    topPlaysCache[userId] = nil
 end
 
 return TopDrawingCacheService

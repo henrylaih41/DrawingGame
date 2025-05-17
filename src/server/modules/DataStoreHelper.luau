@@ -65,7 +65,6 @@ function DataStoreHelper:_performDataStoreOperationWithRetry(dataStore, operatio
             break
         else 
             warn(result)
-            warn(value)
             -- Exponential backoff
             task.wait(1 * 2 ^ (attempt - 1))
         end

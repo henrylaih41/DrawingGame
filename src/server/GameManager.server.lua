@@ -204,6 +204,7 @@ local function sendTopPlaysToClient(player: Player, topPlaysUserId: string, topP
     -- Create a table to store the best drawing data for each theme
     local bestDrawings = {}
     local playerPoints = 0
+
     -- For each theme, get the player's best drawing
     for i, playerBestDrawing in ipairs(topPlays) do
         local imageData = CanvasDraw.DecompressImageDataCustom(playerBestDrawing.imageData)
@@ -319,7 +320,7 @@ local function storeHighestScoringDrawing(player:Player, theme, imageData, score
             end
 
             savePlayerData(player, playerData)
-            TopPlaysStore:saveTopPlays(player, topPlays)
+            TopPlaysStore:saveTopPlays(tostring(player.UserId), topPlays)
             -- Send the new top plays to the client.
             sendTopPlaysToClient(player, tostring(player.UserId), topPlays)
         end

@@ -79,9 +79,8 @@ function TopPlaysStore:checkIfNewBestDrawingChangesTopPlays(originTopPlaysWithou
     return shouldAdd, replaceThemeUuid
 end
 
-function TopPlaysStore:saveTopPlays(player, topPlays)
-    local playerId = player.UserId
-    assert(player, "Missing player parameter")
+function TopPlaysStore:saveTopPlays(userId, topPlays)
+    assert(userId, "Missing userId parameter")
     assert(topPlays, "Missing topPlays parameter")
 
     for _, topPlay in ipairs(topPlays) do
@@ -96,25 +95,29 @@ function TopPlaysStore:saveTopPlays(player, topPlays)
     local success, error = DataStoreHelper:_performDataStoreOperationWithRetry(
         TopPlaysDataStore,
         "SetAsync",
-        "Player_" .. playerId, 
+        "Player_" .. userId, 
         topPlays,
         true)
 
     if not success then
-        warn("TopPlaysStore: Failed to save top plays for player " .. playerId .. ": " .. tostring(error))
+        warn("TopPlaysStore: Failed to save top plays for player " .. userId .. ": " .. tostring(error))
         return false, "Failed to save top plays: " .. tostring(error)
     end
 
     return true, nil
 end
 
-function TopPlaysStore:getTopPlays(playerId)
+function TopPlaysStore:getTopPlays(userId: string)
+    if not userId then
+        warn("TopPlaysStore: Missing userId parameter")
+        return nil, "Missing userId parameter"
+    end
     
     -- Try to get top plays data from DataStore with retry logic
     local success, result = DataStoreHelper:_performDataStoreOperationWithRetry(
         TopPlaysDataStore,
         "GetAsync",
-        "Player_" .. playerId
+        "Player_" .. userId 
     )
     
     if success and result then
@@ -135,11 +138,12 @@ function TopPlaysStore:getTopPlays(playerId)
         return result, nil
     elseif success then
         -- No data found but operation succeeded, return empty table
-        debugPrint("No top plays found for player %s", playerId)
+        debugPrint("No top plays found for player %s", userId)
         return {}, nil
     else
         -- Operation failed
         warn("TopPlaysStore: Failed to retrieve top plays - " .. tostring(result))
+        warn(tostring(result))
         return nil, "DataStore error: " .. tostring(result)
     end
 end

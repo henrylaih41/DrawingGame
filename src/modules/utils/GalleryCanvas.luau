@@ -6,7 +6,7 @@ local CommonHelper = require(ReplicatedStorage.Modules.Utils.CommonHelper)
 
 local GalleryCanvas = {}-- Function to set up the Best-Scores scrolling frame completely in SCALE units
 
-function GalleryCanvas.setupGalleryCanvas(parentContainer, containers, numberOfSlots, closeButtonCallback)
+function GalleryCanvas.setupGalleryCanvas(parentContainer, containers, numberOfSlots, closeButtonCallback, galleryDrawingDeleteButtonCallback)
     --------------------------------------------------
     -- 1. Create top bar for title and close button
     --------------------------------------------------
@@ -110,6 +110,14 @@ function GalleryCanvas.setupGalleryCanvas(parentContainer, containers, numberOfS
     --------------------------------------------------
     for i = 1, numberOfSlots do
         local container = template:Clone()
+        local deleteButton = container:FindFirstChild("DeleteButton")
+
+        if deleteButton and galleryDrawingDeleteButtonCallback then
+            deleteButton.MouseButton1Click:Connect(function()
+                galleryDrawingDeleteButtonCallback(container)
+            end)
+        end
+
         container.Name  = ("ThemeContainer_%s"):format(tostring(i))
         -- Set the parent so we initialize this container faster.
         container.Parent = scoreScrollFrame
@@ -144,6 +152,11 @@ function GalleryCanvas.setupGalleryCanvas(parentContainer, containers, numberOfS
     end
 
     return scoreScrollFrame
+end
+
+function GalleryCanvas.deleteDrawing(container)
+    CommonHelper.destroyEditableImage(container.editableImage)
+    container.editableImage = nil
 end
 
 function GalleryCanvas.updateDrawingDisplayForRank(

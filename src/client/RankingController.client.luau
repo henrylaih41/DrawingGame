@@ -4,6 +4,7 @@ local LeaderBoardBuilder = require(ReplicatedStorage.Modules.Utils.LeaderBoardBu
 local GameConfig = require(ReplicatedStorage.Modules.GameData.GameConfig)
 local GalleryCanvas = require(ReplicatedStorage.Modules.Utils.GalleryCanvas)
 local CommonHelper = require(ReplicatedStorage.Modules.Utils.CommonHelper)
+local NotificationService = require(ReplicatedStorage.Modules.Utils.NotificationService)
 local MainMenuScreen = PlayerGui:WaitForChild("MainMenuScreen")
 local MainMenuButtons = MainMenuScreen:WaitForChild("TopLevelContainer"):WaitForChild("Buttons")
 local GalleryButton = MainMenuButtons:WaitForChild("GalleryButton")
@@ -50,10 +51,11 @@ local function openTopPlays(topPlays)
         warn("Top plays are greater than the number of gallery containers " .. #topPlays .. " > " .. #galleryContainers)
     end
 
-    -- Hide all the containers to start from a clean state.
+    -- Clean and Hide all the containers to start from a clean state.
     for i = 1, #galleryContainers do
         local container = galleryContainers[i]
         container.containerFrame.Visible = false
+        GalleryCanvas.deleteDrawing(container)
     end
 
     for i = 1, math.min(#topPlays, #galleryContainers) do
@@ -71,7 +73,10 @@ end
 
 local function displayPlayerGallery(playerUserId: string)
     -- check cache first
-    if cachedTopPlays[playerUserId] then
+    -- NOTE
+    -- We don't cache the player's own gallery, since we might update it.
+    -- We can revisit this in the future if there is performance issues.
+    if playerUserId ~= tostring(LocalPlayer.UserId) and cachedTopPlays[playerUserId] then
         openTopPlays(cachedTopPlays[playerUserId])
     else
         -- request from server
@@ -171,6 +176,13 @@ local function initGalleryUI(gallerySlots: number)
                     local Loading = containerFrame:FindFirstChild("CanvasFrame"):FindFirstChild("Loading")
                     Loading.Visible = true
                 end
+            end
+        end,
+        function(containerFrame)
+            NotificationService:ShowConfirmationBox("Are you sure you want to delete this drawing?")
+            local confirmed = NotificationService:GetConfirmation()
+            if confirmed then
+                -- TODO: Delete the drawing
             end
         end
     )
