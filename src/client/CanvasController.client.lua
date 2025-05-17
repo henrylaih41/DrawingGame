@@ -3,7 +3,6 @@ local GameConstants = require(ReplicatedStorage.Modules.GameData.GameConstants)
 local LocalPlayer = game:GetService("Players").LocalPlayer
 local ClientState = require(LocalPlayer:WaitForChild("PlayerScripts"):WaitForChild("ClientState"))
 local Events = ReplicatedStorage:WaitForChild("Events")
-local AssetService = game:GetService("AssetService")
 local CommonHelper = require(ReplicatedStorage.Modules.Utils.CommonHelper)
 
 local stopRendering = false
@@ -20,23 +19,7 @@ local function GetDeviceTier()
     end
 end
 
-local function unrenderCanvas(canvas: Model)
-    CommonHelper.destroyEditableImage(ClientState.DrawingCanvas[canvas].editableImage)
-    ClientState.DrawingCanvas[canvas].editableImage = nil
-    ClientState.DrawingCanvas[canvas].rendered = false
-end
 
-local function renderToCanvas(canvas: Model, data: {imageData: {ImageBuffer: buffer, ImageResolution: Vector2, Width: number, Height: number}, rendered: boolean})
-    local dest = CommonHelper.renderImage(
-        canvas.PrimaryPart:FindFirstChild("CanvasGui"):FindFirstChild("DrawingImage"),
-        data.imageData
-    )
-    -- If we successfully created the editable image, we should store it.
-    if dest then
-        ClientState.DrawingCanvas[canvas].editableImage = dest
-        data.rendered = true
-    end
-end
 
 local function init()
     for _, c in ipairs(workspace:WaitForChild(GameConstants.DrawingCanvasFolderName):GetChildren()) do
@@ -56,18 +39,18 @@ local function init()
         canvas)
         -- Set the image data for the canvas.
         if imageData then
-            unrenderCanvas(canvas)
+            CommonHelper.unrenderCanvas(canvas)
             ClientState.DrawingCanvas[canvas].imageData = imageData
         else
             -- When we set the image data to nil, we should also unrender the canvas.
             ClientState.DrawingCanvas[canvas].imageData = nil
-            unrenderCanvas(canvas)
+            CommonHelper.unrenderCanvas(canvas)
         end
 
         -- Let's Render the image immediately for now. 
         -- TODO: We should add our own rendering system so we only render image close to the players.
         -- Create the editable from the original image data.
-        renderToCanvas(canvas, ClientState.DrawingCanvas[canvas])
+        CommonHelper.renderToCanvas(canvas, ClientState.DrawingCanvas[canvas])
     end)
 end
 
@@ -132,9 +115,9 @@ RunService.Heartbeat:Connect(function()
         local data = ClientState.DrawingCanvas[job.canvas]
         if data then
             if job.op == "render"   and not data.rendered and data.imageData then
-                renderToCanvas(job.canvas, data)
+                CommonHelper.renderToCanvas(job.canvas, data)
             elseif job.op == "unrender" and data.rendered then
-                unrenderCanvas(job.canvas)
+                CommonHelper.unrenderCanvas(job.canvas)
             end
         end
         opsThisStep   += 1
@@ -149,27 +132,26 @@ local function renderCanvasController()
     local hrpLastPos = nil
 
     while true do
-        -- This is set when the player is viewing the gallery.
-        if stopRendering then
-            continue
-        end
-        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if hrp then
-            local moved = not hrpLastPos or (hrp.Position - hrpLastPos).Magnitude > 0
-            hrpLastPos = hrp.Position
 
-            for canvas, data in pairs(ClientState.DrawingCanvas) do
-                -- recalc only if player moved OR render-state mismatches data
-                if moved or (data.rendered ~= (data.imageData ~= nil)) then
-                    local dist = (hrp.Position - canvas.PrimaryPart.Position).Magnitude
+        if not stopRendering then
+            local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                local moved = not hrpLastPos or (hrp.Position - hrpLastPos).Magnitude > 0
+                hrpLastPos = hrp.Position
 
-                    if dist <= RENDER_RADIUS then
-                        if data.imageData and not data.rendered then
-                            enqueue(canvas, "render", dist)          -- pass priority
-                        end
-                    elseif dist >= UNRENDER_RADIUS then
-                        if data.rendered then
-                            enqueue(canvas, "unrender")              -- no need for dist
+                for canvas, data in pairs(ClientState.DrawingCanvas) do
+                    -- recalc only if player moved OR render-state mismatches data
+                    if moved or (data.rendered ~= (data.imageData ~= nil)) then
+                        local dist = (hrp.Position - canvas.PrimaryPart.Position).Magnitude
+
+                        if dist <= RENDER_RADIUS then
+                            if data.imageData and not data.rendered then
+                                enqueue(canvas, "render", dist)          -- pass priority
+                            end
+                        elseif dist >= UNRENDER_RADIUS then
+                            if data.rendered then
+                                enqueue(canvas, "unrender")              -- no need for dist
+                            end
                         end
                     end
                 end
@@ -183,13 +165,27 @@ end
 
 function stopRenderingCanvas()
     stopRendering = true
-    for _, canvas in ipairs(ClientState.DrawingCanvas) do
-        unrenderCanvas(canvas)
+    for canvasModel, _ in pairs(ClientState.DrawingCanvas) do 
+        CommonHelper.unrenderCanvas(canvasModel)
     end
 end
 
 function resumeRenderingCanvas()
     stopRendering = false
+end
+
+-- Create a bindable function to expose these functions to other client scripts
+local CanvasControllerBindable = Instance.new("BindableFunction")
+CanvasControllerBindable.Name = "CanvasControllerFunction"
+CanvasControllerBindable.Parent = LocalPlayer.PlayerScripts
+
+-- Handle the function calls with different action names
+CanvasControllerBindable.OnInvoke = function(action)
+    if action == "StopRendering" then
+        stopRenderingCanvas()
+    elseif action == "ResumeRendering" then
+        resumeRenderingCanvas()
+    end
 end
 
 task.spawn(renderCanvasController)

@@ -1,4 +1,6 @@
 local AssetService = game:GetService("AssetService")
+local LocalPlayer = game:GetService("Players").LocalPlayer
+local ClientState = require(LocalPlayer:WaitForChild("PlayerScripts"):WaitForChild("ClientState"))
 
 local CommonHelper = {}
 local editableImageMemoryUsage = 0
@@ -66,4 +68,21 @@ function CommonHelper.renderImage(
     return dest
 end
 
+function CommonHelper.unrenderCanvas(canvas: Model)
+    CommonHelper.destroyEditableImage(ClientState.DrawingCanvas[canvas].editableImage)
+    ClientState.DrawingCanvas[canvas].editableImage = nil
+    ClientState.DrawingCanvas[canvas].rendered = false
+end
+
+function CommonHelper.renderToCanvas(canvas: Model, data: {imageData: {ImageBuffer: buffer, ImageResolution: Vector2, Width: number, Height: number}, rendered: boolean})
+    local dest = CommonHelper.renderImage(
+        canvas.PrimaryPart:FindFirstChild("CanvasGui"):FindFirstChild("DrawingImage"),
+        data.imageData
+    )
+    -- If we successfully created the editable image, we should store it.
+    if dest then
+        ClientState.DrawingCanvas[canvas].editableImage = dest
+        data.rendered = true
+    end
+end
 return CommonHelper
