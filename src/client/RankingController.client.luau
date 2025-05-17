@@ -2,13 +2,13 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local PlayerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
 local LeaderBoardBuilder = require(ReplicatedStorage.Modules.Utils.LeaderBoardBuilder)
 local GameConfig = require(ReplicatedStorage.Modules.GameData.GameConfig)
-local TopPlaysCanvas = require(ReplicatedStorage.Modules.Utils.TopPlaysCanvas)
+local GalleryCanvas = require(ReplicatedStorage.Modules.Utils.GalleryCanvas)
 local MainMenuScreen = PlayerGui:WaitForChild("MainMenuScreen")
 local MainMenuButtons = MainMenuScreen:WaitForChild("TopLevelContainer"):WaitForChild("Buttons")
 local GalleryButton = MainMenuButtons:WaitForChild("GalleryButton")
 -- Get references to UI elements
 local RankingScreen = PlayerGui:WaitForChild("RankingScreen")
-local TopPlaysScreen = PlayerGui:WaitForChild("TopPlaysScreen")
+local GalleryScreen = PlayerGui:WaitForChild("GalleryScreen")
 local TopLevelContainer = RankingScreen:WaitForChild("TopLevelContainer")
 local rowTemplate = ReplicatedStorage:WaitForChild("UI"):WaitForChild("PlayerRankRow")
 
@@ -43,9 +43,9 @@ local function displayTopPlays(topPlays)
     for i = 1, #topPlaysContainers do
         if i <= #topPlays then
             local drawingData = topPlays[i]
-            TopPlaysCanvas.updateDrawingDisplayForRank(drawingData, i, topPlaysContainers)
+            GalleryCanvas.updateDrawingDisplayForRank(drawingData, i, topPlaysContainers)
         else
-            TopPlaysCanvas.closeDrawingDisplayForRank(i, topPlaysContainers)
+            GalleryCanvas.closeDrawingDisplayForRank(i, topPlaysContainers)
         end
     end
 end
@@ -62,8 +62,8 @@ local function openTopPlays(userId)
     else
         Events.RequestTopPlays:FireServer(userId)
     end
-    TopPlaysScreen.Enabled = true
-    TopPlaysScreen:FindFirstChild("TopLevelContainer").Visible = true
+    GalleryScreen.Enabled = true
+    GalleryScreen:FindFirstChild("TopLevelContainer").Visible = true
     CanvasControllerFunction:Invoke("StopRendering")
 end
 
@@ -140,15 +140,15 @@ local function initRankingUI()
 end
 
 local function initTopPlaysUI()
-    local topLevelContainer = TopPlaysScreen:FindFirstChild("TopLevelContainer")
+    local topLevelContainer = GalleryScreen:FindFirstChild("TopLevelContainer")
     -- Set to invisible first before we setup the canvas
     topLevelContainer.Visible = false
-    scrollFrame = TopPlaysCanvas.setupTopPlaysCanvas(
+    scrollFrame = GalleryCanvas.setupGalleryCanvas(
         topLevelContainer, topPlaysContainers, 
         function()
             CanvasControllerFunction:Invoke("ResumeRendering")
             topLevelContainer.Visible = false
-            TopPlaysScreen.Enabled = false
+            GalleryScreen.Enabled = false
 
             if topPlaysContainers then
                 for i, containerData in ipairs(topPlaysContainers) do
@@ -178,7 +178,7 @@ local function initTopPlaysUI()
     end)
 
     -- After setup, disable the screen
-    TopPlaysScreen.Enabled = false
+    GalleryScreen.Enabled = false
 end
 
 initTopPlaysUI()

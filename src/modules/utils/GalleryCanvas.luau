@@ -3,9 +3,9 @@ local CanvasDraw = require(ReplicatedStorage.Modules.Canvas.CanvasDraw)
 local CanvasDisplay = require(ReplicatedStorage.Modules.Canvas.CanvasDisplay)
 local GameConfig = require(ReplicatedStorage.Modules.GameData.GameConfig)
 
-local TopPlaysCanvas = {}-- Function to set up the Best-Scores scrolling frame completely in SCALE units
+local GalleryCanvas = {}-- Function to set up the Best-Scores scrolling frame completely in SCALE units
 
-function TopPlaysCanvas.setupTopPlaysCanvas(parentContainer, containers, closeButtonCallback)
+function GalleryCanvas.setupGalleryCanvas(parentContainer, containers, closeButtonCallback)
     --------------------------------------------------
     -- 1. Create top bar for title and close button
     --------------------------------------------------
@@ -139,7 +139,7 @@ function TopPlaysCanvas.setupTopPlaysCanvas(parentContainer, containers, closeBu
     return scoreScrollFrame
 end
 
-function TopPlaysCanvas.updateDrawingDisplayForRank(drawingData, rank, containers)
+function GalleryCanvas.updateDrawingDisplayForRank(drawingData, rank, containers)
     local container = containers[rank].container
     local canvas = containers[rank].canvas
     local label = container:FindFirstChild("TopBar"):FindFirstChild("BestScoreTitle")
@@ -166,7 +166,7 @@ function TopPlaysCanvas.updateDrawingDisplayForRank(drawingData, rank, container
     end
 end
 
-function TopPlaysCanvas.closeDrawingDisplayForRank(rank, containers)
+function GalleryCanvas.closeDrawingDisplayForRank(rank, containers)
     local container = containers[rank].container
     -- Hide the loading
     local Loading = container:FindFirstChild("CanvasFrame"):FindFirstChild("Loading")
@@ -174,4 +174,4 @@ function TopPlaysCanvas.closeDrawingDisplayForRank(rank, containers)
     container.Visible = false
 end
 
-return TopPlaysCanvas
+return GalleryCanvas

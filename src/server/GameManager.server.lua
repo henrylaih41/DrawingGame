@@ -122,10 +122,7 @@ local function handlePlayerJoined(player)
     -- TODO: This is just for testing purpose. In prod, we should use drawings in player's gallery.
     task.spawn(function()
         task.wait(3)
-        print("Fetching top plays")
         local topPlays = TopDrawingCacheService.fetch(1523877105)
-        print("Top plays fetched")
-        print(topPlays)
         for i, c in ipairs(workspace:WaitForChild(GameConstants.DrawingCanvasFolderName):GetChildren()) do
             local topPlay = topPlays[i % (#topPlays - 1)]
             if (topPlay == nil) then
