@@ -60,7 +60,8 @@ local function initialize()
             -- Check if the player has reached the maximum number of owned canvas.
             if ServerStates.PlayerState[player].maximumOwnedCanvas <= 
                #ServerStates.PlayerState[player].ownedCanvas then
-                -- TODO: Notify the player that they have reached the maximum number of owned canvas.
+                Events.ShowNotification:FireClient(player,
+                    "Reach maximum canvas limit, unregister owned canvas first")
                 return
             end
 
@@ -122,7 +123,6 @@ local function initialize()
         local registerPrompt = canvas:FindFirstChild("CanvasFrame"):FindFirstChild("RegisterCanvasPrompt")
         registerPrompt.Enabled = true 
 
-        -- TODO: We will also need to clear the canvas.
         Events.DrawToCanvas:FireAllClients(nil, nil, canvas)
         -- Notify the client that the canvas has been unregistered.
         Events.UnregisterCanvas:FireClient(player, canvas)

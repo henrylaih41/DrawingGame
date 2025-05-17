@@ -39,6 +39,7 @@ local SubmitDrawingEvent   = Events:WaitForChild("SubmitDrawing")
 local LocalPlayer   = Players.LocalPlayer
 local PlayerGui     = LocalPlayer:WaitForChild("PlayerGui")
 local GameConstants = require(ReplicatedStorage.Modules.GameData.GameConstants)
+local NotificationService = require(ReplicatedStorage.Modules.Utils.NotificationService)
 
 ------------------------------------------------------------------------
 -- 4️⃣  CONFIG / STATE VARS
@@ -302,12 +303,7 @@ local function submitDrawing()
         SubmitDrawingEvent:FireServer(img) 
     end
 
-    submitNotification.Visible = true
-    
-    -- Hide notification after 3 seconds
-    task.delay(3, function()
-        submitNotification.Visible = false
-    end)
+    NotificationService:ShowNotification("Great job!, Drawing submitted!")
 end
 
 local function setupSubmitButton(controls: Frame)
