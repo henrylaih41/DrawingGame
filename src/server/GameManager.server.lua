@@ -24,6 +24,19 @@ local Events = ReplicatedStorage:WaitForChild("Events")
 
 local DEBUG_ENABLED = true
 
+local function getDifficultyMultiplier(difficulty: string)
+    if difficulty == "Easy" then
+        return 1
+    elseif difficulty == "Medium" then
+        return 2
+    elseif difficulty == "Hard" then
+        return 3
+    else
+        warn("Unknown difficulty: " .. difficulty)
+        return 1
+    end
+end
+
 -- Get the player data, if it is not in memory, get it from the datastore.
 local function getPlayerData(player)
     local playerData = ServerStates.PlayerState[player].playerData
@@ -174,17 +187,6 @@ local function topPlaysWithoutImageFromTopPlays(topPlays)
     return topPlaysWithoutImage
 end
 
-local function selfHealPlayer(player: Player)
-    local playerData = getPlayerData(player)
-    if not playerData.topPlaysWithoutImage or (#playerData.topPlaysWithoutImage < GameConfig.GALLERY_SLOTS) then
-        local topPlays = TopPlaysStore:getTopPlays(tostring(player.UserId))
-        local topPlaysWithoutImage = topPlaysWithoutImageFromTopPlays(topPlays)
-
-        playerData.topPlaysWithoutImage = topPlaysWithoutImage
-        savePlayerData(player, playerData)
-    end
-end 
-
 local function sendTopPlaysToClient(player: Player, topPlaysUserId: string, topPlays)
     debugPrint("Player %s requested top plays of %s", player.Name, topPlaysUserId)
 
@@ -222,8 +224,21 @@ local function sendTopPlaysToClient(player: Player, topPlaysUserId: string, topP
     Events.ReceiveTopPlays:FireClient(player, topPlaysUserId, bestDrawings)
 end
 
--- imageData is a compressed image data returned by CompressImageDataCustom.
-local function storeHighestScoringDrawing(player:Player, theme, imageData, score: number, feedback: string)
+local function createDrawingData(imageData, score, theme, playerId)
+    return {
+        imageData = imageData,
+        points = score * getDifficultyMultiplier(theme.Difficulty),
+        score = score,
+        timestamp = os.time(),
+        theme = theme.Name,
+        theme_difficulty = theme.Difficulty,
+        theme_uuid = theme.uuid,
+        playerId = playerId,
+        uuid = HttpService:GenerateGUID(false)
+    }
+end
+
+local function storeHighestScoringDrawing(player:Player, theme: ThemeStore.Theme, imageData, score: number, feedback: string)
     -- Check if there's an existing drawing for this theme
     local existingData, errorMessage = PlayerBestDrawingsStore:getPlayerBestDrawing(player, theme.uuid)
     local existingScore = 0
@@ -245,78 +260,35 @@ local function storeHighestScoringDrawing(player:Player, theme, imageData, score
                 existingScore, score, theme)
         end
     end
+
+    local playerData = getPlayerData(player)
+    playerData.TotalPoints = playerData.TotalPoints + score * getDifficultyMultiplier(theme.Difficulty)
+    savePlayerData(player, playerData)
+    flushPlayerData(player)
     
     -- Save the drawing if needed
     if shouldSaveDrawing then
-        local drawingData = {
-            imageData = imageData,
-            points = score,
-            score = score,
-            timestamp = os.time(),
-            theme = theme.Name,
-            theme_difficulty = theme.Difficulty,
-            theme_uuid = theme.uuid,
-            playerId = player.UserId,
-            uuid = HttpService:GenerateGUID(false)
-        }
-
+        local drawingData = createDrawingData(imageData, score, theme, player.UserId)
+        
         local success, error = PlayerBestDrawingsStore:savePlayerBestDrawing(player, theme.uuid, drawingData)
+
         if not success then
             warn("Failed to save player best drawing for theme '%s': %s", theme, error)
-        end
-        
-        -- self healing - topPlaysWithoutImage
-        selfHealPlayer(player)
-        -- At this point, the playerData must contain the topPlaysWithoutImage field.
-        local playerData = getPlayerData(player)
-
-        local shouldAddToTopPlays, replaceThemeUuid 
-            = TopPlaysStore:checkIfNewBestDrawingChangesTopPlays(playerData.topPlaysWithoutImage, drawingData)
-
-        if shouldAddToTopPlays then
-            -- Get the real topPlays with ImageData
-            local topPlays = TopPlaysStore:getTopPlays(tostring(player.UserId))
-
-            if replaceThemeUuid then
-                -- Replace the old top play with the new one
-                for i, topPlay in ipairs(topPlays) do
-                    if topPlay.theme_uuid == replaceThemeUuid then
-                        topPlays[i] = drawingData
-                    end
-                end
-            -- If replaceThemeUuid is nil, it means we should just insert the new drawing.
-            else
-                table.insert(topPlays, drawingData)
-            end
-
-            -- Do the update, we update the topPlaysWithoutImage and the topPlays.
-            local topPlaysWithoutImage = topPlaysWithoutImageFromTopPlays(topPlays)
-            playerData.topPlaysWithoutImage = topPlaysWithoutImage
-
-            local totalPoints = 0
-            for _, topPlay in ipairs(topPlays) do
-                totalPoints = totalPoints + topPlay.points
-                playerData.TotalPoints = totalPoints
-            end
-
-            savePlayerData(player, playerData)
-            TopPlaysStore:saveTopPlays(tostring(player.UserId), topPlays)
-            -- Send the new top plays to the client.
-            sendTopPlaysToClient(player, tostring(player.UserId), topPlays)
         end
 
         local rawImageData = CanvasDraw.DecompressImageDataCustom(imageData)
         -- Notify the client that a new best drawing for this theme has been saved
         Events.ReceiveNewBestDrawing:FireClient(player, {imageData = rawImageData, score = score, feedback = feedback}, theme)
-        if success then
-            debugPrint("Successfully saved drawing for theme '%s'", theme)
-        else
-            debugPrint("Failed to save drawing for theme '%s': %s", theme, error)
-        end
     end
+
+    -- TODO: Remove this
+    -- local topPlays = TopPlaysStore:getTopPlays(tostring(player.UserId))
+    -- TopPlaysStore:saveTopPlays(tostring(player.UserId), topPlays)
+    -- -- Send the new top plays to the client.
+    -- sendTopPlaysToClient(player, tostring(player.UserId), topPlays)
 end
 
-local function runGradingPhase(player: Player, currentTheme: string)
+local function runGradingPhase(player: Player, currentTheme: ThemeStore.Theme)
     local playerState = ServerStates.PlayerState[player]
     local userId = player.UserId
     local imageData = playerState.playerDrawings
@@ -343,10 +315,6 @@ local function runGradingPhase(player: Player, currentTheme: string)
                 }
                 
                 local scoreValue = tonumber(result.result.Score) or 5
-                -- TODO, we can optimizer here by returning the best drawing image data.
-                -- This way we can avoid the getPlayerBestDrawing call later.
-                -- We need to be careful since this function is called using a task spawn.
-                -- We either have to make this blocking or use some synchronization mechanism.
                 storeHighestScoringDrawing(player, currentTheme, compressedImageData, scoreValue, result.result.Feedback)
 
                 -- TODO, once the grading is done, we check if the image is appropriate to be displayed.
@@ -519,7 +487,7 @@ local function attachSurfaceGui(canvasModel : Model,
     gui.Parent              = board     -- replication happens here
 
     ----------------------------------------------------------------
-    -- 2. Compute the board’s width / height *on that face*
+    -- 2. Compute the board's width / height *on that face*
     ----------------------------------------------------------------
     local size = board.Size
     local widthStuds, heightStuds
@@ -547,7 +515,7 @@ local function attachSurfaceGui(canvasModel : Model,
     img.ScaleType         = Enum.ScaleType.Fit        -- keeps aspect
     img.Parent            = gui
 
-    -- Only add an aspect-ratio constraint if the board isn’t square
+    -- Only add an aspect-ratio constraint if the board isn't square
     if math.abs(widthStuds - heightStuds) > 0.01 then
         local ar          = Instance.new("UIAspectRatioConstraint")
         ar.AspectRatio    = widthStuds / heightStuds

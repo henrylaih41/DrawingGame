@@ -37,7 +37,7 @@ local function init()
         imageData: {ImageBuffer: buffer, ImageResolution: Vector2, Width: number, Height: number}, 
         currentTheme: string, 
         canvas)
-        CommonHelper.unrenderCanvas(canvas)
+        CommonHelper.unrenderCanvas(ClientState, canvas)
         -- Set the image data for the canvas.
         if imageData then
             ClientState.DrawingCanvas[canvas].imageData = imageData
@@ -108,9 +108,9 @@ RunService.Heartbeat:Connect(function()
         local data = ClientState.DrawingCanvas[job.canvas]
         if data then
             if job.op == "render"   and not data.rendered and data.imageData then
-                CommonHelper.renderToCanvas(job.canvas, data)
+                CommonHelper.renderToCanvas(ClientState, job.canvas, data)
             elseif job.op == "unrender" and data.rendered then
-                CommonHelper.unrenderCanvas(job.canvas)
+                CommonHelper.unrenderCanvas(ClientState, job.canvas)
             end
         end
         opsThisStep   += 1
@@ -163,7 +163,7 @@ end
 function stopRenderingCanvas()
     stopRendering = true
     for canvasModel, _ in pairs(ClientState.DrawingCanvas) do 
-        CommonHelper.unrenderCanvas(canvasModel)
+        CommonHelper.unrenderCanvas(ClientState, canvasModel)
     end
     -- Clean the queue.
     queue = {}

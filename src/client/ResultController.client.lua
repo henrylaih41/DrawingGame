@@ -37,7 +37,7 @@ local resultTrophyContainer = nil
 local bestScoreTrophyContainer = nil
 local feedbackContainer = nil
 local feedbackLabel = nil
-local feedbackButton, menuButton, bestScoreButton = nil, nil, nil
+local feedbackButton, menuButton, bestScoreButton, saveToGalleryButton = nil, nil, nil, nil
 
 -- Function to display the final results
 --- Displays the results for a specific player.
@@ -119,6 +119,7 @@ local function initResultUI()
     feedbackButton = buttons:WaitForChild("FeedbackButton")
     menuButton = buttons:WaitForChild("MenuButton")
     bestScoreButton = buttons:WaitForChild("BestScoreButton")
+    saveToGalleryButton = buttons:WaitForChild("SaveToGalleryButton")
     assert(resultTrophyContainer ~= nil, "TrophyContainer not found in ResultScreen")
     assert(feedbackLabel ~= nil, "FeedbackLabel not found in ResultScreen")
     assert(feedbackLabel:IsA("TextLabel"), "FeedbackLabel must be a TextLabel")

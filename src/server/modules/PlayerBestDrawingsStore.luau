@@ -36,6 +36,7 @@ PlayerBestDrawingsStore.playerBestDrawingSchema = SchemaValidator.createSchema({
     theme_difficulty = { type = "string", required = true },
     theme_uuid = { type = "string", required = true }, -- Added theme_uuid field
     playerId = { type = "number", required = true },
+    uuid = { type = "string", required = true },
 })
 
 -- Function to get a player's drawing for a specific theme
