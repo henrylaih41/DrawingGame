@@ -37,7 +37,10 @@
       }
     },
     "ServerScriptService": {
-      "$path": "src/server/"
+      "$path": "src/server/",
+      "tests": {
+        "$path": "src/server/tests"
+      }
     }
   }
 }
