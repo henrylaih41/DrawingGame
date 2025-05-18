@@ -3,7 +3,10 @@ local MemoryStoreService = game:GetService("MemoryStoreService")
 local MemoryStoreHelper = {}
 
 function MemoryStoreHelper:_performMemoryStoreOperationWithRetry(store, operation, key, value, additionalArgs, retry)
-    local retry = retry or true
+    -- Default to retrying if the caller doesn't specify otherwise
+    if retry == nil then
+        retry = true
+    end
     local MAX_RETRIES = 5
     local success, result
     

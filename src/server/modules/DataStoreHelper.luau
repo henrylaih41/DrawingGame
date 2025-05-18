@@ -45,7 +45,10 @@ end
 
 -- Private utility function for handling DataStore operations with retry logic
 function DataStoreHelper:_performDataStoreOperationWithRetry(dataStore, operation, key, value, retry)
-    local retry = retry or true
+    -- Default to retrying on failure unless explicitly disabled
+    if retry == nil then
+        retry = true
+    end
     local MAX_RETRIES = 5
     local success, result
     for attempt = 1, MAX_RETRIES do
