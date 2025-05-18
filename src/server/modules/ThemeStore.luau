@@ -8,7 +8,7 @@ local ThemeCodeStore = require(ServerScriptService.modules.ThemeCodeStore)
 local ThemeStore = {}
 local MS        = game:GetService("MemoryStoreService")
 local ThemeDataStore = DataStoreService:GetDataStore("Themes")
-local AllThemesCache = MS:GetSortedMap("AllThemesCache")
+local AllThemesCache = MS:GetSortedMap("ThemeSummaries")
 local ThemeDefaultCodeLength = 8
 local ThemeMaxCodeLength = 12
 
@@ -62,22 +62,6 @@ local function makeThemeSummary(theme: Theme)
     }
 
     return themeSummary
-end
-
-function ThemeStore:getTheme(theme_uuid: string): Theme?
-    local success, result = MemoryStoreHelper:_performMemoryStoreOperationWithRetry(
-        ThemeDataStore,
-        "GetAsync",
-        "Theme_" .. theme_uuid,
-        nil,
-        true
-    )
-
-    if success then
-        return result
-    end
-
-    return nil
 end
 
 function ThemeStore:getUniqueCode(theme_uuid: string)

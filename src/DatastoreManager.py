@@ -247,6 +247,98 @@ def update_key(store: str, key: str, value: any) -> None:
     r = requests.post(url, headers=headers, params=params, json=value, timeout=REQUEST_TIMEOUT)
     r.raise_for_status()
 
+def update_theme_summaries() -> None:
+    """
+    Scan all themes in the Themes datastore, create a theme summary for each one.
+    Store the list of summaries in the Themes datastore under the key "all_theme_summaries".
+    """
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+    logging.info("▶ Scanning all themes and creating summaries...")
+    
+    source_store_name = "Themes"
+    target_store_name = "Themes"
+    cursor = None
+    total_themes = 0
+    theme_summaries = []
+    
+    # First, scan all themes and create summaries
+    while True:
+        try:
+            # Get a page of themes
+            page = list_keys(source_store_name, cursor)
+            keys = [k["key"] for k in page.get("keys", [])]
+            
+            if not keys:
+                break  # no more data
+            
+            logging.info(f"Processing batch of {len(keys)} themes")
+            
+            for key in keys:
+                try:
+                    # Get the theme data
+                    theme = get_key_value(source_store_name, key)
+                    
+                    if not isinstance(theme, dict):
+                        logging.warning(f"Entry {key} is not a valid theme dictionary, skipping")
+                        continue
+                    
+                    # Create a theme summary (similar to makeThemeSummary in the Lua code)
+                    theme_summary = {
+                        "uuid": theme.get("uuid"),
+                        "Name": theme.get("Name"),
+                        "Description": theme.get("Description", "")[:300],  # Limit description to 300 chars
+                        "CreatedBy": theme.get("CreatedBy"),
+                        "TotalPlayCount": theme.get("TotalPlayCount", 0),
+                        "CreatedAt": theme.get("CreatedAt"),
+                        "Duration": theme.get("Duration"),
+                        "Difficulty": theme.get("Difficulty"),
+                        "Likes": theme.get("Likes", 0),
+                        "Code": theme.get("Code")
+                    }
+                    
+                    theme_summaries.append(theme_summary)
+                    total_themes += 1
+                    logging.info(f"  • Processed theme: {theme.get('Name', 'Unknown')} ({theme.get('uuid', 'No UUID')})")
+                    
+                except Exception as e:
+                    logging.error(f"Error processing theme key {key}: {e}")
+                
+                # Add a small delay between individual theme processing
+                time.sleep(0.5)
+            
+            logging.info(f"Processed {total_themes} themes so far")
+            
+            cursor = page.get("nextPageCursor")
+            if not cursor:
+                break  # reached final page
+            
+            # Add a delay between pages to avoid rate limits
+            time.sleep(BACKOFF_SECONDS)
+            
+        except requests.HTTPError as e:
+            logging.error(f"HTTP error during batch processing: {e}")
+            # Back off for a longer period if we hit rate limits
+            if e.response.status_code == 429:
+                logging.info("Rate limit hit, waiting 30 seconds...")
+                time.sleep(30)
+            else:
+                raise
+    
+    # Now store the list of theme summaries in the target datastore
+    if theme_summaries:
+        try:
+            # Use a fixed key for the list of summaries
+            list_key = "all_theme_summaries"
+            
+            # Store the list in the target datastore
+            update_key(target_store_name, list_key, theme_summaries)
+            
+            logging.info(f"✔ Successfully stored {len(theme_summaries)} theme summaries to {target_store_name}")
+        except Exception as e:
+            logging.error(f"Error storing theme summaries: {e}")
+    else:
+        logging.info("No themes found to summarize.")
+
 def main() -> None:
     if not (UNIVERSE_ID and API_KEY):
         sys.exit("ERROR: set ROBLOX_UNIVERSE_ID and ROBLOX_API_KEY env vars first")
@@ -254,7 +346,7 @@ def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     
     # Add option to run the update_topplays function
-    action = input("Select action (1: Wipe datastores, 2: Update TopPlays): ")
+    action = input("Select action (1: Wipe datastores, 2: Update TopPlays, 3: Update Theme Summaries): ")
     
     if action == "1":
         enable_wipe = input("Enable wipe? (y/n): ")
@@ -271,6 +363,11 @@ def main() -> None:
         confirm = input("Update TopPlays points calculation? (y/n): ")
         if confirm == "y":
             update_topplays()
+    
+    elif action == "3":
+        confirm = input("Update theme summaries in ThemeSummaries datastore? (y/n): ")
+        if confirm == "y":
+            update_theme_summaries()
     
     logging.info("🏁 all done")
 
