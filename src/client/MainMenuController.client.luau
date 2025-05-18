@@ -84,14 +84,6 @@ local function onUiToggleClicked()
     end
 end
 
-local theme_uuids = {}
-
-Events.ReceiveThemeListPage.OnClientEvent:Connect(function(themeList)
-    for _, theme in ipairs(themeList) do
-        table.insert(theme_uuids, theme.value.uuid)
-    end
-end)
-
 local function onFeedbackClicked()
     FeedbackContainer.Visible = true
 end

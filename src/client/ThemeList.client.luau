@@ -83,8 +83,8 @@ end
 
 local function sortThemesByDifficulty(themeList)
     table.sort(themeList, function(a, b)
-        local diffA = getDifficultyValue(a.value.Difficulty)
-        local diffB = getDifficultyValue(b.value.Difficulty)
+        local diffA = getDifficultyValue(a.Difficulty)
+        local diffB = getDifficultyValue(b.Difficulty)
         
         -- First sort by difficulty
         if diffA ~= diffB then
@@ -92,7 +92,7 @@ local function sortThemesByDifficulty(themeList)
         end
         
         -- Then sort by name within same difficulty
-        return a.value.Name < b.value.Name
+        return a.Name < b.Name
     end)
     return themeList
 end
@@ -103,7 +103,7 @@ local function removeDuplicateThemes(themeList)
     
     for _, theme in ipairs(themeList) do
         -- Create a unique key based on name and difficulty
-        local key = theme.value.Name .. ":" .. theme.value.Difficulty
+        local key = theme.Name .. ":" .. theme.Difficulty
         
         -- Only keep themes we haven't seen before
         if not seen[key] then
@@ -156,11 +156,9 @@ local function initRankingUI()
         -- Remove duplicates and sort themes by difficulty and name before displaying
         themeList = removeDuplicateThemes(themeList)
         themeList = sortThemesByDifficulty(themeList)
-        warn("ThemeList", themeList)
         
         local pageFrame = nil 
         for i, theme in ipairs(themeList) do
-            theme = theme.value
             local page_index = math.ceil(i / row_per_page)
             local row_index = i - (page_index - 1) * row_per_page
             pageFrame = pageContainer:FindFirstChild("Page_" .. page_index)

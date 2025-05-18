@@ -1,20 +1,14 @@
 local DataStoreService = game:GetService("DataStoreService")
 local ServerScriptService = game:GetService("ServerScriptService")
 local DataStoreHelper = require(ServerScriptService.modules.DataStoreHelper)
-local MemoryStoreHelper = require(ServerScriptService.modules.MemoryStoreHelper)
 local HttpService = game:GetService("HttpService")
 local ThemeCodeStore = require(ServerScriptService.modules.ThemeCodeStore)
 
 local ThemeStore = {}
-local MS        = game:GetService("MemoryStoreService")
 local ThemeDataStore = DataStoreService:GetDataStore("Themes")
-local AllThemesCache = MS:GetSortedMap("ThemeSummaries")
 local ThemeDefaultCodeLength = 8
 local ThemeMaxCodeLength = 12
-
--- Let's keep this in the cache for now. As we scale, we will need to move 
--- this to a DataStore or external database.
-local THEME_SUMMARY_EXPIRATION_TIME = 60 * 60 * 24 * 30 -- 30 days
+local allThemeSummariesKey = "all_theme_summaries"
 
 export type Theme = {
     Name: string,
@@ -31,7 +25,7 @@ export type Theme = {
     Likes: number
 }
 
-function ThemeStore:GetTheme(theme_uuid: string): Theme?
+function ThemeStore:getTheme(theme_uuid: string): Theme?
     local success, result = DataStoreHelper:_performDataStoreOperationWithRetry(
         ThemeDataStore,
         "GetAsync",
@@ -97,44 +91,27 @@ function ThemeStore:saveTheme(theme: Theme)
         if not code_success then
             warn("Failed to save theme code: " .. theme.uuid)
         end
+
         local themeSummary = makeThemeSummary(theme)
-        -- Store this in the cache for discovery.
-        local cache_success, _ = MemoryStoreHelper:_performMemoryStoreOperationWithRetry(
-            AllThemesCache,
-            "SetAsync",
-            theme.uuid,
-            themeSummary,
-            {
-                expiration = THEME_SUMMARY_EXPIRATION_TIME,
-                sortKey = theme.CreatedAt
-            }
-        )
-        if not cache_success then
-            warn("Failed to store theme summary in cache: " .. theme.uuid)
-        end 
+        local allThemeSummaries = self:getThemeSummary()
+        table.insert(allThemeSummaries, themeSummary)
+
+        local save_success = self:saveThemeSummary(allThemeSummaries)
+        if not save_success then
+            warn("Failed to save theme summary: " .. theme.uuid)
+        end
     end
 
     return success
 end
 
-function ThemeStore:getThemeSummary(count: number, startKey:string?)
-    local exclusiveStartKey = nil
 
-    if startKey then
-        exclusiveStartKey = {}
-        exclusiveStartKey["key"] = startKey
-    end
-
-    local success, result = MemoryStoreHelper:_performMemoryStoreOperationWithRetry(
-        AllThemesCache,
-        "GetRangeAsync",
-        nil,
-        nil,
-        {
-            direction = Enum.SortDirection.Ascending,
-            pageSize = count,
-            exclusiveStartKey = exclusiveStartKey
-        }
+function ThemeStore:getThemeSummary()
+    local success, result = DataStoreHelper:_performDataStoreOperationWithRetry(
+        ThemeDataStore,
+        "GetAsync",
+        allThemeSummariesKey,
+        nil
     )
 
     if success then
@@ -142,6 +119,21 @@ function ThemeStore:getThemeSummary(count: number, startKey:string?)
     end
 
     return nil
+end
+
+function ThemeStore:saveThemeSummary(themeSummary)
+    local success, _ = DataStoreHelper:_performDataStoreOperationWithRetry(
+        ThemeDataStore,
+        "SetAsync",
+        allThemeSummariesKey,
+        themeSummary
+    )
+
+    if not success then
+        warn("Failed to save theme summary: " .. themeSummary.uuid)
+    end
+
+    return success
 end
 
 function ThemeStore:getThemeByCode(code: string): Theme?

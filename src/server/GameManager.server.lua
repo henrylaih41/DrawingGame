@@ -443,7 +443,7 @@ end
 
 local function sendThemeListPageToClient(player)
     -- fetch all theme at once for now.
-    local themeList = ThemeStore:getThemeSummary(GameConfig.THEME_LIST_LIMIT)
+    local themeList = ThemeStore:getThemeSummary()
     Events.ReceiveThemeListPage:FireClient(player, themeList)
 end
 
