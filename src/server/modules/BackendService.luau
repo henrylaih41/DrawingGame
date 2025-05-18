@@ -146,8 +146,6 @@ function BackendService:ImageToBase64(image)
     -- you might just want to pass the base64 data through rather than converting it again
 end
 
--- TODO: Allow players to choose different prompts other than the BASIC_PROMPT.
---       Some ideas include the SPONG BOB PROMPT, PIXAR PROMPT, etc.
 function BackendService:submitDrawingToBackendForGrading(player, imageData, theme)
     -- Assert that we have valid image data before proceeding
     if not imageData then

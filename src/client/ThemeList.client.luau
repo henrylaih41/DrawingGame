@@ -156,6 +156,7 @@ local function initRankingUI()
         -- Remove duplicates and sort themes by difficulty and name before displaying
         themeList = removeDuplicateThemes(themeList)
         themeList = sortThemesByDifficulty(themeList)
+        warn("ThemeList", themeList)
         
         local pageFrame = nil 
         for i, theme in ipairs(themeList) do

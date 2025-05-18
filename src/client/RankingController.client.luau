@@ -41,7 +41,7 @@ local function updateLabel(pageLbl, currentPage, pageCount)
     pageLbl.Text = string.format("%d / %d", currentPage, pageCount)
 end
 
-local function openTopPlays(topPlays)
+local function openTopPlays(userId: string, topPlays)
     if (topPlays == nil) then
         warn("openTopPlays:userId is nil")
         return
@@ -55,6 +55,13 @@ local function openTopPlays(topPlays)
     for i = 1, #galleryContainers do
         local container = galleryContainers[i]
         container.containerFrame.Visible = false
+        -- Only show the delete button for the local player gallery.
+        if userId == tostring(LocalPlayer.UserId) then
+            container.containerFrame:WaitForChild("DeleteButton").Visible = true
+        else 
+            container.containerFrame:WaitForChild("DeleteButton").Visible = false
+        end
+
         GalleryCanvas.deleteDrawing(container)
     end
 
@@ -77,7 +84,7 @@ local function displayPlayerGallery(playerUserId: string)
     -- We don't cache the player's own gallery, since we might update it.
     -- We can revisit this in the future if there is performance issues.
     if playerUserId ~= tostring(LocalPlayer.UserId) and cachedTopPlays[playerUserId] then
-        openTopPlays(cachedTopPlays[playerUserId])
+        openTopPlays(playerUserId, cachedTopPlays[playerUserId])
     else
         -- request from server
         Events.RequestTopPlays:FireServer(playerUserId)
@@ -158,6 +165,7 @@ end
 
 local function initGalleryUI(gallerySlots: number)
     local topLevelContainer = GalleryScreen:FindFirstChild("TopLevelContainer")
+    GalleryScreen.Enabled = true
     -- Set to invisible first before we setup the canvas
     topLevelContainer.Visible = false
     GalleryCanvas.setupGalleryCanvas(
@@ -212,6 +220,6 @@ Events.ReceiveTopPlays.OnClientEvent:Connect(function(topPlaysUserId: string, to
     end
 
     cachedTopPlays[topPlaysUserId] = topPlays
-    openTopPlays(topPlays)
+    openTopPlays(topPlaysUserId, topPlays)
 end)
 

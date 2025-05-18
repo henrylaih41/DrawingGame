@@ -10,7 +10,8 @@ local TopPlaysStore = require(ServerScriptService.modules.TopPlaysStore)
 --------------------------------------------------------------------
 -- CONFIG – edit to match your deployment
 --------------------------------------------------------------------
-local WORKER_BASE_URL = "http://localhost:3000"   -- trailing slash
+local WORKER_BASE_URL = "https://drawing-backend.vercel.app"
+-- local WORKER_BASE_URL = "http://localhost:3000"   -- trailing slash
 local ENDPOINT = "/api/topPlays/"  -- Will append userId to this path
 -- local WORKER_BASE_URL = "http://127.0.0.1:8787/"   -- trailing slash
 local MAX_RETRIES     = 4          -- exponential back-off tries
