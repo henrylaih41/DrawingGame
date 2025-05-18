@@ -133,6 +133,10 @@ local function renderCanvasController()
                 hrpLastPos = hrp.Position
 
                 for canvas, data in pairs(ClientState.DrawingCanvas) do
+                    -- Safety check to ensure the canvas is not nil
+                    if canvas.PrimaryPart == nil then
+                        continue
+                    end
                     -- recalc only if player moved OR render-state mismatches data
                     if moved or (data.rendered ~= (data.imageData ~= nil)) then
                         local dist = (hrp.Position - canvas.PrimaryPart.Position).Magnitude
