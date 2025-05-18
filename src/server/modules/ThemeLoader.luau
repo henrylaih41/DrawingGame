@@ -5,292 +5,445 @@ local ThemeLoader = {}
 
 function ThemeLoader:loadThemes()
     -- =========================
--- === 1. Lighthouse =======
+-- === 1. Skate Park =========
 -- =========================
-ThemeService:createTheme(
-    "Lighthouse",
-    "",
-    [[
-"Beacon of the coast! A hard-mode lighthouse piece must balance architectural precision with dramatic seascape lighting. **Core requirements:**  
-1️⃣ *Structure Accuracy* – cylindrical or tapered tower, balcony (gallery), lantern room (glass top), and access door.  
-2️⃣ *Context* – rocky outcrop or pier, visible waves, and sky condition (sunset, storm, night).  
-3️⃣ *Light Interaction* – defined light beam or glow cone, correctly illuminating nearby rocks/water.  
-4️⃣ *Atmospheric Story* – weather effects (spray, clouds, rain) or narrative element (keeper’s house, ship in distance).
+    ThemeService:createTheme(
+        "Skate Park",
+        "",
+        [[
+"Skateboarders catching air in the park. Easy mode focuses on energy and basic perspective.
+Score 1  Random lines; no ramps or boards.
+Score 2  Ramp shape and board; flat background.
+Score 3  One rider drawn; colors basic.
+Score 4  Multiple ramps, small crowd; simple shading.
+Score 5  Proper board shape, rail or stairs.
+Score 6  Show motion lines and shadows.
+Score 7  Background buildings or trees; perspective aligned.
+Score 8  Detailed skate gear and graffiti.
+Score 9  Dynamic poses, layered depth, consistent lighting.
+Score 10 Vibrant park scene with polished details."
+        ]],
+        "Easy", 20,
+        "Server")
 
-Score 1 Random coast doodle; no tower.  
-Score 2 Tower outline only; no balcony or glow; flat sea.  
-Score 3 Tower w/ balcony OR lantern; perspective skewed; waves hinted.  
-Score 4 Full tower pieces, horizon line, single light beam; colors flat; no shadows.  
-Score 5 Correct proportions, textured brick/stripe, wave crests, basic light cone.  
-Score 6 Rock texture, reflected beam on water, sky gradient, doorway detail.  
-Score 7 Weather drama (storm clouds/rain), foam splash, multi-source shadows.  
-Score 8 Golden-hour or moonlit palette, glass glare, subtle atmospheric depth.  
-Score 9 Complex lighting (caustics, rim light on rocks), disciplined perspective, credible weather physics.  
-Score 10 Publish-ready illustration—flawless architecture, cinematic lighting, rich textures, compelling narrative focal point."
-
-    ]],
-    "Hard", 20,
-    "Server")
-
+    -- =========================
+-- === 2. Retro Arcade ========
 -- =========================
--- === 2. Spaceship =========
+    ThemeService:createTheme(
+        "Retro Arcade",
+        "",
+        [[
+"Step into a classic game hall. Easy scoring values recognizable machines and bright screens.
+Score 1  Box shapes; no screens.
+Score 2  Single cabinet outline; blank screen.
+Score 3  Add joystick and buttons; simple color.
+Score 4  Row of machines, gamer silhouette; shading minimal.
+Score 5  Glowing screens, carpet pattern.
+Score 6  Neon sign or token counter; perspective ok.
+Score 7  Characters playing, screen graphics.
+Score 8  Reflections, background posters, multiple colors.
+Score 9  Depth and textures, consistent light.
+Score 10 Immersive arcade with lively atmosphere."
+        ]],
+        "Easy", 20,
+        "Server")
+
+    -- =========================
+-- === 3. Urban Graffiti Alley ==
 -- =========================
-ThemeService:createTheme(
-    "Spaceship",
-    "",
-    [[
-"Command the void! Hard mode expects a **cohesive spacecraft design** rendered in believable three-dimensional space. **Must include:**  
-1️⃣ *Readable Silhouette* – hull, thrusters, command bridge/cockpit, and antennae or weapon arrays.  
-2️⃣ *Surface Detail* – panel lines, vents, rivets, or greebles across at least three hull zones.  
-3️⃣ *Lighting Logic* – single key light (nearby star, explosion) with secondary rim or bounce; shadows follow.  
-4️⃣ *Scene* – space backdrop with nebula, planet, or debris field conveying depth/scale.
+    ThemeService:createTheme(
+        "Urban Graffiti Alley",
+        "",
+        [[
+"City alley covered in art. Easy grading checks wall perspective and graffiti style.
+Score 1  Blank wall; no graffiti.
+Score 2  Simple tag shapes; flat pavement.
+Score 3  Add spray cans, minimal color.
+Score 4  Perspective correct, small details.
+Score 5  Layered graffiti text and shapes.
+Score 6  Background buildings, light shading.
+Score 7  Shadows, ground litter, more color.
+Score 8  Character sketching, depth cues.
+Score 9  Dynamic composition, textured bricks.
+Score 10 Vibrant alley with rich graffiti art."
+        ]],
+        "Easy", 20,
+        "Server")
 
-Score 1 Random shape; no depth.  
-Score 2 Blobby rocket; no detail; stars as dots.  
-Score 3 Hull and engines, flat color; no shading; empty backdrop.  
-Score 4 Perspective in place, two-tone shading; minimal panel lines.  
-Score 5 Panel patterns, exhaust glow, gradient star field, basic rim light.  
-Score 6 Complex greebles, lens-flare thrusters, foreground debris for parallax.  
-Score 7 Consistent light falloff, planetary terminator glow, subtle bounce on hull.  
-Score 8 Multiple material types (metal, glass), color temperature contrast, depth-of-field hint.  
-Score 9 Dynamic camera angle, micro-detail crispness, atmospheric scattering or particle bloom.  
-Score 10 AAA concept-art tier—innovative design, immaculate lighting, cinematic composition, storytelling action (e.g., battle, docking)."
-
-    ]],
-    "Hard", 20,
-    "Server")
-
+    -- =========================
+-- === 4. Fantasy Dragon Hatchery ==
 -- =========================
--- === 3. Rollercoaster ====
+    ThemeService:createTheme(
+        "Fantasy Dragon Hatchery",
+        "",
+        [[
+"Baby dragons emerging from eggs. Easy scoring looks for cute poses and warm lighting.
+Score 1  Egg scribble; no dragon.
+Score 2  Egg with cracks, nest lines.
+Score 3  Baby dragon outline; plain background.
+Score 4  Nest texture, simple shading.
+Score 5  Multiple eggs, small props.
+Score 6  Warm lighting, scales visible.
+Score 7  Background cave or forest.
+Score 8  Detailed hatchling expressions.
+Score 9  Atmospheric depth, dynamic poses.
+Score 10 Storybook hatchery with polished detail."
+        ]],
+        "Easy", 20,
+        "Server")
+
+    -- =========================
+-- === 5. Magic Academy Classroom ==
 -- =========================
-ThemeService:createTheme(
-    "Rollercoaster",
-    "",
-    [[
-"Feel the adrenaline! This hard-mode rollercoaster scene must capture **structural logic, motion, and crowd energy.**  
-Requirements:  
-1️⃣ *Track Geometry* – recognizable rails, support beams, and at least one inversion (loop, corkscrew) or steep drop.  
-2️⃣ *Train* – visible cars with seats, safety harnesses, and riders (hands-up screams!).  
-3️⃣ *Perspective* – dynamic angle (low worm’s-eye or aerial), coherent vanishing lines.  
-4️⃣ *Environment* – theme-park context: queue fencing, signage, trees, or adjacent rides. Motion blur or speed lines expected.
+    ThemeService:createTheme(
+        "Magic Academy Classroom",
+        "",
+        [[
+"Students practicing spells indoors. Easy guidelines emphasize layout and simple effects.
+Score 1  Boxy room; no magic.
+Score 2  Desks and chalkboard; flat color.
+Score 3  Student outlines, simple wands.
+Score 4  Books and potions on desks; shading minimal.
+Score 5  Windows or banners added; perspective correct.
+Score 6  Glowing spell effects, shadows.
+Score 7  Background shelves or animals.
+Score 8  Multiple light sources, textured surfaces.
+Score 9  Detailed robes, dynamic composition.
+Score 10 Enchanting classroom with rich color and depth."
+        ]],
+        "Easy", 20,
+        "Server")
 
-Score 1 Lines on page; no rollercoaster shape.  
-Score 2 Simple hill; no supports; blank cars.  
-Score 3 Full loop + cars; riders faceless; perspective wobbly.  
-Score 4 Supports added, cart wheels, basic crowd dots; flat colors.  
-Score 5 Correct track thickness, rider poses, park props; motion lines.  
-Score 6 Shadows under track, atmospheric haze, color-coded harnesses.  
-Score 7 Dynamic POV, blurred background, lighting on metal beams.  
-Score 8 Reflected sunlight, crowd reactions, detailed signage, depth layers.  
-Score 9 Complex track path crossing, staged foreground objects, meticulous perspective.  
-Score 10 Magazine-spread quality—immersive motion, flawless anatomy, stainless-steel reflections, vibrant park life."
-
-    ]],
-    "Hard", 20,
-    "Server")
-
+    -- =========================
+-- === 6. Futuristic Hoverboard Race ==
 -- =========================
--- === 4. Observatory ======
+    ThemeService:createTheme(
+        "Futuristic Hoverboard Race",
+        "",
+        [[
+"High-speed competition on hoverboards. Medium mode demands motion and tech detail.
+Score 1  Scribble shapes; no riders.
+Score 2  Single board outline; plain ground.
+Score 3  Rider posture awkward, limited color.
+Score 4  Multiple racers, basic perspective.
+Score 5  Speed lines, simple track or city skyline.
+Score 6  Lighting effects on boards, shadows.
+Score 7  Background crowd or obstacles, dynamic angle.
+Score 8  Detailed gear, reflections, sense of motion.
+Score 9  Atmospheric depth with lights and particles.
+Score 10 High-energy race scene, polished anatomy, complex shading."
+        ]],
+        "Medium", 20,
+        "Server")
+
+    -- =========================
+-- === 7. K-Pop Concert ==========
 -- =========================
-ThemeService:createTheme(
-    "Observatory",
-    "",
-    [[
-"Eyes on the cosmos! Deliver a **scientifically-plausible observatory** with convincing architecture and night-sky integration.  
-Key items:  
-1️⃣ *Dome Structure* – hemispherical roof, slit opening/shutter, rotating base.  
-2️⃣ *Primary Telescope* – optical tube, mount, and eyepiece/camera rig; correct pivot.  
-3️⃣ *Interior vs Exterior* – choose one but light convincingly (red safe lights inside or moonlit exterior).  
-4️⃣ *Context* – mountainous or remote hilltop, starry sky with Milky Way or aurora; subtle light pollution gradient.
+    ThemeService:createTheme(
+        "K-Pop Concert",
+        "",
+        [[
+"Colorful performers on stage. Medium scoring checks crowd energy and lighting.
+Score 1  Stick figures; no stage.
+Score 2  Stage outline with speakers; flat color.
+Score 3  Performers drawn, minimal lighting.
+Score 4  Audience row, simple background.
+Score 5  Spotlights, microphone stands, perspective solid.
+Score 6  Colorful outfits, glow sticks, stage effects.
+Score 7  Depth with crowd silhouettes, dynamic poses.
+Score 8  Screens or pyrotechnics, multiple light sources.
+Score 9  Detailed expressions, textured costumes, atmospheric haze.
+Score 10 Concert poster quality with dramatic lighting and energy."
+        ]],
+        "Medium", 20,
+        "Server")
 
-Score 1 Building blob; no dome.  
-Score 2 Dome and telescope, but perspective off, no context.  
-Score 3 Correct dome slit, simple tripod, star dots; flat lighting.  
-Score 4 Stone/metal texture, shadows, background peaks.  
-Score 5 Lens glass sheen, red interior glow or moon rim, sky gradient.  
-Score 6 Star density variation, Milky Way bands, atmospheric perspective on mountains.  
-Score 7 Instrument cables, access stairs, light spill on ground.  
-Score 8 Subtle reflection in lens, sky color shift, mist/fog layer.  
-Score 9 Astro-photography realism—accurate star colors, detailed mount, architectural precision.  
-Score 10 Masterpiece—cinematic nightscape, impeccable lighting physics, tactile textures, narrative element (astronomer at console)."
-
-    ]],
-    "Hard", 20,
-    "Server")
-
+    -- =========================
+-- === 8. Superhero Hangout ======
 -- =========================
--- === 5. Submarine ========
+    ThemeService:createTheme(
+        "Superhero Hangout",
+        "",
+        [[
+"Heroes relaxing between missions. Easy scoring values costumes and basic setting.
+Score 1  Generic shapes; no characters.
+Score 2  Single hero silhouette; plain room.
+Score 3  Group outline, minimal furniture.
+Score 4  Emblems and color on suits; shading basic.
+Score 5  Background monitors or gadgets.
+Score 6  Consistent perspective, dynamic poses.
+Score 7  Lighting highlights, hero props.
+Score 8  Detailed costumes, small sidekicks.
+Score 9  Depth layering, reflections, color harmony.
+Score 10 Comic-ready hero lounge with polished detail."
+        ]],
+        "Easy", 20,
+        "Server")
+
+    -- =========================
+-- === 9. Street Food Market ====
 -- =========================
-ThemeService:createTheme(
-    "Submarine",
-    "",
-    [[
-"Deep-sea stealth! A hard submarine scene needs **technical hull detail** and **underwater atmosphere**.  
-Mandatory:  
-1️⃣ *Hull Form* – hydrodynamic cylinder, conning tower (sail), dive planes, propeller or pump-jet.  
-2️⃣ *Lighting* – limited ambient light, headlamps or floodlights casting volumetric beams; caustics on metal.  
-3️⃣ *Environment* – depth cues: blue-green gradient, particulate silt, sea life or seafloor.  
-4️⃣ *Scale Reference* – diver, ROV, or comparison fauna to show size.
+    ThemeService:createTheme(
+        "Street Food Market",
+        "",
+        [[
+"Busy vendors cooking outdoors. Easy guidelines focus on crowd layout and warm color.
+Score 1  Empty street; no stalls.
+Score 2  Simple stall shapes, people missing.
+Score 3  Add vendor and food signs, basic color.
+Score 4  Multiple stalls, shading minimal.
+Score 5  Food detail, crowd silhouettes.
+Score 6  Warm lighting, tents or umbrellas.
+Score 7  Depth with tables and chairs.
+Score 8  Steam or smoke effects, color variety.
+Score 9  Textured ground and stalls, dynamic scene.
+Score 10 Bustling market with vibrant atmosphere."
+        ]],
+        "Easy", 20,
+        "Server")
 
-Score 1 Oval blob; no water cues.  
-Score 2 Cylinder + tower; flat blue background.  
-Score 3 Propeller, fins, headlights; shading basic; no particles.  
-Score 4 Metal gradient, bubble stream, silhouette fish.  
-Score 5 Volumetric beams, sediment cloud, subtle caustics.  
-Score 6 Pressure hull panel lines, rivets, foreground coral or wreckage.  
-Score 7 Accurate light attenuation, fauna schooling, reflection on hull.  
-Score 8 Dynamic camera angle, depth-of-field blur, color cast realism.  
-Score 9 Detailed textures, sonar pings/glow logos, balanced composition.  
-Score 10 Film-concept quality—photoreal metals, rich particulate depth, compelling narrative (rescue, exploration)."
 
-    ]],
-    "Hard", 20,
-    "Server")
-
+    -- =========================
+-- === 10. Music Festival Stage ===
 -- =========================
--- === 6. Windmill =========
+    ThemeService:createTheme(
+        "Music Festival Stage",
+        "",
+        [[
+"Outdoor concert packed with fans. Medium mode requires complex lighting and perspective.
+Score 1  Simple stage line; no equipment.
+Score 2  Speakers and mic stands; flat color.
+Score 3  Performers outlined, minimal backdrop.
+Score 4  Crowd shapes and simple shading.
+Score 5  Lighting rigs, banners, perspective set.
+Score 6  Colorful stage lights, instrument details.
+Score 7  Audience hands raised, depth layering.
+Score 8  Smoke effects, multiple performers, dynamic angles.
+Score 9  Rich textures, complex lighting, balanced composition.
+Score 10 Concert scene worthy of promotional art."
+        ]],
+        "Medium", 20,
+        "Server")
+
+    -- =========================
+-- === 11. Cosplay Convention ===
 -- =========================
-ThemeService:createTheme(
-    "Windmill",
-    "",
-    [[
-"Capture the turning sails! Hard mode demands architectural understanding and motion portrayal.  
-Checklist:  
-1️⃣ *Structure* – stone or wooden tower, rotating cap, four sails with lattice frames.  
-2️⃣ *Mechanics* – gear housing or interior view through door; pivot beams visible.  
-3️⃣ *Environment* – rural landscape (fields, canal) or dramatic weather.  
-4️⃣ *Motion* – angled sails, blur streaks, shadow orientation matching sun.
+    ThemeService:createTheme(
+        "Cosplay Convention",
+        "",
+        [[
+"Fans dressed as favorite characters. Medium scoring checks costume detail and crowd layout.
+Score 1  Stick figure; no costumes.
+Score 2  Booth outlines, plain background.
+Score 3  Attendees in simple outfits; minimal color.
+Score 4  Vendor tables, signage, basic shading.
+Score 5  Accurate costumes, props, perspective correct.
+Score 6  Crowd variety, lighting consistent.
+Score 7  Background banners, textured floor.
+Score 8  Detailed characters, dynamic poses.
+Score 9  Depth of field with crowd, reflection on props.
+Score 10 Showcase-level scene with vibrant energy."
+        ]],
+        "Medium", 20,
+        "Server")
 
-Score 1 Tower doodle; no sails.  
-Score 2 Tower + sails; incorrect proportion; blank fields.  
-Score 3 Proper sail number, door, horizon; flat colors.  
-Score 4 Material texture (stone, wood), cast shadows, sky gradient.  
-Score 5 Gear hint, grass sway, blur on tips, reflected light.  
-Score 6 Perspective accuracy, flower/field detail, light direction consistent.  
-Score 7 Weather element (storm clouds, sunset bloom), strong rim light.  
-Score 8 Interior cog view or cutaway, atmospheric depth fog.  
-Score 9 Fine lattice detail, moving grain dust, balanced composition.  
-Score 10 Storybook art—perfect mechanics, cinematic lighting, dynamic landscape narrative."
-
-    ]],
-    "Hard", 20,
-    "Server")
-
+    -- =========================
+-- === 12. Robot Companion Workshop ===
 -- =========================
--- === 7. Pyramid ==========
+    ThemeService:createTheme(
+        "Robot Companion Workshop",
+        "",
+        [[
+"Building friendly robots in a shop. Medium mode emphasizes machinery and light sources.
+Score 1  Boxes and gears; no robot.
+Score 2  Simple robot shape; flat shading.
+Score 3  Workbench and tools, limited color.
+Score 4  Multiple robot parts, perspective aligned.
+Score 5  Cable detail, small screens or monitors.
+Score 6  Light sources, shadows, metal textures.
+Score 7  Technician figure, dynamic layout.
+Score 8  Moving arms or sparks, layered background.
+Score 9  Intricate mechanical detail, color harmony.
+Score 10 Polished workshop scene with lively storytelling."
+        ]],
+        "Medium", 20,
+        "Server")
+
+    -- =========================
+-- === 13. Virtual Reality Battle ===
 -- =========================
-ThemeService:createTheme(
-    "Pyramid",
-    "",
-    [[
-"Monument of the ancients. Hard grading looks for **geometric precision** and **environmental storytelling.**  
-Essentials:  
-1️⃣ *Structure* – accurate triangular faces, aligned bricks/blocks, visible erosion or sand buildup.  
-2️⃣ *Lighting* – harsh desert sun, sharp shadows, heat haze.  
-3️⃣ *Surroundings* – dunes, obelisks, sphinx, or excavation gear.  
-4️⃣ *Sky* – gradient (dawn, dusk) or stellar night with Orion’s Belt alignment.
+    ThemeService:createTheme(
+        "Virtual Reality Battle",
+        "",
+        [[
+"Gamers dueling inside a digital arena. Medium scoring values special effects and action poses.
+Score 1  Random shapes; no characters.
+Score 2  Headset outlines, plain grid.
+Score 3  Two players facing off, simple color.
+Score 4  Weapons or spells, basic shading.
+Score 5  Virtual arena features, perspective set.
+Score 6  Light effects, dynamic poses, shadows.
+Score 7  Background spectators or interface graphics.
+Score 8  Particle effects, motion blur, depth.
+Score 9  Detailed armor and environment, color contrast.
+Score 10 Intense VR clash with refined lighting."
+        ]],
+        "Medium", 20,
+        "Server")
 
-Score 1 Triangle blob; no depth.  
-Score 2 Block lines, flat sand, bright sky; no shading.  
-Score 3 Two pyramid faces visible, basic shadow.  
-Score 4 Brick texture, dune lines, warm palette.  
-Score 5 Sunlit rim, long cast shadows, wind-trace ripples.  
-Score 6 Foreground artifact (statue, dig tools), heat shimmer.  
-Score 7 Complex erosion detail, sky gradient, dust motes.  
-Score 8 Night scene with star alignment or torch light, depth layering.  
-Score 9 Photoreal textures, atmospheric perspective, storytelling (explorers, caravan).  
-Score 10 Museum-poster quality—flawless geometry, master lighting, immersive desert narrative."
-
-    ]],
-    "Hard", 20,
-    "Server")
-
+    -- =========================
+-- === 14. Cyberpunk Street Market ===
 -- =========================
--- === 8. Ferriswheel ======
+    ThemeService:createTheme(
+        "Cyberpunk Street Market",
+        "",
+        [[
+"Neon-lit vendors in a futuristic alley. Medium guidelines cover atmosphere and crowded layouts.
+Score 1  Boxy stalls; dull colors.
+Score 2  Neon sign shapes, blank street.
+Score 3  Vendors and shoppers, minimal shading.
+Score 4  Perspective lines, simple reflections.
+Score 5  Glowing lights, cables, color variety.
+Score 6  Fog or rain effects, layered depth.
+Score 7  Holograms, cluttered props, strong contrast.
+Score 8  Dynamic viewpoint, detailed costumes.
+Score 9  Rich textures, atmospheric lighting, balanced layout.
+Score 10 Cinematic cyberpunk scene bursting with detail."
+        ]],
+        "Medium", 20,
+        "Server")
+
+    -- =========================
+-- === 15. Haunted Carnival =======
 -- =========================
-ThemeService:createTheme(
-    "Ferriswheel",
-    "",
-    [[
-"Sky-high carnival lights! Hard mode emphasizes **engineering accuracy** and **night-time illumination.**  
-Must include:  
-1️⃣ *Wheel Framework* – radial spokes, central hub, A-frame supports, cross-bracing.  
-2️⃣ *Gondolas* – evenly spaced cabins with windows/doors, at least some occupants.  
-3️⃣ *Lighting* – LED strips or bulb chains following spokes/rim, glow reflecting on metal.  
-4️⃣ *Park Setting* – ticket booth, crowd, other rides blurred.
+    ThemeService:createTheme(
+        "Haunted Carnival",
+        "",
+        [[
+"Abandoned rides with ghostly vibes. Medium scoring looks for eerie lighting and detailed props.
+Score 1  Tent scribble; no eerie feel.
+Score 2  Ferris wheel outline, flat background.
+Score 3  Ghost shapes, minimal shading.
+Score 4  Broken rides, dim lights.
+Score 5  Accurate perspective, spooky color palette.
+Score 6  Fog effects, detailed props, shadows.
+Score 7  Creepy characters, layered depth.
+Score 8  Dramatic lighting, tattered banners.
+Score 9  Complex textures, chilling mood.
+Score 10 Poster-worthy haunted carnival scene."
+        ]],
+        "Medium", 20,
+        "Server")
 
-Score 1 Circle; no spokes/cabins.  
-Score 2 Spokes present, cabins blocks; flat lighting.  
-Score 3 Proper supports, even cabins, simple bulbs.  
-Score 4 Metal shading, crowd silhouettes, sky gradient.  
-Score 5 Reflected light, cabin windows/glare, balanced perspective.  
-Score 6 Motion blur on rim, foreground bokeh lights, accurate shadows.  
-Score 7 Complex crowd, lens flare, color harmony.  
-Score 8 Atmospheric haze, depth layering, detailed booth signage.  
-Score 9 Precision engineering lines, dynamic composition, polished reflections.  
-Score 10 Festival-poster finish—immaculate lighting, depth, vibrant storytelling."
-
-    ]],
-    "Hard", 20,
-    "Server")
-
+    -- =========================
+-- === 16. Mermaid Lagoon =======
 -- =========================
--- === 9. Greenhouse =======
+    ThemeService:createTheme(
+        "Mermaid Lagoon",
+        "",
+        [[
+"Underwater paradise for merfolk. Easy grading checks fluid shapes and bright colors.
+Score 1  Blob shapes; no mermaid.
+Score 2  Mermaid outline, flat water.
+Score 3  Simple coral or rocks, minimal color.
+Score 4  Flowing hair, basic shading.
+Score 5  Multiple mermaids or fish.
+Score 6  Sunlight rays, seaweed detail.
+Score 7  Bubbles and shells, perspective.
+Score 8  Water reflections, vibrant palette.
+Score 9  Textured scales and environment.
+Score 10 Enchanting lagoon with polished lighting."
+        ]],
+        "Easy", 20,
+        "Server")
+
+    -- =========================
+-- === 17. Space Exploration Rover ==
 -- =========================
-ThemeService:createTheme(
-    "Greenhouse",
-    "",
-    [[
-"Grow with the glow! Hard guidelines focus on **transparent structure** and **lush interior biodiversity.**  
-Requirements:  
-1️⃣ *Architecture* – glass panels, steel/aluminum framework, roof vents.  
-2️⃣ *Botany* – at least five plant types (vines, flowers, potted trees) with distinct leaf shapes.  
-3️⃣ *Lighting* – noon sun or artificial grow lights casting colored highlights through glass.  
-4️⃣ *Micro-climate Details* – mist/fog, water hoses, hanging planters, gardener or tools.
+    ThemeService:createTheme(
+        "Space Exploration Rover",
+        "",
+        [[
+"Mechanical rover exploring another planet. Medium scoring highlights machinery and atmosphere.
+Score 1  Circle or box; no wheels.
+Score 2  Rover outline, plain terrain.
+Score 3  Wheels and antenna, simple color.
+Score 4  Tracks or rocks, perspective okay.
+Score 5  Planet horizon, shading direction.
+Score 6  Dust effects, panel detail.
+Score 7  Background stars or distant base.
+Score 8  Reflections on metal, dynamic angle.
+Score 9  Intricate machinery, atmospheric depth.
+Score 10 Professional sci-fi scene with realistic lighting."
+        ]],
+        "Medium", 20,
+        "Server")
 
-Score 1 Box shape; no glass cues.  
-Score 2 Panel grid, generic plants, flat color.  
-Score 3 Light refraction lines, two plant varieties, perspective uneven.  
-Score 4 Leaf type variety, basic reflections, interior shadows.  
-Score 5 Sunbeam shafts, soil texture, tool bench.  
-Score 6 Condensation droplets on glass, color bounce from leaves.  
-Score 7 Depth rows, mist spray, insect or butterfly, light gradient.  
-Score 8 Translucent glass reflections, soft-focus background beds.  
-Score 9 Detailed leaf veins, multi-source lighting, balanced composition.  
-Score 10 Botanical-magazine quality—hyper-real glass, lush biodiversity, story element (researcher, rare bloom)."
-
-    ]],
-    "Hard", 20,
-    "Server")
-
+    -- =========================
+-- === 18. Zombie Survival Base ===
 -- =========================
--- === 10. Aquarium ========
+    ThemeService:createTheme(
+        "Zombie Survival Base",
+        "",
+        [[
+"Defenders hold off the undead. Medium mode focuses on tension and environmental detail.
+Score 1  Square fort; no zombies.
+Score 2  Simple barricade, flat color.
+Score 3  Survivors with weapons, minimal shading.
+Score 4  Zombies approaching, perspective correct.
+Score 5  Lighting from fires or lamps, debris.
+Score 6  Layered defenses, texture detail.
+Score 7  Dynamic poses, ominous sky.
+Score 8  Blood splatters, fog or smoke.
+Score 9  Balanced composition with depth.
+Score 10 Intense survival scene with dramatic lighting."
+        ]],
+        "Medium", 20,
+        "Server")
+
+    -- =========================
+-- === 19. Road Trip Adventure ===
 -- =========================
-ThemeService:createTheme(
-    "Aquarium",
-    "",
-    [[
-"Underwater showcase! Hard mode demands **convincing water optics** and **ecosystem richness.**  
-Include:  
-1️⃣ *Tank Structure* – glass walls, silicone seams, lighting hood.  
-2️⃣ *Aquascape* – substrate, rocks/driftwood, live plants, at least five fish species with accurate shapes.  
-3️⃣ *Optical Effects* – light caustics on substrate, subtle distortion/refraction through glass, surface ripples.  
-4️⃣ *Viewer Context* – human silhouette, info panel, room reflections.
+    ThemeService:createTheme(
+        "Road Trip Adventure",
+        "",
+        [[
+"Friends driving across the country. Easy scoring values fun details and simple perspective.
+Score 1  Box car; blank road.
+Score 2  Car with wheels, simple line horizon.
+Score 3  Add driver and passenger; basic color.
+Score 4  Road signs or scenery; shading minimal.
+Score 5  Consistent perspective, sky gradient.
+Score 6  Luggage on roof, roadside details.
+Score 7  Depth with background mountains or city.
+Score 8  Motion lines, reflections, small animals.
+Score 9  Textured car and environment, balanced composition.
+Score 10 Fun road trip scene with vibrant detail."
+        ]],
+        "Easy", 20,
+        "Server")
 
-Score 1 Fish bowl doodle.  
-Score 2 Rect tank, few fish; no water effects.  
-Score 3 Substrate + plants, simple lighting; glass lines flat.  
-Score 4 Species variety, accurate colors, rock layout.  
-Score 5 Light rays, shadow gradient, subtle glass reflection.  
-Score 6 Caustic patterns, bubble stream, viewer silhouette.  
-Score 7 Refraction distortion, background signage glare.  
-Score 8 Dynamic fish poses, depth-of-field, balanced composition.  
-Score 9 Photoreal texture, convincing optics, storytelling (feeding, research).  
-Score 10 Show-poster excellence—perfect water physics, rich ecosystem, immersive lighting and reflections."
-
-    ]],
-    "Hard", 20,
-    "Server")
+    -- =========================
+-- === 20. Gaming Stream Setup ===
+-- =========================
+    ThemeService:createTheme(
+        "Gaming Stream Setup",
+        "",
+        [[
+"Desk ready for live streaming. Easy grading checks perspective and equipment detail.
+Score 1  Monitor outline; no desk.
+Score 2  Desk shape, chair scribble.
+Score 3  Keyboard and mouse added; flat color.
+Score 4  Streaming camera or mic, simple shading.
+Score 5  Background posters, correct perspective.
+Score 6  RGB lighting, wire details, shadows.
+Score 7  Multiple screens, chat overlay hint.
+Score 8  Character with headset, depth cues.
+Score 9  Reflections on monitors, textured equipment.
+Score 10 Professional streaming setup with balanced lighting."
+        ]],
+        "Easy", 20,
+        "Server")
 end
 
 return ThemeLoader
