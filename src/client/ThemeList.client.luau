@@ -25,8 +25,20 @@ local function createRow(name)
     row.Name = name
     row.NameLabel.Text = ""
     row.DifficultyLabel.Text = ""
-    row.DurationLabel.Text = ""
+    row.TrophyMultiplierLabel.Text = ""
     return row
+end
+
+local function getTrophyMultiplier(difficulty)
+    if difficulty == "Easy" then
+        return 1
+    elseif difficulty == "Medium" then
+        return 2
+    elseif difficulty == "Hard" then
+        return 3
+    else
+        return 1
+    end
 end
 
 local function resetSelectedTheme(frame)
@@ -151,7 +163,7 @@ local function initRankingUI()
     local header = TopLevelContainer:FindFirstChild("Header")
     header.NameLabel.Text = "Theme"
     header.DifficultyLabel.Text = "Difficulty"
-    header.DurationLabel.Text = "Duration"
+    header.TrophyMultiplierLabel.Text = "Trophy Multiplier"
     Events.ReceiveThemeListPage.OnClientEvent:Connect(function(themeList)
         -- Remove duplicates and sort themes by difficulty and name before displaying
         themeList = removeDuplicateThemes(themeList)
@@ -194,7 +206,7 @@ local function initRankingUI()
                         row.DifficultyLabel.TextColor3 = Color3.fromRGB(255, 255, 255)  -- White (default)
                     end
                     
-                    row.DurationLabel.Text = theme.Duration
+                    row.TrophyMultiplierLabel.Text = getTrophyMultiplier(theme.Difficulty)
                     row:SetAttribute("theme_uuid", theme.uuid)
                 end
             end

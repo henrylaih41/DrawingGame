@@ -7,6 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 local GameConfig = require(ReplicatedStorage.Modules.GameData.GameConfig)
 local GameConstants = require(ReplicatedStorage.Modules.GameData.GameConstants)
+local HttpService = game:GetService("HttpService")
 local PlayerStore = require(ServerScriptService.modules.PlayerStore)
 local TopPlaysStore = require(ServerScriptService.modules.TopPlaysStore)
 local PlayerBestDrawingsStore = require(ServerScriptService.modules.PlayerBestDrawingsStore)
@@ -255,7 +256,8 @@ local function storeHighestScoringDrawing(player:Player, theme, imageData, score
             theme = theme.Name,
             theme_difficulty = theme.Difficulty,
             theme_uuid = theme.uuid,
-            playerId = player.UserId
+            playerId = player.UserId,
+            uuid = HttpService:GenerateGUID(false)
         }
 
         local success, error = PlayerBestDrawingsStore:savePlayerBestDrawing(player, theme.uuid, drawingData)
@@ -273,7 +275,7 @@ local function storeHighestScoringDrawing(player:Player, theme, imageData, score
 
         if shouldAddToTopPlays then
             -- Get the real topPlays with ImageData
-            local topPlays = TopPlaysStore:getTopPlays(player.UserId)
+            local topPlays = TopPlaysStore:getTopPlays(tostring(player.UserId))
 
             if replaceThemeUuid then
                 -- Replace the old top play with the new one
