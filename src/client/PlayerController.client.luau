@@ -9,7 +9,6 @@ local LoadingScreen = LocalPlayer:WaitForChild("PlayerGui"):WaitForChild("Loadin
 
 Events.GameStateChanged.OnClientEvent:Connect(function(stateData)
     -- Update the player state.
-    warn("GameStateChanged", stateData)
     local newState = stateData.state
     ClientState.PlayerState = newState
     if newState ~= GameConstants.PlayerStateEnum.IDLE then

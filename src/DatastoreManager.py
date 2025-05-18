@@ -20,6 +20,7 @@ import time
 import logging
 from dotenv import load_dotenv
 from typing import List, Optional
+import uuid  # Add this import for UUID generation
 
 import requests
 
@@ -148,7 +149,8 @@ def wipe_store(store: str) -> None:
 def update_topplays() -> None:
     """
     Scan all entries in TopPlays, update points based on difficulty,
-    sort by points, keep top 5, and save back to the datastore.
+    sort by points, keep top 3, and save back to the datastore.
+    Also ensures each topplay has a uuid.
     """
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     logging.info("▶ Updating TopPlays entries...")
@@ -184,8 +186,13 @@ def update_topplays() -> None:
                         logging.warning(f"Entry {key} is not a list, skipping")
                         continue
                     
-                    # Update points based on difficulty
+                    # Update points based on difficulty and ensure each topplay has a uuid
                     for play in topplays:
+                        # Add UUID if missing
+                        if 'uuid' not in play:
+                            play['uuid'] = str(uuid.uuid4())
+                            logging.info(f"Added UUID {play['uuid']} to a topplay for {key}")
+                        
                         difficulty = play.get('theme_difficulty', 'medium').lower()
                         multiplier = difficulty_multipliers.get(difficulty, 1)
                         play['points'] = play['score'] * multiplier
@@ -193,8 +200,8 @@ def update_topplays() -> None:
                     # Sort by points in descending order
                     topplays.sort(key=lambda x: x.get('points', 0), reverse=True)
                     
-                    # Keep only top 5
-                    topplays = topplays[:5]
+                    # Keep only top 3
+                    topplays = topplays[:3]
                     
                     # Save back to the datastore
                     update_key(store_name, key, topplays)

@@ -82,7 +82,6 @@ local function UpdatePlayerStateAndNotifyClient(player: Player, newState: string
     playerState.state = newState
 
     if newState == GameConstants.PlayerStateEnum.THEME_LIST then
-        warn(newState, additionalData)
         -- This is the canvas that the player is currently on.
         playerState.canvas = additionalData.canvas
     end
@@ -177,7 +176,7 @@ end
 local function selfHealPlayer(player: Player)
     local playerData = getPlayerData(player)
     if not playerData.topPlaysWithoutImage or (#playerData.topPlaysWithoutImage < GameConfig.GALLERY_SLOTS) then
-        local topPlays = TopPlaysStore:getTopPlays(player.UserId)
+        local topPlays = TopPlaysStore:getTopPlays(tostring(player.UserId))
         local topPlaysWithoutImage = topPlaysWithoutImageFromTopPlays(topPlays)
 
         playerData.topPlaysWithoutImage = topPlaysWithoutImage
@@ -203,42 +202,21 @@ local function sendTopPlaysToClient(player: Player, topPlaysUserId: string, topP
 
     -- Create a table to store the best drawing data for each theme
     local bestDrawings = {}
-    local playerPoints = 0
 
-    -- For each theme, get the player's best drawing
+    -- Decompress the image data and send it to the client.
     for i, playerBestDrawing in ipairs(topPlays) do
         local imageData = CanvasDraw.DecompressImageDataCustom(playerBestDrawing.imageData)
-        playerPoints = playerPoints + playerBestDrawing.points
-
         local drawingData = {
             imageData = imageData,
             score = playerBestDrawing.score,
             feedback = playerBestDrawing.feedback,
             theme = playerBestDrawing.theme,
-            theme_difficulty = playerBestDrawing.theme_difficulty
+            theme_difficulty = playerBestDrawing.theme_difficulty,
+            uuid = playerBestDrawing.uuid
         }
         bestDrawings[i] = drawingData
     end
 
-    -- Only self heal TotalPoints if the topPlays are for the local player.
-    if tostring(player.UserId) == tostring(topPlaysUserId) then
-        local playerData = getPlayerData(player)
-
-        if(playerPoints ~= playerData.TotalPoints) then
-            warn("Player points do not match")
-            if playerPoints then 
-                warn("Player points: " .. playerPoints)
-            end
-            if playerData.TotalPoints then
-                warn("Player points: " .. playerData.TotalPoints)
-            end
-            -- Self Healing
-            playerData.TotalPoints = playerPoints
-            PlayerStore:savePlayer(player, playerData)
-            Events.PlayerDataUpdated:FireClient(player, playerData)
-        end
-    end
-    
     -- Send the data back to the requesting client
     Events.ReceiveTopPlays:FireClient(player, topPlaysUserId, bestDrawings)
 end
@@ -477,6 +455,30 @@ local function handleClientStateChange(player, newState, additionalData)
     UpdatePlayerStateAndNotifyClient(player, newState, additionalData)
 end
 
+local function handleDeleteGalleryDrawing(player, uuid)
+    local topPlays = TopDrawingCacheService.fetch(tostring(player.UserId))
+    local deleted = false
+    for i, topPlay in ipairs(topPlays) do
+        if topPlay.uuid == uuid then
+            table.remove(topPlays, i)
+            deleted = true
+            break
+        end
+    end
+
+    if not deleted then
+        warn("Failed to delete drawing with uuid: " .. uuid)
+    end
+
+    -- Save the updated top plays
+    TopPlaysStore:saveTopPlays(tostring(player.UserId), topPlays)
+    -- Purge the server cache
+    TopDrawingCacheService.purgeCache(tostring(player.UserId))
+
+    -- Send the updated top plays to the client.
+    sendTopPlaysToClient(player, tostring(player.UserId), topPlays)
+end
+
 -- ServerScriptService/CanvasSurface.lua
 local function attachSurfaceGui(canvasModel : Model,
                                 pixelsPerStud : number,
@@ -586,6 +588,7 @@ local function init()
     Events.RequestThemeListPage.OnServerEvent:Connect(sendThemeListPageToClient)
     Events.SendFeedback.OnServerEvent:Connect(handleSendFeedback)
     Events.ClientStateChange.OnServerEvent:Connect(handleClientStateChange)
+    Events.DeleteGalleryDrawing.OnServerEvent:Connect(handleDeleteGalleryDrawing)
     Events.TestEvent.OnServerEvent:Connect(function(player)
     end)
 end

@@ -181,6 +181,7 @@ function GalleryCanvas.updateDrawingDisplayForRank(
             CommonHelper.destroyEditableImage(editableImage)
         end
         -- Save the editable image to the container so we can destroy it later.
+        containerFrame:SetAttribute("drawing_uuid", drawingData.uuid)
         container.editableImage = CommonHelper.renderImage(imageLabel, drawingData.imageData)
         CanvasDisplay.updateStarDisplay(trophyContainer, drawingData.score, false)
     end

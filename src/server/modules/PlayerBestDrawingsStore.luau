@@ -35,7 +35,7 @@ PlayerBestDrawingsStore.playerBestDrawingSchema = SchemaValidator.createSchema({
     theme = { type = "string", required = true },
     theme_difficulty = { type = "string", required = true },
     theme_uuid = { type = "string", required = true }, -- Added theme_uuid field
-    playerId = { type = "number", required = true }
+    playerId = { type = "number", required = true },
 })
 
 -- Function to get a player's drawing for a specific theme
@@ -61,19 +61,27 @@ function PlayerBestDrawingsStore:getPlayerBestDrawing(player, theme_uuid: string
             error("Failed to retrieve data: " .. tostring(drawingData))
         end
         
-        -- Update size statistics if data was returned
-        if drawingData then
-            local dataSize = #HttpService:JSONEncode(drawingData)
-            debugPrint("Read %d bytes from DataStore for key: %s", dataSize, key)
-        end
-        
         -- Validate the data if it exists
         if drawingData then
             local isValid, errorMessage = self.playerBestDrawingSchema:validate(drawingData)
-            assert(isValid, "Invalid drawing data: " .. errorMessage)
+            if not isValid then
+                warn("Invalid drawing data: " .. errorMessage)
+            end
             isValid, errorMessage = self.imageDataSchema:validate(drawingData.imageData)
-            assert(isValid, "Invalid image data: " .. errorMessage)
+            if not isValid then
+                warn("Invalid image data: " .. errorMessage)
+            end
+            
+            -- Generate a UUID if it doesn't exist
+            -- This is self healing and shouldn't happen too often.
+            if drawingData.uuid == nil then
+                warn("[Self Healing] Generating UUID for best drawing")
+                drawingData.uuid = HttpService:GenerateGUID(false)
+                -- Save the drawing data
+                self:savePlayerBestDrawing(player, theme_uuid, drawingData)
+            end
         end
+
         return drawingData
     end)
     

@@ -182,12 +182,11 @@ local function initGalleryUI(gallerySlots: number)
             NotificationService:ShowConfirmationBox("Are you sure you want to delete this drawing?")
             local confirmed = NotificationService:GetConfirmation()
             if confirmed then
-                -- TODO: Delete the drawing
+                local uuid = containerFrame:GetAttribute("drawing_uuid")
+                Events.DeleteGalleryDrawing:FireServer(uuid)
             end
         end
     )
-
-    -- Best scores button is just self rank view.
 
     -- After setup, disable the screen
     GalleryScreen.Enabled = false

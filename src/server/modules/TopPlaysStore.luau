@@ -123,10 +123,17 @@ function TopPlaysStore:getTopPlays(userId: string)
     if success and result then
         -- Validate the schema
         for _, topPlay in ipairs(result) do
+
+            -- Generate a UUID if it doesn't exist
+            if topPlay.uuid == nil then
+                warn("[Self Healing] Generating UUID for top play")
+                topPlay.uuid = HttpService:GenerateGUID(false)
+                -- Save the top play data
+                self:saveTopPlays(userId, result)
+            end
             local valid, errors = playerBestDrawingSchema:validate(topPlay)
             if not valid then
                 warn(errors)
-                return nil, "Invalid top play data"
             end
         end
         
