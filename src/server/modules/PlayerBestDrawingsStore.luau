@@ -68,7 +68,7 @@ function PlayerBestDrawingsStore:createDrawingData(
         theme = theme.Name,
         theme_difficulty = theme.Difficulty,
         theme_uuid = theme.uuid,
-        playerId = playerId,
+        playerId = tostring(playerId),
         uuid = HttpService:GenerateGUID(false),
         likes = 0
     }
@@ -99,7 +99,12 @@ function PlayerBestDrawingsStore:getPlayerBestDrawing(player, theme_uuid: string
         
         -- Validate the data if it exists
         if drawingData then
-            -- Self healing.
+            -- Self healing, non-existent playerId.
+            if drawingData.playerId == nil then
+                warn("[Self Healing] Missing playerId for best drawing")
+                drawingData.playerId = tostring(player.UserId)
+            end
+            -- Self healing, wrong playerId type.
             drawingData.playerId = tostring(drawingData.playerId)
             -- Generate a UUID if it doesn't exist
             -- This is self healing and shouldn't happen too often.
@@ -158,9 +163,6 @@ function PlayerBestDrawingsStore:savePlayerBestDrawing(player, theme_uuid: strin
     
     -- Create a unique key for this player and theme combination
     local key = self:generateDrawingKey(player.UserId, theme_uuid)
-    
-    -- Ensure playerId is included in the data
-    drawingData.playerId = player.UserId
     
     -- Attempt to save the drawing data to the DataStore
     local success, result = pcall(function()
