@@ -8,10 +8,10 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local GameConfig = require(ReplicatedStorage.Modules.GameData.GameConfig)
 local GameConstants = require(ReplicatedStorage.Modules.GameData.GameConstants)
 local HttpService = game:GetService("HttpService")
-local PlayerStore = require(ServerScriptService.modules.PlayerStore)
 local TopPlaysStore = require(ServerScriptService.modules.TopPlaysStore)
 local PlayerBestDrawingsStore = require(ServerScriptService.modules.PlayerBestDrawingsStore)
 local TopPlaysCacheService = require(ServerScriptService.modules.TopPlaysCacheService)
+local PlayerDataService = require(ServerScriptService.modules.PlayerDataService)
 
 -- Modules
 local CanvasDraw = require(ReplicatedStorage.Modules.Canvas.CanvasDraw)
@@ -24,50 +24,10 @@ local Events = ReplicatedStorage:WaitForChild("Events")
 
 local DEBUG_ENABLED = true
 
-local function getDifficultyMultiplier(difficulty: string)
-    if difficulty == "Easy" then
-        return 1
-    elseif difficulty == "Medium" then
-        return 2
-    elseif difficulty == "Hard" then
-        return 3
-    else
-        warn("Unknown difficulty: " .. difficulty)
-        return 1
-    end
-end
-
--- Get the player data, if it is not in memory, get it from the datastore.
-local function getPlayerData(player)
-    local playerData = ServerStates.PlayerState[player].playerData
-    local errorMessage = nil
-    
-    if not playerData then
-        playerData, errorMessage = PlayerStore:getPlayer(player)
-        if not playerData then
-            error("Failed to get player data for " .. player.Name .. ": " .. tostring(errorMessage))
-        end
-    end
-
-    return playerData
-end
-
-local function savePlayerData(player, playerData)
-    if playerData then
-        local playerState = ServerStates.PlayerState[player]
-        -- Update the cache
-        playerState.playerData = playerData
-        -- Notify the client
-        Events.PlayerDataUpdated:FireClient(player, playerData)
-    end
-end
-
-local function flushPlayerData(player: Player)
-    local playerData = ServerStates.PlayerState[player].playerData
-    if playerData then
-        PlayerStore:savePlayer(player, playerData)
-    end
-end
+local getDifficultyMultiplier = PlayerDataService.getDifficultyMultiplier
+local getPlayerData = PlayerDataService.getPlayerData
+local savePlayerData = PlayerDataService.savePlayerData
+local flushPlayerData = PlayerDataService.flushPlayerData
 
 -- Utility Functions
 local function debugPrint(message, ...)
