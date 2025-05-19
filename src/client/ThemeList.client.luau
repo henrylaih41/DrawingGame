@@ -2,6 +2,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LeaderBoardBuilder = require(ReplicatedStorage.Modules.Utils.LeaderBoardBuilder)
 local GameConfig = require(ReplicatedStorage.Modules.GameData.GameConfig)
 local GameConstants = require(ReplicatedStorage.Modules.GameData.GameConstants)
+local UIUtils = require(ReplicatedStorage.Modules.Utils.UIUtils)
+local ThemeUtils = require(ReplicatedStorage.Modules.Utils.ThemeUtils)
 
 -- Get references to UI elements
 local PlayerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
@@ -27,18 +29,6 @@ local function createRow(name)
     row.DifficultyLabel.Text = ""
     row.TrophyMultiplierLabel.Text = ""
     return row
-end
-
-local function getTrophyMultiplier(difficulty)
-    if difficulty == "Easy" then
-        return 1
-    elseif difficulty == "Medium" then
-        return 2
-    elseif difficulty == "Hard" then
-        return 3
-    else
-        return 1
-    end
 end
 
 local function resetSelectedTheme(frame)
@@ -67,10 +57,6 @@ local function createFooter()
     return footer
 end
 
-local function updateLabel(pageLbl, currentPage, pageCount)
-    pageLbl.Text = string.format("%d / %d", currentPage, pageCount)
-end
-
 local function selectTheme(row)
     -- If same theme is selected, do nothing.
     if SelectedTheme == row then
@@ -81,51 +67,6 @@ local function selectTheme(row)
     SelectedTheme = row
 end
 
-local function getDifficultyValue(difficulty)
-    if difficulty == "Easy" then
-        return 1
-    elseif difficulty == "Medium" then
-        return 2
-    elseif difficulty == "Hard" then
-        return 3
-    else
-        return 4  -- For any unknown difficulty, place at the end
-    end
-end
-
-local function sortThemesByDifficulty(themeList)
-    table.sort(themeList, function(a, b)
-        local diffA = getDifficultyValue(a.Difficulty)
-        local diffB = getDifficultyValue(b.Difficulty)
-        
-        -- First sort by difficulty
-        if diffA ~= diffB then
-            return diffA < diffB
-        end
-        
-        -- Then sort by name within same difficulty
-        return a.Name < b.Name
-    end)
-    return themeList
-end
-
-local function removeDuplicateThemes(themeList)
-    local uniqueThemes = {}
-    local seen = {}
-    
-    for _, theme in ipairs(themeList) do
-        -- Create a unique key based on name and difficulty
-        local key = theme.Name .. ":" .. theme.Difficulty
-        
-        -- Only keep themes we haven't seen before
-        if not seen[key] then
-            seen[key] = true
-            table.insert(uniqueThemes, theme)
-        end
-    end
-    
-    return uniqueThemes
-end
 
 local function initRankingUI()
     local row_per_page = ROWS_PER_PAGE
@@ -135,7 +76,7 @@ local function initRankingUI()
 
 
     local currentPage = 1
-    updateLabel(pageLbl, currentPage, pageCount)
+    UIUtils.updatePageLabel(pageLbl, currentPage, pageCount)
 
     closeBtn.MouseButton1Click:Connect(function()
         ThemeListScreen.Enabled = false
@@ -147,7 +88,7 @@ local function initRankingUI()
         if currentPage > 1 then
             currentPage -= 1
             pageLayout:JumpToIndex(currentPage - 1)
-            updateLabel(pageLbl, currentPage, pageCount)
+            UIUtils.updatePageLabel(pageLbl, currentPage, pageCount)
         end
     end)
 
@@ -155,7 +96,7 @@ local function initRankingUI()
         if currentPage < pageCount then
             currentPage += 1
             pageLayout:JumpToIndex(currentPage - 1)
-            updateLabel(pageLbl, currentPage, pageCount)
+            UIUtils.updatePageLabel(pageLbl, currentPage, pageCount)
         end
     end)
 
@@ -166,8 +107,8 @@ local function initRankingUI()
     header.TrophyMultiplierLabel.Text = "Trophy Multiplier"
     Events.ReceiveThemeListPage.OnClientEvent:Connect(function(themeList)
         -- Remove duplicates and sort themes by difficulty and name before displaying
-        themeList = removeDuplicateThemes(themeList)
-        themeList = sortThemesByDifficulty(themeList)
+        themeList = ThemeUtils.removeDuplicateThemes(themeList)
+        themeList = ThemeUtils.sortThemesByDifficulty(themeList)
         
         local pageFrame = nil 
         for i, theme in ipairs(themeList) do
@@ -206,7 +147,7 @@ local function initRankingUI()
                         row.DifficultyLabel.TextColor3 = Color3.fromRGB(255, 255, 255)  -- White (default)
                     end
                     
-                    row.TrophyMultiplierLabel.Text = getTrophyMultiplier(theme.Difficulty)
+                    row.TrophyMultiplierLabel.Text = ThemeUtils.getTrophyMultiplier(theme.Difficulty)
                     row:SetAttribute("theme_uuid", theme.uuid)
                 end
             end
