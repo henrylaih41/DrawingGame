@@ -146,9 +146,14 @@ table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(UiToggleButton, o
 GameStateChangedEvent.OnClientEvent:Connect(onGameStateChanged)
 
 local function onPlayerDataUpdated(playerData)
-    local count = TrophyCount.count
+    local trophyCount = TrophyCount.count
+    local coinCount = CoinFrame.count
+    local pencilCount = PencilFrame.count
+
     if playerData then
-        count.Text = tostring(playerData.TotalPoints)
+        trophyCount.Text = tostring(playerData.TotalPoints)
+        coinCount.Text = tostring(playerData.coins)
+        pencilCount.Text = tostring(playerData.Energy) .. " / " .. tostring(playerData.maximumEnergy)
     else
         warn("Player data is nil")
     end

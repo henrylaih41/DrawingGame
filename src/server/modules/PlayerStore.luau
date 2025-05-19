@@ -8,6 +8,8 @@ local PlayersDataStore = DataStoreService:GetDataStore("Players")
 
 local defaultMaximumGallerySize = 3
 local defaultDrawingTTLAfterPlayerLeft = 3600
+local defaultMaximumEnergy = 3
+local energyRefreshInterval = 60 -- 12 * 60 * 60 -- 12 hours
 
 -- Define schema for player data
 local playerDataSchema = SchemaValidator.createSchema({
@@ -18,8 +20,22 @@ local playerDataSchema = SchemaValidator.createSchema({
     coins = { type = "number", required = true },
     topPlaysWithoutImage = { type = "table", required = false},
     maximumGallerySize = { type = "number", required = true },
-    drawingTTLAfterPlayerLeft = { type = "number", required = true }
+    drawingTTLAfterPlayerLeft = { type = "number", required = true },
+    maximumEnergy = { type = "number", required = true },
+    lastEnergyUpdate = { type = "number", required = true }
 })
+
+export type PlayerData = {
+    Name: string,
+    TotalPlayCount: number,
+    TotalPoints: number,
+    Energy: number,
+    coins: number,
+    maximumGallerySize: number,
+    drawingTTLAfterPlayerLeft: number,  
+    maximumEnergy: number,
+    lastEnergyUpdate: number
+}
 
 -- Player Data Management Functions
 function PlayerStore:getPlayer(player)
@@ -38,6 +54,20 @@ function PlayerStore:getPlayer(player)
         -- Self healing.
         result.maximumGallerySize = result.maximumGallerySize or defaultMaximumGallerySize
         result.drawingTTLAfterPlayerLeft = result.drawingTTLAfterPlayerLeft or defaultDrawingTTLAfterPlayerLeft
+        result.maximumEnergy = result.maximumEnergy or defaultMaximumEnergy
+        result.lastEnergyUpdate = result.lastEnergyUpdate or os.time()
+        result.coins = result.coins or 0
+
+        -- Energy should never exceed the maximum energy.
+        if result.Energy > result.maximumEnergy then
+            result.Energy = result.maximumEnergy
+        end
+
+        -- Refresh the energy if it has been more than 12 hours since the last energy update.
+        if os.time() - result.lastEnergyUpdate > energyRefreshInterval then
+            result.Energy = defaultMaximumEnergy
+            result.lastEnergyUpdate = os.time()
+        end
 
         -- Validate the schema
         local valid, errors = playerDataSchema:validate(result)
@@ -52,10 +82,12 @@ function PlayerStore:getPlayer(player)
             Name = player.Name,
             TotalPlayCount = 0,
             TotalPoints = 0,
-            Energy = 10, -- Starting energy
+            Energy = defaultMaximumEnergy, -- Starting energy
             coins = 0,
             maximumGallerySize = defaultMaximumGallerySize,
-            drawingTTLAfterPlayerLeft = defaultDrawingTTLAfterPlayerLeft
+            drawingTTLAfterPlayerLeft = defaultDrawingTTLAfterPlayerLeft,
+            maximumEnergy = defaultMaximumEnergy,
+            lastEnergyUpdate = os.time()
         }
         
         -- Try to save the default data

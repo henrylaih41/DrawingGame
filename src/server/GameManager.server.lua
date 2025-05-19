@@ -225,6 +225,7 @@ local function storeHighestScoringDrawing(player:Player, drawingData: PlayerBest
     playerData.TotalPoints = playerData.TotalPoints + drawingData.points
     savePlayerData(player, playerData)
     flushPlayerData(player)
+    Events.ShowNotification:FireClient(player, "You earned " .. drawingData.points .. " points!", "green")
     
     -- Save the drawing if needed
     if shouldSaveDrawing then
@@ -331,7 +332,7 @@ local function handleSaveToGallery(player: Player, imageData: string)
 end
 
 -- Game Flow
-local function startGame(player: Player, theme_uuid: string)
+local function startDrawing(player: Player, theme_uuid: string)
     local playerState = ServerStates.PlayerState[player]
     local currentTheme = ThemeStore:getTheme(theme_uuid)
 
@@ -399,9 +400,22 @@ local function handleDrawingSubmission(player, imageData)
     playerState.waitSignal:Fire()
 end
 
-local function handleStartGame(player: Player, theme_uuid: string)
+local function handlestartDrawing(player: Player, theme_uuid: string)
+    -- Check if the player has enough energy to draw.
+    local playerData = getPlayerData(player)
+
+    if playerData.Energy <= 0 then
+        Events.ShowNotification:FireClient(player, "You don't have enough energy to draw.", "red")
+        return
+    else
+        -- Consume one energy.
+        playerData.Energy = playerData.Energy - 1
+        savePlayerData(player, playerData)
+        flushPlayerData(player)
+    end
+    
     -- Start the game
-    startGame(player, theme_uuid)
+    startDrawing(player, theme_uuid)
 end
 
 local function sendThemeListPageToClient(player)
@@ -545,7 +559,7 @@ local function init()
     -- Connect event handlers
     Players.PlayerAdded:Connect(handlePlayerJoined)
     Players.PlayerRemoving:Connect(handlePlayerLeft)
-    Events.StartGame.OnServerEvent:Connect(handleStartGame)
+    Events.startDrawing.OnServerEvent:Connect(handlestartDrawing)
     Events.SubmitDrawing.OnServerEvent:Connect(handleDrawingSubmission)
     Events.RequestTopPlays.OnServerEvent:Connect(sendTopPlaysToClient)
     Events.RequestThemeListPage.OnServerEvent:Connect(sendThemeListPageToClient)

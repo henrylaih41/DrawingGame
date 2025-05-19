@@ -303,7 +303,7 @@ local function submitDrawing()
         SubmitDrawingEvent:FireServer(img) 
     end
 
-    NotificationService:ShowNotification("Great job!, Drawing submitted!")
+    NotificationService:ShowNotification("Great job! Drawing submitted!")
 end
 
 local function setupSubmitButton(controls: Frame)

@@ -60,7 +60,7 @@ local function createFooter()
             return
         end
         local theme_uuid = SelectedTheme:GetAttribute("theme_uuid")
-        Events.StartGame:FireServer(theme_uuid)
+        Events.startDrawing:FireServer(theme_uuid)
         resetSelectedTheme(SelectedTheme)
         SelectedTheme = nil
     end)
