@@ -5,6 +5,7 @@ local GameConfig = require(ReplicatedStorage.Modules.GameData.GameConfig)
 local GalleryCanvas = require(ReplicatedStorage.Modules.Utils.GalleryCanvas)
 local CommonHelper = require(ReplicatedStorage.Modules.Utils.CommonHelper)
 local NotificationService = require(ReplicatedStorage.Modules.Utils.NotificationService)
+local UIUtils = require(ReplicatedStorage.Modules.Utils.UIUtils)
 local MainMenuScreen = PlayerGui:WaitForChild("MainMenuScreen")
 local MainMenuButtons = MainMenuScreen:WaitForChild("TopLevelContainer"):WaitForChild("Buttons")
 local GalleryButton = MainMenuButtons:WaitForChild("GalleryButton")
@@ -37,9 +38,6 @@ local function createRow(name)
     return row
 end
 
-local function updateLabel(pageLbl, currentPage, pageCount)
-    pageLbl.Text = string.format("%d / %d", currentPage, pageCount)
-end
 
 local function openTopPlays(userId: string, topPlays)
     if (topPlays == nil) then
@@ -98,7 +96,7 @@ local function initRankingUI()
         = LeaderBoardBuilder.Create(TopLevelContainer, MAX_ROWS, createRow, createRow,row_per_page)
 
     local currentPage = 1
-    updateLabel(pageLbl, currentPage, pageCount)
+    UIUtils.updatePageLabel(pageLbl, currentPage, pageCount)
 
     closeBtn.MouseButton1Click:Connect(function()
         TopLevelContainer.Visible = false
@@ -108,7 +106,7 @@ local function initRankingUI()
         if currentPage > 1 then
             currentPage -= 1
             pageLayout:JumpToIndex(currentPage - 1)
-            updateLabel(pageLbl, currentPage, pageCount)
+            UIUtils.updatePageLabel(pageLbl, currentPage, pageCount)
         end
     end)
 
@@ -116,7 +114,7 @@ local function initRankingUI()
         if currentPage < pageCount then
             currentPage += 1
             pageLayout:JumpToIndex(currentPage - 1)
-            updateLabel(pageLbl, currentPage, pageCount)
+            UIUtils.updatePageLabel(pageLbl, currentPage, pageCount)
         end
     end)
 
