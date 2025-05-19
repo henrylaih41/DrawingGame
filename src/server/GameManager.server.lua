@@ -11,7 +11,7 @@ local HttpService = game:GetService("HttpService")
 local PlayerStore = require(ServerScriptService.modules.PlayerStore)
 local TopPlaysStore = require(ServerScriptService.modules.TopPlaysStore)
 local PlayerBestDrawingsStore = require(ServerScriptService.modules.PlayerBestDrawingsStore)
-local TopDrawingCacheService = require(ServerScriptService.modules.TopDrawingCacheService)
+local TopPlaysCacheService = require(ServerScriptService.modules.TopPlaysCacheService)
 
 -- Modules
 local CanvasDraw = require(ReplicatedStorage.Modules.Canvas.CanvasDraw)
@@ -135,7 +135,7 @@ local function handlePlayerJoined(player)
     -- TODO: This is just for testing purpose. In prod, we should use drawings in player's gallery.
     task.spawn(function()
         task.wait(3)
-        local topPlays = TopDrawingCacheService.fetch(1523877105)
+        local topPlays = TopPlaysCacheService.fetch(1523877105)
         for i, c in ipairs(workspace:WaitForChild(GameConstants.DrawingCanvasFolderName):GetChildren()) do
             local topPlay = topPlays[i % (#topPlays - 1)]
             if (topPlay == nil) then
@@ -151,9 +151,9 @@ end
 local function handlePlayerLeft(player: Player)
     -- flush player data before removing
     flushPlayerData(player)
-    
     -- Remove player from active players list
     ServerStates.PlayerState[player] = nil
+    -- TODO: Spawn task that remove player canvas after TTL.
 end
 
 local function runDrawingPhase(player: Player, currentTheme: string)
@@ -165,34 +165,12 @@ local function runDrawingPhase(player: Player, currentTheme: string)
     return currentTheme
 end
 
-local function topPlaysWithoutImageFromTopPlays(topPlays)
-    local topPlaysWithoutImage = {}
-
-    -- Get the stripped down top plays
-    for i, topPlay in ipairs(topPlays) do
-        local topPlayWithoutImage = {
-            theme = topPlay.theme,
-            score = topPlay.score,
-            points = topPlay.points,
-            timestamp = topPlay.timestamp,
-            theme_uuid = topPlay.theme_uuid,
-            theme_difficulty = topPlay.theme_difficulty,
-            playerId = topPlay.playerId,
-            imageData = nil
-        }
-
-        table.insert(topPlaysWithoutImage, topPlayWithoutImage)
-    end
-
-    return topPlaysWithoutImage
-end
-
 local function sendTopPlaysToClient(player: Player, topPlaysUserId: string, topPlays)
     debugPrint("Player %s requested top plays of %s", player.Name, topPlaysUserId)
 
     -- If no topPlays are provided, get them from the backend.
     if not topPlays then
-        topPlays = TopDrawingCacheService.fetch(topPlaysUserId)
+        topPlays = TopPlaysCacheService.fetch(topPlaysUserId)
         if topPlays == nil then
             warn("Failed to fetch top plays for player " .. topPlaysUserId)
             return
@@ -224,73 +202,49 @@ local function sendTopPlaysToClient(player: Player, topPlaysUserId: string, topP
     Events.ReceiveTopPlays:FireClient(player, topPlaysUserId, bestDrawings)
 end
 
-local function createDrawingData(imageData, score, theme, playerId)
-    return {
-        imageData = imageData,
-        points = score * getDifficultyMultiplier(theme.Difficulty),
-        score = score,
-        timestamp = os.time(),
-        theme = theme.Name,
-        theme_difficulty = theme.Difficulty,
-        theme_uuid = theme.uuid,
-        playerId = playerId,
-        uuid = HttpService:GenerateGUID(false)
-    }
-end
-
-local function storeHighestScoringDrawing(player:Player, theme: ThemeStore.Theme, imageData, score: number, feedback: string)
+local function storeHighestScoringDrawing(player:Player, drawingData: PlayerBestDrawingsStore.DrawingData)
     -- Check if there's an existing drawing for this theme
-    local existingData, errorMessage = PlayerBestDrawingsStore:getPlayerBestDrawing(player, theme.uuid)
+    local theme_uuid = drawingData.theme_uuid
+    local existingData, errorMessage = PlayerBestDrawingsStore:getPlayerBestDrawing(player, theme_uuid)
     local existingScore = 0
     local shouldSaveDrawing = false
     
     if not existingData or errorMessage then
         -- No existing drawing found, save this one
-        debugPrint("No existing drawing found for theme '%s'. Saving new drawing.", theme)
+        debugPrint("No existing drawing found for theme '%s'. Saving new drawing.", drawingData.theme)
         shouldSaveDrawing = true
     else
         -- Compare scores to see if we should update
         existingScore = tonumber(existingData.score) or 0
-        if score > existingScore then
-            debugPrint("New drawing score (%d) is higher than existing score (%d) for theme '%s'. Updating.", 
-                score, existingScore, theme)
+        if drawingData.score > existingScore then
             shouldSaveDrawing = true
-        else
-            debugPrint("Existing drawing has higher or equal score (%d vs %d) for theme '%s'. Keeping existing drawing.", 
-                existingScore, score, theme)
         end
     end
 
     local playerData = getPlayerData(player)
-    playerData.TotalPoints = playerData.TotalPoints + score * getDifficultyMultiplier(theme.Difficulty)
+    playerData.TotalPoints = playerData.TotalPoints + drawingData.points
     savePlayerData(player, playerData)
     flushPlayerData(player)
     
     -- Save the drawing if needed
     if shouldSaveDrawing then
-        local drawingData = createDrawingData(imageData, score, theme, player.UserId)
         
-        local success, error = PlayerBestDrawingsStore:savePlayerBestDrawing(player, theme.uuid, drawingData)
+        local success, error = PlayerBestDrawingsStore:savePlayerBestDrawing(player, theme_uuid, drawingData)
 
         if not success then
-            warn("Failed to save player best drawing for theme '%s': %s", theme, error)
+            warn("Failed to save player best drawing for theme '%s': %s", theme_uuid, error)
         end
 
-        local rawImageData = CanvasDraw.DecompressImageDataCustom(imageData)
+        local rawImageData = CanvasDraw.DecompressImageDataCustom(drawingData.imageData)
         -- Notify the client that a new best drawing for this theme has been saved
-        Events.ReceiveNewBestDrawing:FireClient(player, {imageData = rawImageData, score = score, feedback = feedback}, theme)
+        Events.ReceiveNewBestDrawing:FireClient(player, {imageData = rawImageData, score = drawingData.score})
     end
 
     -- TODO: Remove this
-    -- local topPlays = TopPlaysStore:getTopPlays(tostring(player.UserId))
-    -- TopPlaysStore:saveTopPlays(tostring(player.UserId), topPlays)
-    -- -- Send the new top plays to the client.
-    -- sendTopPlaysToClient(player, tostring(player.UserId), topPlays)
 end
 
 local function runGradingPhase(player: Player, currentTheme: ThemeStore.Theme)
     local playerState = ServerStates.PlayerState[player]
-    local userId = player.UserId
     local imageData = playerState.playerDrawings
     if imageData then
         -- Asynchronously grade each drawing
@@ -307,24 +261,31 @@ local function runGradingPhase(player: Player, currentTheme: ThemeStore.Theme)
             result, errorMessage, compressedImageData = BackendService:submitDrawingToBackendForGrading(player, imageData, currentTheme)
 
             if result and result.success then
-                debugPrint("Grading successful for %s", player.Name)
-                playerState.playerScores = { 
-                    drawing = imageData, 
-                    score = result.result.Score, 
-                    feedback = result.result.Feedback
-                }
+                local score = tonumber(result.result.Score) or 5
+                local points = score * getDifficultyMultiplier(currentTheme.Difficulty)
+                local drawingData = PlayerBestDrawingsStore:createDrawingData(
+                    compressedImageData, score, points, currentTheme, tostring(player.UserId))
+
+                playerState.drawingData = drawingData
+
+                playerState.playerScores = {
+                    drawing = imageData,
+                    score = drawingData.score,
+                    feedback = result.result.Feedback,
+                    theme = currentTheme
+                } 
                 
-                local scoreValue = tonumber(result.result.Score) or 5
-                storeHighestScoringDrawing(player, currentTheme, compressedImageData, scoreValue, result.result.Feedback)
+                storeHighestScoringDrawing(player, drawingData)
 
                 -- TODO, once the grading is done, we check if the image is appropriate to be displayed.
                 Events.DrawToCanvas:FireAllClients(imageData, currentTheme, playerState.canvas)
             else
                 warn("Grading failed")
-                playerState.playerScores[userId] = { 
+                playerState.playerScores = { 
                     drawing = imageData, 
                     score = 5, 
-                    feedback = "Opps! Something went wrong. Sorry about that. Please try again later." 
+                    feedback = "Opps! Something went wrong. Sorry about that. Please try again later.",
+                    theme = currentTheme
                 }
             end
 
@@ -335,6 +296,38 @@ local function runGradingPhase(player: Player, currentTheme: ThemeStore.Theme)
     end
 
     playerState.waitSignal.Event:Wait()
+end
+
+-- TopPlays equals the gallery.
+local function handleSaveToGallery(player: Player, imageData: string)
+    local topPlays = TopPlaysCacheService.fetch(tostring(player.UserId))
+    local playerData = getPlayerData(player)
+    local playerState = ServerStates.PlayerState[player]
+
+    if #topPlays >= playerData.maximumGallerySize then
+        Events.ShowNotification:FireClient(player, 
+            "Gallery is full. Please delete some drawings to make space.",
+            "red"
+        )
+    else
+        table.insert(topPlays, playerState.drawingData)
+        -- Save the new top plays.
+        local success, _ = TopPlaysStore:saveTopPlays(tostring(player.UserId), topPlays)
+        if not success then
+            warn("Failed to save top plays for player " .. player.UserId)
+            Events.ShowNotification:FireClient(player, 
+                "Failed to save drawing to gallery. Please try again later.",
+                "red"
+            )
+            return
+        end
+        TopPlaysCacheService.purgeCache(tostring(player.UserId))
+        Events.ShowNotification:FireClient(player, 
+            "Successfully saved drawing to gallery."
+        )
+        -- Send the new top plays to the client.
+        sendTopPlaysToClient(player, tostring(player.UserId), topPlays)
+    end
 end
 
 -- Game Flow
@@ -426,7 +419,7 @@ local function handleClientStateChange(player, newState, additionalData)
 end
 
 local function handleDeleteGalleryDrawing(player, uuid)
-    local topPlays = TopDrawingCacheService.fetch(tostring(player.UserId))
+    local topPlays = TopPlaysCacheService.fetch(tostring(player.UserId))
     local deleted = false
     for i, topPlay in ipairs(topPlays) do
         if topPlay.uuid == uuid then
@@ -443,7 +436,7 @@ local function handleDeleteGalleryDrawing(player, uuid)
     -- Save the updated top plays
     TopPlaysStore:saveTopPlays(tostring(player.UserId), topPlays)
     -- Purge the server cache
-    TopDrawingCacheService.purgeCache(tostring(player.UserId))
+    TopPlaysCacheService.purgeCache(tostring(player.UserId))
 
     -- Send the updated top plays to the client.
     sendTopPlaysToClient(player, tostring(player.UserId), topPlays)
@@ -559,6 +552,7 @@ local function init()
     Events.SendFeedback.OnServerEvent:Connect(handleSendFeedback)
     Events.ClientStateChange.OnServerEvent:Connect(handleClientStateChange)
     Events.DeleteGalleryDrawing.OnServerEvent:Connect(handleDeleteGalleryDrawing)
+    Events.SaveToGallery.OnServerEvent:Connect(handleSaveToGallery)
     Events.TestEvent.OnServerEvent:Connect(function(player)
     end)
 end

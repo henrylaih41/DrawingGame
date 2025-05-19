@@ -4,6 +4,7 @@ local DataStoreHelper = require(ServerScriptService.modules.DataStoreHelper)
 local HttpService = game:GetService("HttpService")
 local SchemaValidator = require(ServerScriptService.modules.SchemaValidator)
 local PlayerBestDrawingsDataStore = DataStoreService:GetDataStore("PlayerBestDrawings")
+local ThemeStore = require(ServerScriptService.modules.ThemeStore)
 
 local PlayerBestDrawingsStore = {}
 local DEBUG_ENABLED = true
@@ -29,15 +30,49 @@ PlayerBestDrawingsStore.imageDataSchema = SchemaValidator.createSchema({
 -- Define schema for best drawings
 PlayerBestDrawingsStore.playerBestDrawingSchema = SchemaValidator.createSchema({
     imageData = { type = "table", required = true },
-    score = { type = "number", required = true },
     points = { type = "number", required = true }, -- Added points field
+    score = { type = "number", required = true },
     timestamp = { type = "number", required = true },
     theme = { type = "string", required = true },
     theme_difficulty = { type = "string", required = true },
     theme_uuid = { type = "string", required = true }, -- Added theme_uuid field
-    playerId = { type = "number", required = true },
+    playerId = { type = "string", required = true },
     uuid = { type = "string", required = true },
+    likes = { type = "number", required = true }
 })
+
+export type DrawingData = {
+    imageData: string,
+    points: number,
+    score: number,
+    timestamp: number,
+    theme: string,
+    theme_difficulty: string,
+    theme_uuid: string,
+    playerId: string,
+    uuid: string,
+    likes: number
+}
+
+function PlayerBestDrawingsStore:createDrawingData(
+    imageData, 
+    score: number, 
+    points: number, 
+    theme: ThemeStore.Theme, 
+    playerId: string): DrawingData
+    return {
+        imageData = imageData,
+        points = points,
+        score = score,
+        timestamp = os.time(),
+        theme = theme.Name,
+        theme_difficulty = theme.Difficulty,
+        theme_uuid = theme.uuid,
+        playerId = playerId,
+        uuid = HttpService:GenerateGUID(false),
+        likes = 0
+    }
+end
 
 -- Function to get a player's drawing for a specific theme
 function PlayerBestDrawingsStore:getPlayerBestDrawing(player, theme_uuid: string)
@@ -64,6 +99,18 @@ function PlayerBestDrawingsStore:getPlayerBestDrawing(player, theme_uuid: string
         
         -- Validate the data if it exists
         if drawingData then
+            -- Self healing.
+            drawingData.playerId = tostring(drawingData.playerId)
+            -- Generate a UUID if it doesn't exist
+            -- This is self healing and shouldn't happen too often.
+            if drawingData.uuid == nil then
+                warn("[Self Healing] Generating UUID for best drawing")
+                drawingData.uuid = HttpService:GenerateGUID(false)
+            end
+            if drawingData.likes == nil then
+                warn("[Self Healing] Generating likes for best drawing")
+                drawingData.likes = 0
+            end
             local isValid, errorMessage = self.playerBestDrawingSchema:validate(drawingData)
             if not isValid then
                 warn("Invalid drawing data: " .. errorMessage)
@@ -73,14 +120,6 @@ function PlayerBestDrawingsStore:getPlayerBestDrawing(player, theme_uuid: string
                 warn("Invalid image data: " .. errorMessage)
             end
             
-            -- Generate a UUID if it doesn't exist
-            -- This is self healing and shouldn't happen too often.
-            if drawingData.uuid == nil then
-                warn("[Self Healing] Generating UUID for best drawing")
-                drawingData.uuid = HttpService:GenerateGUID(false)
-                -- Save the drawing data
-                self:savePlayerBestDrawing(player, theme_uuid, drawingData)
-            end
         end
 
         return drawingData
@@ -108,10 +147,14 @@ function PlayerBestDrawingsStore:savePlayerBestDrawing(player, theme_uuid: strin
     
     -- Validate the drawing data against our schema
     local isValid, errorMessage = self.playerBestDrawingSchema:validate(drawingData)
-    assert(isValid, "Invalid drawing data: " .. errorMessage)
+    if not isValid then
+        warn("Invalid drawing data: " .. errorMessage)
+    end
 
     isValid, errorMessage = self.imageDataSchema:validate(drawingData.imageData)
-    assert(isValid, "Invalid image data: " .. errorMessage)
+    if not isValid then 
+        warn("Invalid image data: " .. errorMessage)
+    end
     
     -- Create a unique key for this player and theme combination
     local key = self:generateDrawingKey(player.UserId, theme_uuid)

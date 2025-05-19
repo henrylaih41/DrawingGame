@@ -120,9 +120,9 @@ end
 local function onGameStateChanged(stateData)
     if stateData and stateData.state then
         print("Game state changed to:", stateData.state)
-        
-        -- Show main menu only when in MAIN_MENU state, hide otherwise
-        if stateData.state == GameConstants.PlayerStateEnum.IDLE then
+
+        if stateData.state == GameConstants.PlayerStateEnum.IDLE or 
+           stateData.state == GameConstants.PlayerStateEnum.RESULTS then
             MainMenuScreen.Enabled = true
             TopLevelContainer.Visible = true
         else

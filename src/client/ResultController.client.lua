@@ -142,6 +142,11 @@ local function initResultUI()
         -- Send the event to server
         Events.ReturnToMainMenu:FireServer()
     end)
+
+    saveToGalleryButton.MouseButton1Click:Connect(function()
+        -- Send the event to server
+        Events.SaveToGallery:FireServer()
+    end)
     
     -- Create a canvas for the drawing display
     if not resultCanvas then -- Create canvas only if it doesn't exist

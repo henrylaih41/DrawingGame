@@ -119,6 +119,8 @@ function TopPlaysStore:getTopPlays(userId: string)
         "GetAsync",
         "Player_" .. userId 
     )
+
+    local selfHealing = false
     
     if success and result then
         -- Validate the schema
@@ -126,21 +128,29 @@ function TopPlaysStore:getTopPlays(userId: string)
 
             -- Generate a UUID if it doesn't exist
             if topPlay.uuid == nil then
-                warn("[Self Healing] Generating UUID for top play")
+                selfHealing = true
                 topPlay.uuid = HttpService:GenerateGUID(false)
                 -- Save the top play data
                 self:saveTopPlays(userId, result)
             end
+
+            if topPlay.likes == nil then
+                topPlay.likes = 0
+            end
+
+            -- Self healing
+            topPlay.playerId = tostring(topPlay.playerId)
+
             local valid, errors = playerBestDrawingSchema:validate(topPlay)
             if not valid then
                 warn(errors)
             end
         end
-        
-        -- Sort plays by points in descending order
-        table.sort(result, function(a, b)
-            return a.points > b.points
-        end)
+
+        if selfHealing then
+            warn("[Self Healing] Saving top plays for player %s", userId)
+            self:saveTopPlays(userId, result)
+        end
         
         return result, nil
     elseif success then

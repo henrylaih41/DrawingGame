@@ -6,6 +6,9 @@ local HttpService = game:GetService("HttpService")
 local PlayerStore = {}
 local PlayersDataStore = DataStoreService:GetDataStore("Players")
 
+local defaultMaximumGallerySize = 3
+local defaultDrawingTTLAfterPlayerLeft = 3600
+
 -- Define schema for player data
 local playerDataSchema = SchemaValidator.createSchema({
     Name = { type = "string", required = true },
@@ -13,7 +16,9 @@ local playerDataSchema = SchemaValidator.createSchema({
     TotalPoints = { type = "number", required = true },
     Energy = { type = "number", required = true },
     coins = { type = "number", required = true },
-    topPlaysWithoutImage = { type = "table", required = false}
+    topPlaysWithoutImage = { type = "table", required = false},
+    maximumGallerySize = { type = "number", required = true },
+    drawingTTLAfterPlayerLeft = { type = "number", required = true }
 })
 
 -- Player Data Management Functions
@@ -30,6 +35,10 @@ function PlayerStore:getPlayer(player)
     )
     
     if success and result then
+        -- Self healing.
+        result.maximumGallerySize = result.maximumGallerySize or defaultMaximumGallerySize
+        result.drawingTTLAfterPlayerLeft = result.drawingTTLAfterPlayerLeft or defaultDrawingTTLAfterPlayerLeft
+
         -- Validate the schema
         local valid, errors = playerDataSchema:validate(result)
         if not valid then
@@ -44,7 +53,9 @@ function PlayerStore:getPlayer(player)
             TotalPlayCount = 0,
             TotalPoints = 0,
             Energy = 10, -- Starting energy
-            coins = 0
+            coins = 0,
+            maximumGallerySize = defaultMaximumGallerySize,
+            drawingTTLAfterPlayerLeft = defaultDrawingTTLAfterPlayerLeft
         }
         
         -- Try to save the default data
