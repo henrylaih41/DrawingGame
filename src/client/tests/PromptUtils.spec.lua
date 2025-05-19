@@ -1,0 +1,18 @@
+local PromptUtils = require(script.Parent.Parent.modules.utils.PromptUtils)
+
+return function()
+    describe("PromptUtils.createPrompt", function()
+        it("creates a ProximityPrompt with given properties", function()
+            local prompt = PromptUtils.createPrompt("Test", "Action", "Object", 0.5, 10, Enum.KeyCode.E)
+            expect(prompt).to.be.ok()
+            expect(prompt:IsA("ProximityPrompt")).to.equal(true)
+            expect(prompt.Name).to.equal("Test")
+            expect(prompt.ActionText).to.equal("Action")
+            expect(prompt.ObjectText).to.equal("Object")
+            expect(prompt.HoldDuration).to.equal(0.5)
+            expect(prompt.MaxActivationDistance).to.equal(10)
+            expect(prompt.KeyboardKeyCode).to.equal(Enum.KeyCode.E)
+            prompt:Destroy()
+        end)
+    end)
+end

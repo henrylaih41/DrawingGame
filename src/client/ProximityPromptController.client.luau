@@ -5,17 +5,7 @@ local LocalPlayer = game:GetService("Players").LocalPlayer
 local ClientState = require(LocalPlayer:WaitForChild("PlayerScripts"):WaitForChild("ClientState"))
 local GameConstants = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("GameData"):WaitForChild("GameConstants"))
 
-local function createPrompt(promptName, promptActionText, promptObjectText, promptDuration, promptDistance, promptKeyboardKeyCode)
-    local prompt = Instance.new("ProximityPrompt")
-    prompt.RequiresLineOfSight = false
-    prompt.Name = promptName
-    prompt.ActionText = promptActionText
-    prompt.ObjectText = promptObjectText
-    prompt.HoldDuration = promptDuration
-    prompt.MaxActivationDistance = promptDistance
-    prompt.KeyboardKeyCode = promptKeyboardKeyCode
-    return prompt
-end
+local PromptUtils = require(ReplicatedStorage.Modules.Utils.PromptUtils)
 
 Events.RegisterCanvas.OnClientEvent:Connect(function(canvas)
     local frame = canvas:FindFirstChild("CanvasFrame")
@@ -27,9 +17,9 @@ Events.RegisterCanvas.OnClientEvent:Connect(function(canvas)
 
     if frame:FindFirstChild("DrawPrompt") then return end
 
-    local drawPrompt = createPrompt("DrawPrompt", "Draw", "Canvas", 0.5, 5, Enum.KeyCode.E)
+    local drawPrompt = PromptUtils.createPrompt("DrawPrompt", "Draw", "Canvas", 0.5, 5, Enum.KeyCode.E)
     drawPrompt.Parent = canvas:FindFirstChild("CanvasFrame")
-    local unregisterPrompt = createPrompt("UnregisterCanvasPrompt", "Unclaim", "Canvas", 0.5, 5, Enum.KeyCode.U)
+    local unregisterPrompt = PromptUtils.createPrompt("UnregisterCanvasPrompt", "Unclaim", "Canvas", 0.5, 5, Enum.KeyCode.U)
     unregisterPrompt.UIOffset = Vector2.new(0, 80)
     unregisterPrompt.Parent = canvas:FindFirstChild("CanvasFrame")
 end)
