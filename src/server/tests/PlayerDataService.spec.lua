@@ -1,5 +1,12 @@
 local PlayerDataService = require(script.Parent.Parent.modules.PlayerDataService)
 
+local nextUserId = 1
+local function createMockPlayer()
+    local p = { Name = "Player" .. nextUserId, UserId = nextUserId }
+    nextUserId = nextUserId + 1
+    return p
+end
+
 return function()
     describe("getDifficultyMultiplier", function()
         it("returns correct multiplier", function()
@@ -15,7 +22,7 @@ return function()
 
     describe("savePlayerData", function()
         it("updates state and fires event", function()
-            local player = Instance.new("Player")
+            local player = createMockPlayer()
             local fired = false
             local firedPlayer = nil
             local firedData = nil
@@ -44,7 +51,7 @@ return function()
 
     describe("getPlayerData", function()
         it("returns cached data", function()
-            local player = Instance.new("Player")
+            local player = createMockPlayer()
             local mockStates = { PlayerState = { [player] = { playerData = { foo = "bar" } } } }
             PlayerDataService._override({ ServerStates = mockStates })
             local data = PlayerDataService.getPlayerData(player)
@@ -52,7 +59,7 @@ return function()
         end)
 
         it("fetches from store when missing", function()
-            local player = Instance.new("Player")
+            local player = createMockPlayer()
             local called = false
             local mockStore = {
                 getPlayer = function(self, p)
@@ -70,7 +77,7 @@ return function()
 
     describe("flushPlayerData", function()
         it("saves player data when present", function()
-            local player = Instance.new("Player")
+            local player = createMockPlayer()
             local savedPlayer = nil
             local savedData = nil
             local mockStore = {
