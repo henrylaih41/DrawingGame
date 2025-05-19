@@ -1,0 +1,5 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TestEZ = require(ReplicatedStorage.Modules.TestEZ)
+local StarterPlayerScripts = game:GetService("StarterPlayer"):WaitForChild("StarterPlayerScripts")
+local testsFolder = StarterPlayerScripts:WaitForChild("tests")
+TestEZ.TestBootstrap:run({ testsFolder })
