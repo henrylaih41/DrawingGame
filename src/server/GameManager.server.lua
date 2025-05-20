@@ -5,6 +5,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
+local CollectionService = game:GetService("CollectionService")
 local GameConfig = require(ReplicatedStorage.Modules.GameData.GameConfig)
 local GameConstants = require(ReplicatedStorage.Modules.GameData.GameConstants)
 local HttpService = game:GetService("HttpService")
@@ -136,14 +137,15 @@ local function handlePlayerJoined(player)
     task.spawn(function()
         task.wait(3)
         local topPlays = TopPlaysCacheService.fetch(1523877105)
-        for i, c in ipairs(workspace:WaitForChild(GameConstants.DrawingCanvasFolderName):GetChildren()) do
+        for i, c in pairs(CollectionService:GetTagged("Canvas")) do
             local topPlay = topPlays[i % (#topPlays - 1)]
             if (topPlay == nil) then
                 continue
             end
             local theme = topPlay.theme
             local imageData = CanvasDraw.DecompressImageDataCustom(topPlay.imageData)
-            Events.DrawToCanvas:FireAllClients(imageData, theme, c)
+            Events.DrawToCanvas:FireAllClients(imageData, 
+            {themeName = theme, canvas = c, playerId = topPlay.playerId, drawingId = topPlay.uuid})
         end
     end)
 end
@@ -279,7 +281,9 @@ local function runGradingPhase(player: Player, currentTheme: ThemeStore.Theme)
                 storeHighestScoringDrawing(player, drawingData)
 
                 -- TODO, once the grading is done, we check if the image is appropriate to be displayed.
-                Events.DrawToCanvas:FireAllClients(imageData, currentTheme, playerState.canvas)
+                Events.DrawToCanvas:FireAllClients(imageData, 
+                    {themeName = currentTheme.Name, canvas = playerState.canvas, 
+                     playerId = drawingData.playerId, drawingId = drawingData.uuid})
             else
                 warn("Grading failed")
                 playerState.playerScores = { 
@@ -465,6 +469,7 @@ local function attachSurfaceGui(canvasModel : Model,
     ----------------------------------------------------------------
     -- 0. Validate inputs
     ----------------------------------------------------------------
+    warn("attachSurfaceGui")
     local board = canvasModel.PrimaryPart
     if not board then
         error(("attachSurfaceGui: %q has no PrimaryPart"):format(canvasModel:GetFullName()))
@@ -541,7 +546,8 @@ local function init()
     end
 
     -- Initialize the canvas state for all canvas in the workspace.
-    for _, c in ipairs(workspace:WaitForChild(GameConstants.DrawingCanvasFolderName):GetChildren()) do
+
+    for _, c in pairs(CollectionService:GetTagged("Canvas")) do
         ServerStates.CanvasState[c] = {
             registered = false,
             ownerPlayer = nil

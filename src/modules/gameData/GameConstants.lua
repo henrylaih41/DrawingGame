@@ -16,7 +16,6 @@ GameConstants.PlayerStateEnum = {
     VOTING = "VOTING",
 }
 
-GameConstants.DrawingCanvasFolderName = "DrawingCanvas"
 GameConstants.RENDER_RADIUS = 80
 GameConstants.UNRENDER_RADIUS = 100
 return GameConstants

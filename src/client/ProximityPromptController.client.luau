@@ -40,7 +40,6 @@ end)
 PPS.PromptTriggered:Connect(function(prompt, player)
     -- If the player is drawing, we don't want to retrigger the client-side prompt.
     if ClientState.PlayerState ~= GameConstants.PlayerStateEnum.IDLE then
-        warn(ClientState.PlayerState)
         return
     end
 

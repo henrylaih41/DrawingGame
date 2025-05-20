@@ -50,7 +50,7 @@ end
 
 local function initialize()
     -- existing canvases
-    for _, c in ipairs(workspace:WaitForChild(GameConstants.DrawingCanvasFolderName):GetChildren()) do
+    for _, c in pairs(CollectionService:GetTagged("Canvas")) do
         attachDrawingPrompts(c)
     end
 
@@ -123,7 +123,8 @@ local function initialize()
         local registerPrompt = canvas:FindFirstChild("CanvasFrame"):FindFirstChild("RegisterCanvasPrompt")
         registerPrompt.Enabled = true 
 
-        Events.DrawToCanvas:FireAllClients(nil, nil, canvas)
+        Events.DrawToCanvas:FireAllClients(nil, 
+            {themeName = nil, canvas = canvas, playerId = nil, drawingId = nil})
         -- Notify the client that the canvas has been unregistered.
         Events.UnregisterCanvas:FireClient(player, canvas)
     end)

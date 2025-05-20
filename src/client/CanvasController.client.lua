@@ -4,8 +4,10 @@ local LocalPlayer = game:GetService("Players").LocalPlayer
 local ClientState = require(LocalPlayer:WaitForChild("PlayerScripts"):WaitForChild("ClientState"))
 local Events = ReplicatedStorage:WaitForChild("Events")
 local CommonHelper = require(ReplicatedStorage.Modules.Utils.CommonHelper)
-
+local CollectionService = game:GetService("CollectionService")
+local NotificationService = require(ReplicatedStorage.Modules.Utils.NotificationService)
 local stopRendering = false
+local initialized = false
 
 local function GetDeviceTier()
     local screenSize = workspace.CurrentCamera.ViewportSize
@@ -19,32 +21,90 @@ local function GetDeviceTier()
     end
 end
 
+local function initCanvas(instance)
+    ClientState.DrawingCanvas[instance] = {
+        imageData = nil,
+        rendered = false,
+        editableImage = nil,
+        playerId = nil,
+        canvasId = nil
+    }
 
+    local likeButton = instance:FindFirstChildWhichIsA("ImageButton", true)
+    ClientState.DrawingCanvas[instance].likeButton = likeButton
+
+    if likeButton then
+        likeButton.Activated:Connect(function()
+            -- Check if the drawing is empty.
+            if ClientState.DrawingCanvas[instance].canvasId == nil or 
+               ClientState.DrawingCanvas[instance].playerId == nil then
+                NotificationService:ShowNotification("You cannot like an empty drawing.", "red")
+                return
+            end
+
+            -- Check if the drawing is already liked.
+            if table.find(ClientState.likedDrawings, 
+                ClientState.DrawingCanvas[instance].canvasId) then
+                NotificationService:ShowNotification("You already liked this drawing.", "red")
+                return
+            end
+
+            -- Add the drawing to the liked drawings.
+            table.insert(ClientState.likedDrawings, 
+                ClientState.DrawingCanvas[instance].canvasId)
+
+            -- TODO: Implement the like functionality.
+
+            -- Update the like button color.
+            likeButton.BackgroundColor3 = Color3.fromRGB(100, 161, 231)
+        end)
+    end
+end
+
+local function clearCanvas(canvas)
+    ClientState.DrawingCanvas[canvas].imageData = nil
+    ClientState.DrawingCanvas[canvas].playerId = nil
+    ClientState.DrawingCanvas[canvas].canvasId = nil
+end
 
 local function init()
-    for _, c in ipairs(workspace:WaitForChild(GameConstants.DrawingCanvasFolderName):GetChildren()) do
+    -- We can't assume that all canvases are added to the workspace immediately.
+    -- So we need to listen for the instance added signal.
+    CollectionService:GetInstanceAddedSignal("Canvas"):Connect(function(c)
+        initCanvas(c)
+    end)
 
-        ClientState.DrawingCanvas[c] = {
-            imageData = nil,
-            rendered = false,
-            editableImage = nil
-        }
+    -- In case we missed any canvases, we can add them to the state.
+    for _, c in pairs(CollectionService:GetTagged("Canvas")) do
+        initCanvas(c)
     end
 
     -- We simple set the image data for the canvas.
     -- The rendering will be handled in a separate thread.
     Events.DrawToCanvas.OnClientEvent:Connect(function(
         imageData: {ImageBuffer: buffer, ImageResolution: Vector2, Width: number, Height: number}, 
-        currentTheme: string, 
-        canvas)
+        metadata: {themeName: string, canvas: Instance, playerId: string, drawingId: string})
+        local canvas = metadata.canvas
+
+        -- Every time a new drawing is drawn, we reset the like button color.
+        local likeButton = ClientState.DrawingCanvas[canvas].likeButton
+
+        if likeButton then
+            likeButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        end
+
         CommonHelper.unrenderCanvas(ClientState, canvas)
         -- Set the image data for the canvas.
         if imageData then
             ClientState.DrawingCanvas[canvas].imageData = imageData
+            ClientState.DrawingCanvas[canvas].playerId = metadata.playerId
+            ClientState.DrawingCanvas[canvas].canvasId = metadata.drawingId
         else
-            ClientState.DrawingCanvas[canvas].imageData = nil
+            clearCanvas(canvas)
         end
     end)
+
+    initialized = true
 end
 
 
@@ -78,6 +138,10 @@ end
 -- 2  Consumer: runs every frame, but respects both caps
 ----------------------------------------------------------------
 RunService.Heartbeat:Connect(function()
+    if not initialized then
+        return
+    end
+
     -- reset the 1-second window
     local now = clock()
     if now - windowStart >= 1 then

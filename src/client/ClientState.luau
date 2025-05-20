@@ -5,5 +5,6 @@ local ClientState = {}
 -- Global Variables on the client-side.
 ClientState.DrawingCanvas = {}
 ClientState.PlayerState = GameConstants.PlayerStateEnum.IDLE
+ClientState.likedDrawings = {}
 
 return ClientState
