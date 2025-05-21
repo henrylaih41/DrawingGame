@@ -6,9 +6,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 local CollectionService = game:GetService("CollectionService")
-local GameConfig = require(ReplicatedStorage.Modules.GameData.GameConfig)
 local GameConstants = require(ReplicatedStorage.Modules.GameData.GameConstants)
-local HttpService = game:GetService("HttpService")
 local PlayerStore = require(ServerScriptService.modules.PlayerStore)
 local TopPlaysStore = require(ServerScriptService.modules.TopPlaysStore)
 local PlayerBestDrawingsStore = require(ServerScriptService.modules.PlayerBestDrawingsStore)
@@ -35,38 +33,6 @@ local function getDifficultyMultiplier(difficulty: string)
     else
         warn("Unknown difficulty: " .. difficulty)
         return 1
-    end
-end
-
--- Get the player data, if it is not in memory, get it from the datastore.
-local function getPlayerData(player)
-    local playerData = ServerStates.PlayerState[player].playerData
-    local errorMessage = nil
-    
-    if not playerData then
-        playerData, errorMessage = PlayerStore:getPlayer(player)
-        if not playerData then
-            error("Failed to get player data for " .. player.Name .. ": " .. tostring(errorMessage))
-        end
-    end
-
-    return playerData
-end
-
-local function savePlayerData(player, playerData)
-    if playerData then
-        local playerState = ServerStates.PlayerState[player]
-        -- Update the cache
-        playerState.playerData = playerData
-        -- Notify the client
-        Events.PlayerDataUpdated:FireClient(player, playerData)
-    end
-end
-
-local function flushPlayerData(player: Player)
-    local playerData = ServerStates.PlayerState[player].playerData
-    if playerData then
-        PlayerStore:savePlayer(player, playerData)
     end
 end
 
@@ -121,9 +87,7 @@ local function handlePlayerJoined(player)
     }
 
     -- Load the persistent player data.
-    local playerData = getPlayerData(player)
-
-    ServerStates.PlayerState[player].playerData = playerData
+    local playerData = PlayerStore:getPlayer(player)
 
     -- Tell the new player the current game state
     Events.GameStateChanged:FireClient(player, {
@@ -136,7 +100,7 @@ local function handlePlayerJoined(player)
     -- TODO: This is just for testing purpose. In prod, we should use drawings in player's gallery.
     task.spawn(function()
         task.wait(3)
-        local topPlays = TopPlaysCacheService.fetch(1523877105)
+        local topPlays = TopPlaysCacheService.fetch(tostring(player.UserId))
         for i, c in pairs(CollectionService:GetTagged("Canvas")) do
             local topPlay = topPlays[i % (#topPlays - 1)]
             if (topPlay == nil) then
@@ -151,8 +115,6 @@ local function handlePlayerJoined(player)
 end
 
 local function handlePlayerLeft(player: Player)
-    -- flush player data before removing
-    flushPlayerData(player)
     -- Remove player from active players list
     ServerStates.PlayerState[player] = nil
     -- TODO: Spawn task that remove player canvas after TTL.
@@ -223,10 +185,9 @@ local function storeHighestScoringDrawing(player:Player, drawingData: PlayerBest
         end
     end
 
-    local playerData = getPlayerData(player)
+    local playerData = PlayerStore:getPlayer(player)
     playerData.TotalPoints = playerData.TotalPoints + drawingData.points
-    savePlayerData(player, playerData)
-    flushPlayerData(player)
+    PlayerStore:savePlayer(player, playerData)
     Events.ShowNotification:FireClient(player, "You earned " .. drawingData.points .. " points!", "green")
     
     -- Save the drawing if needed
@@ -256,9 +217,8 @@ local function runGradingPhase(player: Player, currentTheme: ThemeStore.Theme)
             local errorMessage = nil
             debugPrint("Submitting drawing for grading for player %s", player.Name)
 
-            local playerData = getPlayerData(player)
+            local playerData = PlayerStore:getPlayer(player)
             playerData.TotalPlayCount = playerData.TotalPlayCount + 1
-            savePlayerData(player, playerData)
 
             local compressedImageData = nil
             result, errorMessage, compressedImageData = BackendService:submitDrawingToBackendForGrading(player, imageData, currentTheme)
@@ -306,7 +266,7 @@ end
 -- TopPlays equals the gallery.
 local function handleSaveToGallery(player: Player, imageData: string)
     local topPlays = TopPlaysCacheService.fetch(tostring(player.UserId))
-    local playerData = getPlayerData(player)
+    local playerData = PlayerStore:getPlayer(player)
     local playerState = ServerStates.PlayerState[player]
 
     if #topPlays >= playerData.maximumGallerySize then
@@ -406,7 +366,7 @@ end
 
 local function handlestartDrawing(player: Player, theme_uuid: string)
     -- Check if the player has enough energy to draw.
-    local playerData = getPlayerData(player)
+    local playerData = PlayerStore:getPlayer(player)
 
     if playerData.Energy <= 0 then
         Events.ShowNotification:FireClient(player, "You don't have enough energy to draw.", "red")
@@ -414,8 +374,7 @@ local function handlestartDrawing(player: Player, theme_uuid: string)
     else
         -- Consume one energy.
         playerData.Energy = playerData.Energy - 1
-        savePlayerData(player, playerData)
-        flushPlayerData(player)
+        PlayerStore:savePlayer(player, playerData)
     end
     
     -- Start the game

@@ -49,6 +49,7 @@ createEvent("ShowNotification")
 createEvent("ShowConfirmationBox")
 createEvent("DeleteGalleryDrawing")
 createEvent("SaveToGallery")
+createEvent("LikeDrawing")
 -- Set the parent of the Events folder
 Events.Parent = ReplicatedStorage
 print("Events setup complete") 

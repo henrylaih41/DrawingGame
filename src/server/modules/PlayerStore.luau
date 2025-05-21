@@ -2,9 +2,12 @@ local DataStoreService = game:GetService("DataStoreService")
 local ServerScriptService = game:GetService("ServerScriptService")
 local DataStoreHelper = require(ServerScriptService.modules.DataStoreHelper)
 local SchemaValidator = require(ServerScriptService.modules.SchemaValidator)
-local HttpService = game:GetService("HttpService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Events = ReplicatedStorage:WaitForChild("Events")
 local PlayerStore = {}
 local PlayersDataStore = DataStoreService:GetDataStore("Players")
+local MemoryStoreService   = game:GetService("MemoryStoreService")
+local CacheMap             = MemoryStoreService:GetSortedMap("PlayerDataCache") --:contentReference[oaicite:2]{index=2}
 
 local defaultMaximumGallerySize = 3
 local defaultDrawingTTLAfterPlayerLeft = 3600
@@ -37,95 +40,153 @@ export type PlayerData = {
     lastEnergyUpdate: number
 }
 
--- Player Data Management Functions
-function PlayerStore:getPlayer(player)
-    assert(player, "Missing player parameter")
-    local playerId = player.UserId
-    
-    local success, result = DataStoreHelper:_performDataStoreOperationWithRetry(
-        PlayersDataStore,
-        "GetAsync",
-        "Player_" .. playerId,
-        nil,
-        true
-    )
-    
-    if success and result then
-        -- Self healing.
-        result.maximumGallerySize = result.maximumGallerySize or defaultMaximumGallerySize
-        result.drawingTTLAfterPlayerLeft = result.drawingTTLAfterPlayerLeft or defaultDrawingTTLAfterPlayerLeft
-        result.maximumEnergy = result.maximumEnergy or defaultMaximumEnergy
-        result.lastEnergyUpdate = result.lastEnergyUpdate or os.time()
-        result.coins = result.coins or 0
+-- tuning ----------------------------------------------------------------
+local CACHE_TTL_SECONDS    = 30*60          -- 30 min cache
+local LOCK_TTL_SECONDS     = 5              -- 5 s mutex
+local LOCK_RETRIES         = 5
+local LOCK_RETRY_DELAY     = 0.4
+-------------------------------------------------------------------------
 
-        -- Energy should never exceed the maximum energy.
-        if result.Energy > result.maximumEnergy then
-            result.Energy = result.maximumEnergy
-        end
+-- helpers ---------------------------------------------------------------
+local function ckey(id: number) return "Player_"..id end
+local function lkey(id: number) return "PlayerLock_"..id end
+local function enc(t: any)   return t end
+local function dec(s: any)   return s end
+-------------------------------------------------------------------------
 
-        -- Refresh the energy if it has been more than 12 hours since the last energy update.
-        if os.time() - result.lastEnergyUpdate > energyRefreshInterval then
-            result.Energy = defaultMaximumEnergy
-            result.lastEnergyUpdate = os.time()
+-- lock helper (atomic via UpdateAsync) ----------------------------------
+local function acquireLock(id: number)
+    for i = 1, LOCK_RETRIES do
+        local claimed = false
+        local ok = pcall(function()
+            CacheMap:UpdateAsync(lkey(id), function(oldVal)
+                if oldVal == nil then          -- nobody owns lock
+                    claimed = true
+                    return true               -- become owner
+                end
+                return oldVal                 -- keep current owner
+            end, LOCK_TTL_SECONDS)            -- lock expires automatically
+        end)
+        if ok and claimed then
+            return true                       -- we own the mutex
         end
-
-        -- Validate the schema
-        local valid, errors = playerDataSchema:validate(result)
-        if not valid then
-            warn("BackendService: Invalid player data schema for player " .. playerId .. ": " .. HttpService:JSONEncode(errors))
-            return nil, "Invalid player data schema"
-        end
-        return result, nil
-    else
-        -- Create default player data if not found
-        local defaultData = {
-            Name = player.Name,
-            TotalPlayCount = 0,
-            TotalPoints = 0,
-            Energy = defaultMaximumEnergy, -- Starting energy
-            coins = 0,
-            maximumGallerySize = defaultMaximumGallerySize,
-            drawingTTLAfterPlayerLeft = defaultDrawingTTLAfterPlayerLeft,
-            maximumEnergy = defaultMaximumEnergy,
-            lastEnergyUpdate = os.time()
-        }
-        
-        -- Try to save the default data
-        local saveSuccess, saveError = self:savePlayer(player, defaultData)
-        if not saveSuccess then
-            return nil, "Failed to create player profile: " .. tostring(saveError)
-        end
-        
-        return defaultData, nil
+        task.wait(LOCK_RETRY_DELAY)           -- back-off and retry
     end
+    return false                              -- could not obtain lock
+end
+---------------------------------------------------------------------
+-- READ -------------------------------------------------------------
+---------------------------------------------------------------------
+function PlayerStore:getPlayer(player: Player)
+    assert(player,"Missing player")
+    local id  = player.UserId
+    local key = ckey(id)
+    local success, data = nil, nil
+
+    -- 1) MemoryStore fast-path
+    local ok, cached = pcall(function() return CacheMap:GetAsync(key) end)
+    if ok and cached then
+        data = dec(cached)
+    end
+
+    -- 2) DataStore fallback
+    if not data then
+        success, data = DataStoreHelper:_performDataStoreOperationWithRetry(
+            PlayersDataStore, "GetAsync", key, nil, true
+        )
+
+        if not success then
+            warn("Failed to get player data for " .. player.Name)
+            return nil, data
+        end
+    end
+
+    -- 3) default + healing if first visit
+    if not data then
+        data = {
+            Name                      = player.Name,
+            TotalPlayCount            = 0,
+            TotalPoints               = 0,
+            Energy                    = defaultMaximumEnergy,
+            coins                     = 0,
+            maximumGallerySize        = defaultMaximumGallerySize,
+            drawingTTLAfterPlayerLeft = defaultDrawingTTLAfterPlayerLeft,
+            maximumEnergy             = defaultMaximumEnergy,
+            lastEnergyUpdate          = os.time(),
+        }
+    else
+        data.maximumGallerySize        = data.maximumGallerySize or defaultMaximumGallerySize
+        data.drawingTTLAfterPlayerLeft = data.drawingTTLAfterPlayerLeft or defaultDrawingTTLAfterPlayerLeft
+        data.maximumEnergy             = data.maximumEnergy or defaultMaximumEnergy
+        data.lastEnergyUpdate          = data.lastEnergyUpdate or os.time()
+        data.coins                     = data.coins or 0
+
+        if data.Energy > data.maximumEnergy then
+            data.Energy = data.maximumEnergy
+        end
+
+        if os.time() - data.lastEnergyUpdate > energyRefreshInterval then
+            data.Energy         = defaultMaximumEnergy
+            data.lastEnergyUpdate = os.time()
+        end
+
+        self:savePlayer(player, data)
+    end
+
+    -- 4) validate
+    local valid, errs = playerDataSchema:validate(data)
+    if not valid then
+        warn(("PlayerStore: invalid schema for %d: %s"):format(id, enc(errs)))
+        return nil, "Invalid player data schema"
+    end
+
+    -- 5) back-fill cache (best effort)
+    pcall(function()
+        CacheMap:SetAsync(key, enc(data), CACHE_TTL_SECONDS)
+    end)
+
+    return data, nil
 end
 
-function PlayerStore:savePlayer(player, playerData)
-    assert(player, "Missing player parameter")
-    assert(playerData, "Missing playerData parameter")
-    print("Saving player data for " .. player.Name)
-    local playerId = player.UserId
-    
-    -- Validate the schema
-    local valid, errors = playerDataSchema:validate(playerData)
+---------------------------------------------------------------------
+-- WRITE ------------------------------------------------------------
+---------------------------------------------------------------------
+function PlayerStore:savePlayer(player: Player, data: PlayerData)
+    assert(player, "Missing player")
+    assert(data,   "Missing playerData")
+    local id  = player.UserId
+    local key = ckey(id)
+
+    -- schema validation
+    local valid, errs = playerDataSchema:validate(data)
     if not valid then
-        warn("BackendService: Invalid player data schema for player " .. playerId .. ": " .. HttpService:JSONEncode(errors))
+        warn(("PlayerStore: invalid schema for %d: %s"):format(id, enc(errs)))
         return false, "Invalid player data schema"
     end
-    
-    -- Save to DataStore with retry logic
-    local success, error = DataStoreHelper:_performDataStoreOperationWithRetry(
-        PlayersDataStore,
-        "SetAsync",
-        "Player_" .. playerId,
-        playerData
-    )
-    
-    if not success then
-        warn("BackendService: Failed to save player data for " .. playerId .. ": " .. tostring(error))
-        return false, "Failed to save player data: " .. tostring(error)
+
+    -- distributed mutex - optimistically acquire lock
+    if not acquireLock(id) then
+        warn("Could not acquire player write lock for " .. player.Name)
     end
-    
+
+    -- write-through: DataStore first (durable)
+    local ok, err = DataStoreHelper:_performDataStoreOperationWithRetry(
+        PlayersDataStore, "SetAsync", key, data
+    )
+    if not ok then
+        warn(("PlayerStore: failed to save %d: %s"):format(id, tostring(err)))
+        return false, "Failed to save: " .. tostring(err)
+    end
+
+    -- update cache
+    pcall(function()
+        CacheMap:SetAsync(key, enc(data), CACHE_TTL_SECONDS)
+        CacheMap:RemoveAsync(lkey(id)) 
+    end)
+
+    -- Send the updated player data to the client.
+    Events.PlayerDataUpdated:FireClient(player, data)
+
     return true, nil
 end
 

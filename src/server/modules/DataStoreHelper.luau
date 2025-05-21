@@ -71,7 +71,7 @@ function DataStoreHelper:_performDataStoreOperationWithRetry(dataStore, operatio
             task.wait(1 * 2 ^ (attempt - 1))
         end
     end
-    
+
     return success, result
 end
 

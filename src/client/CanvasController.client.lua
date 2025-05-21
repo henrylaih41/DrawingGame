@@ -53,7 +53,9 @@ local function initCanvas(instance)
             table.insert(ClientState.likedDrawings, 
                 ClientState.DrawingCanvas[instance].canvasId)
 
-            -- TODO: Implement the like functionality.
+            Events.LikeDrawing:FireServer(
+                ClientState.DrawingCanvas[instance].playerId,
+                ClientState.DrawingCanvas[instance].canvasId)
 
             -- Update the like button color.
             likeButton.BackgroundColor3 = Color3.fromRGB(100, 161, 231)
