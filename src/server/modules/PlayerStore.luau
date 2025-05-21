@@ -19,6 +19,7 @@ local playerDataSchema = SchemaValidator.createSchema({
     Name = { type = "string", required = true },
     TotalPlayCount = { type = "number", required = true },
     TotalPoints = { type = "number", required = true },
+    PreviousTotalPoints = { type = "number", required = true },
     Energy = { type = "number", required = true },
     coins = { type = "number", required = true },
     topPlaysWithoutImage = { type = "table", required = false},
@@ -32,6 +33,7 @@ export type PlayerData = {
     Name: string,
     TotalPlayCount: number,
     TotalPoints: number,
+    PreviousTotalPoints: number,
     Energy: number,
     coins: number,
     maximumGallerySize: number,
@@ -48,14 +50,14 @@ local LOCK_RETRY_DELAY     = 0.4
 -------------------------------------------------------------------------
 
 -- helpers ---------------------------------------------------------------
-local function ckey(id: number) return "Player_"..id end
-local function lkey(id: number) return "PlayerLock_"..id end
+local function ckey(id: string) return "Player_"..id end
+local function lkey(id: string) return "PlayerLock_"..id end
 local function enc(t: any)   return t end
 local function dec(s: any)   return s end
 -------------------------------------------------------------------------
 
 -- lock helper (atomic via UpdateAsync) ----------------------------------
-local function acquireLock(id: number)
+local function acquireLock(id: string)
     for i = 1, LOCK_RETRIES do
         local claimed = false
         local ok = pcall(function()
@@ -77,10 +79,8 @@ end
 ---------------------------------------------------------------------
 -- READ -------------------------------------------------------------
 ---------------------------------------------------------------------
-function PlayerStore:getPlayer(player: Player)
-    assert(player,"Missing player")
-    local id  = player.UserId
-    local key = ckey(id)
+function PlayerStore:getPlayer(playerId: string)
+    local key = ckey(playerId)
     local success, data = nil, nil
 
     -- 1) MemoryStore fast-path
@@ -96,7 +96,7 @@ function PlayerStore:getPlayer(player: Player)
         )
 
         if not success then
-            warn("Failed to get player data for " .. player.Name)
+            warn("Failed to get player data for " .. playerId)
             return nil, data
         end
     end
@@ -104,39 +104,44 @@ function PlayerStore:getPlayer(player: Player)
     -- 3) default + healing if first visit
     if not data then
         data = {
-            Name                      = player.Name,
+            -- Remove the Name field. This is not used in the game.
+            Name                      = "",
             TotalPlayCount            = 0,
             TotalPoints               = 0,
-            Energy                    = defaultMaximumEnergy,
+            PreviousTotalPoints       = 0,
             coins                     = 0,
-            maximumGallerySize        = defaultMaximumGallerySize,
             drawingTTLAfterPlayerLeft = defaultDrawingTTLAfterPlayerLeft,
-            maximumEnergy             = defaultMaximumEnergy,
+            -- TODO: Update this based on player type or TotalPoints.
+            Energy                    = defaultMaximumEnergy,
             lastEnergyUpdate          = os.time(),
         }
-    else
-        data.maximumGallerySize        = data.maximumGallerySize or defaultMaximumGallerySize
-        data.drawingTTLAfterPlayerLeft = data.drawingTTLAfterPlayerLeft or defaultDrawingTTLAfterPlayerLeft
-        data.maximumEnergy             = data.maximumEnergy or defaultMaximumEnergy
-        data.lastEnergyUpdate          = data.lastEnergyUpdate or os.time()
-        data.coins                     = data.coins or 0
+    end 
 
-        if data.Energy > data.maximumEnergy then
-            data.Energy = data.maximumEnergy
-        end
+    -- Self healing
+    data.maximumGallerySize        = data.maximumGallerySize or defaultMaximumGallerySize
+    data.lastEnergyUpdate          = data.lastEnergyUpdate or os.time()
+    data.PreviousTotalPoints       = data.PreviousTotalPoints or data.TotalPoints
+    data.coins                     = data.coins or 0
+    
+    -- TODO: Update these value based on player type or TotalPoints.
+    data.maximumEnergy = defaultMaximumEnergy
+    data.drawingTTLAfterPlayerLeft = defaultDrawingTTLAfterPlayerLeft
+    data.maximumGallerySize = defaultMaximumGallerySize
 
-        if os.time() - data.lastEnergyUpdate > energyRefreshInterval then
-            data.Energy         = defaultMaximumEnergy
-            data.lastEnergyUpdate = os.time()
-        end
+    if data.Energy > data.maximumEnergy then
+        data.Energy = data.maximumEnergy
+    end
 
-        self:savePlayer(player, data)
+    if os.time() - data.lastEnergyUpdate > energyRefreshInterval then
+        data.Energy         = data.maximumEnergy
+        data.lastEnergyUpdate = os.time()
+        self:savePlayer(playerId, data)
     end
 
     -- 4) validate
     local valid, errs = playerDataSchema:validate(data)
     if not valid then
-        warn(("PlayerStore: invalid schema for %d: %s"):format(id, enc(errs)))
+        warn(("PlayerStore: invalid schema for %s: %s"):format(playerId, enc(errs)))
         return nil, "Invalid player data schema"
     end
 
@@ -151,22 +156,21 @@ end
 ---------------------------------------------------------------------
 -- WRITE ------------------------------------------------------------
 ---------------------------------------------------------------------
-function PlayerStore:savePlayer(player: Player, data: PlayerData)
-    assert(player, "Missing player")
+function PlayerStore:savePlayer(playerId: string, data: PlayerData)
+    assert(playerId, "Missing playerId")
     assert(data,   "Missing playerData")
-    local id  = player.UserId
-    local key = ckey(id)
+    local key = ckey(playerId)
 
     -- schema validation
     local valid, errs = playerDataSchema:validate(data)
     if not valid then
-        warn(("PlayerStore: invalid schema for %d: %s"):format(id, enc(errs)))
+        warn(("PlayerStore: invalid schema for %s: %s"):format(playerId, enc(errs)))
         return false, "Invalid player data schema"
     end
 
     -- distributed mutex - optimistically acquire lock
-    if not acquireLock(id) then
-        warn("Could not acquire player write lock for " .. player.Name)
+    if not acquireLock(playerId) then
+        warn("Could not acquire player write lock for " .. playerId)
     end
 
     -- write-through: DataStore first (durable)
@@ -174,18 +178,15 @@ function PlayerStore:savePlayer(player: Player, data: PlayerData)
         PlayersDataStore, "SetAsync", key, data
     )
     if not ok then
-        warn(("PlayerStore: failed to save %d: %s"):format(id, tostring(err)))
+        warn(("PlayerStore: failed to save %s: %s"):format(playerId, tostring(err)))
         return false, "Failed to save: " .. tostring(err)
     end
 
     -- update cache
     pcall(function()
         CacheMap:SetAsync(key, enc(data), CACHE_TTL_SECONDS)
-        CacheMap:RemoveAsync(lkey(id)) 
+        CacheMap:RemoveAsync(lkey(playerId)) 
     end)
-
-    -- Send the updated player data to the client.
-    Events.PlayerDataUpdated:FireClient(player, data)
 
     return true, nil
 end

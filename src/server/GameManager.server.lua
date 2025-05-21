@@ -86,8 +86,10 @@ local function handlePlayerJoined(player)
         waitSignal = Instance.new("BindableEvent"),
     }
 
+    ServerStates.PlayerIdToPlayerMap[tostring(player.UserId)] = player
+
     -- Load the persistent player data.
-    local playerData = PlayerStore:getPlayer(player)
+    local playerData = PlayerStore:getPlayer(tostring(player.UserId))
 
     -- Tell the new player the current game state
     Events.GameStateChanged:FireClient(player, {
@@ -117,6 +119,7 @@ end
 local function handlePlayerLeft(player: Player)
     -- Remove player from active players list
     ServerStates.PlayerState[player] = nil
+    ServerStates.PlayerIdToPlayerMap[tostring(player.UserId)] = nil
     -- TODO: Spawn task that remove player canvas after TTL.
 end
 
@@ -185,9 +188,10 @@ local function storeHighestScoringDrawing(player:Player, drawingData: PlayerBest
         end
     end
 
-    local playerData = PlayerStore:getPlayer(player)
+    local playerData = PlayerStore:getPlayer(tostring(player.UserId))
     playerData.TotalPoints = playerData.TotalPoints + drawingData.points
-    PlayerStore:savePlayer(player, playerData)
+    PlayerStore:savePlayer(tostring(player.UserId), playerData)
+    Events.PlayerDataUpdated:FireClient(player, playerData)
     Events.ShowNotification:FireClient(player, "You earned " .. drawingData.points .. " points!", "green")
     
     -- Save the drawing if needed
@@ -217,7 +221,7 @@ local function runGradingPhase(player: Player, currentTheme: ThemeStore.Theme)
             local errorMessage = nil
             debugPrint("Submitting drawing for grading for player %s", player.Name)
 
-            local playerData = PlayerStore:getPlayer(player)
+            local playerData = PlayerStore:getPlayer(tostring(player.UserId))
             playerData.TotalPlayCount = playerData.TotalPlayCount + 1
 
             local compressedImageData = nil
@@ -266,7 +270,7 @@ end
 -- TopPlays equals the gallery.
 local function handleSaveToGallery(player: Player, imageData: string)
     local topPlays = TopPlaysCacheService.fetch(tostring(player.UserId))
-    local playerData = PlayerStore:getPlayer(player)
+    local playerData = PlayerStore:getPlayer(tostring(player.UserId))
     local playerState = ServerStates.PlayerState[player]
 
     if #topPlays >= playerData.maximumGallerySize then
@@ -366,7 +370,7 @@ end
 
 local function handlestartDrawing(player: Player, theme_uuid: string)
     -- Check if the player has enough energy to draw.
-    local playerData = PlayerStore:getPlayer(player)
+    local playerData = PlayerStore:getPlayer(tostring(player.UserId))
 
     if playerData.Energy <= 0 then
         Events.ShowNotification:FireClient(player, "You don't have enough energy to draw.", "red")
@@ -374,7 +378,7 @@ local function handlestartDrawing(player: Player, theme_uuid: string)
     else
         -- Consume one energy.
         playerData.Energy = playerData.Energy - 1
-        PlayerStore:savePlayer(player, playerData)
+        PlayerStore:savePlayer(tostring(player.UserId), playerData)
     end
     
     -- Start the game

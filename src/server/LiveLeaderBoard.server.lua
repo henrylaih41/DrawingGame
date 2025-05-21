@@ -3,7 +3,7 @@
 -- CONFIG
 --------------------------------------------------------------------
 local TOP_MAP_NAME        = "TopPointsV2"     -- MemoryStore SortedMap
-local KEY_TTL_SECONDS     = 30 * 24 * 3600     -- 30 days(auto-evicts idle entries)
+local KEY_TTL_SECONDS     = 7 * 24 * 3600     -- 30 days(auto-evicts idle entries)
 local MAX_ROWS            = 100               -- hard cap
 local OVERFLOW_FETCH      = MAX_ROWS + 1       -- grab one extra to trim
 
@@ -57,7 +57,7 @@ end
 game.Players.PlayerAdded:Connect(function(plr)
     -- simple debounce: one read per join
     task.spawn(function()
-        local playerData = PlayerStore:getPlayer(plr)
+        local playerData = PlayerStore:getPlayer(tostring(plr.UserId))
         local points = playerData["TotalPoints"]
         -- hard code threshold for now
         if points > 10 then
@@ -67,7 +67,10 @@ game.Players.PlayerAdded:Connect(function(plr)
 end)
 
 Events.RequestTopScores.OnServerEvent:Connect(function(player)
-    local playerData = PlayerStore:getPlayer(player)
+    -- TODO: We should cache the leader board data in the server.
+    -- TODO: Also a worker thread the updates the cached data every x seconds.
+    local playerData = PlayerStore:getPlayer(tostring(player.UserId))
+    warn(playerData)
     local topScores = TopMap:GetRangeAsync(Enum.SortDirection.Descending, MAX_ROWS)
     Events.ReceiveTopScores:FireClient(player, topScores, playerData)
 end)
