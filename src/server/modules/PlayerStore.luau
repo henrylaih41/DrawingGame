@@ -103,7 +103,7 @@ function PlayerStore:getPlayer(playerId: string, playerName: string?)
     -- 3) default + healing if first visit
     if not data then
         data = {
-            Name                      = playerName or "",
+            Name                      = playerName,
             TotalPlayCount            = 0,
             TotalPoints               = 0,
             PreviousTotalPoints       = 0,
@@ -116,11 +116,15 @@ function PlayerStore:getPlayer(playerId: string, playerName: string?)
     end 
 
     -- Self healing
-    data.Name                      = data.Name or playerName or ""
+    data.Name                      = data.Name or playerName
     data.maximumGallerySize        = data.maximumGallerySize or defaultMaximumGallerySize
     data.lastEnergyUpdate          = data.lastEnergyUpdate or os.time()
     data.PreviousTotalPoints       = data.PreviousTotalPoints or data.TotalPoints
     data.coins                     = data.coins or 0
+
+    if data.Name == nil then
+        warn("Player name is nil for " .. playerId)
+    end
     
     -- TODO: Update these value based on player type or TotalPoints.
     data.maximumEnergy = defaultMaximumEnergy
@@ -176,6 +180,7 @@ function PlayerStore:savePlayer(playerId: string, data: PlayerData)
     local ok, err = DataStoreHelper:_performDataStoreOperationWithRetry(
         PlayersDataStore, "SetAsync", key, data
     )
+
     if not ok then
         warn(("PlayerStore: failed to save %s: %s"):format(playerId, tostring(err)))
         return false, "Failed to save: " .. tostring(err)

@@ -7,6 +7,7 @@ local NotificationService = {}
 
 local confirmationBoxInitialized = false
 local decide = Instance.new("BindableEvent")
+local DEFAULT_DELAY = 3
 
 function colorFromColorText(colorText)
     if colorText == "red" then
@@ -18,7 +19,11 @@ function colorFromColorText(colorText)
     return Color3.fromRGB(0, 255, 0)
 end
 
-function NotificationService:ShowNotification(message, color)
+function NotificationService:ShowNotification(message, color, delay)
+    if delay == nil then
+        delay = DEFAULT_DELAY
+    end
+
     task.spawn(function()
         if color == nil then
             color = "green"
@@ -28,7 +33,7 @@ function NotificationService:ShowNotification(message, color)
         notification.BackgroundColor3 = colorFromColorText(color)
         notification.Text = message
         notification.Visible = true
-        task.wait(3)
+        task.wait(delay)
         notification.Visible = false
     end)
 end
@@ -64,8 +69,8 @@ function NotificationService:ShowConfirmationBox(message)
     end
 end
 
-Events.ShowNotification.OnClientEvent:Connect(function(message, color)
-    NotificationService:ShowNotification(message, color)
+Events.ShowNotification.OnClientEvent:Connect(function(message, color, delay)
+    NotificationService:ShowNotification(message, color, delay)
 end)
 
 Events.ShowConfirmationBox.OnClientEvent:Connect(function(message)

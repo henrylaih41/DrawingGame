@@ -74,6 +74,19 @@ local function UpdatePlayerStateAndNotifyClient(player: Player, newState: string
     Events.GameStateChanged:FireClient(player, stateData)
 end
 
+local function sendLoginMessage(player: Player, playerData: PlayerStore.PlayerData)
+    local pointsGained = playerData.TotalPoints - playerData.PreviousTotalPoints
+    local message = nil
+    local delayTime = 8
+    if pointsGained > 0 then
+        message = "Welcome back! Your drawing gained " .. pointsGained .. " likes while you were away!"
+    else
+        message = "Welcome to Drawing Theme League!"
+        delayTime = 3
+    end
+    Events.ShowNotification:FireClient(player, message, "green", delayTime)
+end
+
 -- Player Management
 local function handlePlayerJoined(player)
     warn(player.UserId)
@@ -91,6 +104,8 @@ local function handlePlayerJoined(player)
 
     -- Load the persistent player data.
     local playerData = PlayerStore:getPlayer(tostring(player.UserId), player.Name)
+
+    sendLoginMessage(player, playerData)
 
     -- Tell the new player the current game state
     Events.GameStateChanged:FireClient(player, {
@@ -118,8 +133,9 @@ local function handlePlayerJoined(player)
 end
 
 local function handlePlayerLeft(player: Player)
+    local playerData = PlayerStore:getPlayer(tostring(player.UserId))
     local ownedCanvasList = ServerStates.PlayerState[player].ownedCanvas
-    local canvasTTL = PlayerStore:getPlayer(tostring(player.UserId)).drawingTTLAfterPlayerLeft
+    local canvasTTL = playerData.drawingTTLAfterPlayerLeft
     -- Spawn a task that removes the player's canvas after the TTL.
     task.spawn(function()
         task.wait(canvasTTL)
@@ -131,6 +147,10 @@ local function handlePlayerLeft(player: Player)
     -- Remove player from active players list
     ServerStates.PlayerState[player] = nil
     ServerStates.PlayerIdToPlayerMap[tostring(player.UserId)] = nil
+
+    -- Save the previous total points.
+    playerData.PreviousTotalPoints = playerData.TotalPoints
+    PlayerStore:savePlayer(tostring(player.UserId), playerData)
 end
 
 local function runDrawingPhase(player: Player, currentTheme: string)
