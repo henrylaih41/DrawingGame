@@ -5,6 +5,7 @@ local ServerStates = require(ServerScriptService.modules.ServerStates)
 local GameConstants = require(ReplicatedStorage.Modules.GameData.GameConstants)
 local Events = ReplicatedStorage:WaitForChild("Events")
 local PPS = game:GetService("ProximityPromptService")
+local CanvasManager = require(ServerScriptService.modules.CanvasManager)
 
 -- Attach drawing prompts to the canvas
 local function attachDrawingPrompts(canvasModel)
@@ -113,18 +114,10 @@ local function initialize()
                 break
             end
         end
-
+        
         -- Unregister the canvas.
-        ServerStates.CanvasState[canvas].registered = false
-        ServerStates.CanvasState[canvas].ownerPlayer = nil
-        ServerStates.CanvasState[canvas].ownedCanvasIndex = nil
+        CanvasManager.resetCanvas(canvas)
 
-        -- Re-enable the register prompt.
-        local registerPrompt = canvas:FindFirstChild("CanvasFrame"):FindFirstChild("RegisterCanvasPrompt")
-        registerPrompt.Enabled = true 
-
-        Events.DrawToCanvas:FireAllClients(nil, 
-            {themeName = nil, canvas = canvas, playerId = nil, drawingId = nil})
         -- Notify the client that the canvas has been unregistered.
         Events.UnregisterCanvas:FireClient(player, canvas)
     end)

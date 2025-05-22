@@ -70,7 +70,6 @@ Events.RequestTopScores.OnServerEvent:Connect(function(player)
     -- TODO: We should cache the leader board data in the server.
     -- TODO: Also a worker thread the updates the cached data every x seconds.
     local playerData = PlayerStore:getPlayer(tostring(player.UserId))
-    warn(playerData)
     local topScores = TopMap:GetRangeAsync(Enum.SortDirection.Descending, MAX_ROWS)
     Events.ReceiveTopScores:FireClient(player, topScores, playerData)
 end)

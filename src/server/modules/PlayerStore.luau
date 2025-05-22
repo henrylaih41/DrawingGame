@@ -2,15 +2,14 @@ local DataStoreService = game:GetService("DataStoreService")
 local ServerScriptService = game:GetService("ServerScriptService")
 local DataStoreHelper = require(ServerScriptService.modules.DataStoreHelper)
 local SchemaValidator = require(ServerScriptService.modules.SchemaValidator)
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Events = ReplicatedStorage:WaitForChild("Events")
 local PlayerStore = {}
 local PlayersDataStore = DataStoreService:GetDataStore("Players")
 local MemoryStoreService   = game:GetService("MemoryStoreService")
 local CacheMap             = MemoryStoreService:GetSortedMap("PlayerDataCache") --:contentReference[oaicite:2]{index=2}
 
 local defaultMaximumGallerySize = 3
-local defaultDrawingTTLAfterPlayerLeft = 3600
+-- TODO: Set this to production value.
+local defaultDrawingTTLAfterPlayerLeft = 10
 local defaultMaximumEnergy = 3
 local energyRefreshInterval = 60 -- 12 * 60 * 60 -- 12 hours
 
@@ -79,7 +78,7 @@ end
 ---------------------------------------------------------------------
 -- READ -------------------------------------------------------------
 ---------------------------------------------------------------------
-function PlayerStore:getPlayer(playerId: string)
+function PlayerStore:getPlayer(playerId: string, playerName: string?)
     local key = ckey(playerId)
     local success, data = nil, nil
 
@@ -104,8 +103,7 @@ function PlayerStore:getPlayer(playerId: string)
     -- 3) default + healing if first visit
     if not data then
         data = {
-            -- Remove the Name field. This is not used in the game.
-            Name                      = "",
+            Name                      = playerName or "",
             TotalPlayCount            = 0,
             TotalPoints               = 0,
             PreviousTotalPoints       = 0,
@@ -118,6 +116,7 @@ function PlayerStore:getPlayer(playerId: string)
     end 
 
     -- Self healing
+    data.Name                      = data.Name or playerName or ""
     data.maximumGallerySize        = data.maximumGallerySize or defaultMaximumGallerySize
     data.lastEnergyUpdate          = data.lastEnergyUpdate or os.time()
     data.PreviousTotalPoints       = data.PreviousTotalPoints or data.TotalPoints

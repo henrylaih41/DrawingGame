@@ -17,6 +17,7 @@ local CanvasDraw = require(ReplicatedStorage.Modules.Canvas.CanvasDraw)
 local BackendService = require(ServerScriptService.modules.BackendService)
 local ThemeStore = require(ServerScriptService.modules.ThemeStore)
 local ServerStates = require(ServerScriptService.modules.ServerStates)
+local CanvasManager = require(ServerScriptService.modules.CanvasManager)
 
 -- Remote events
 local Events = ReplicatedStorage:WaitForChild("Events")
@@ -89,7 +90,7 @@ local function handlePlayerJoined(player)
     ServerStates.PlayerIdToPlayerMap[tostring(player.UserId)] = player
 
     -- Load the persistent player data.
-    local playerData = PlayerStore:getPlayer(tostring(player.UserId))
+    local playerData = PlayerStore:getPlayer(tostring(player.UserId), player.Name)
 
     -- Tell the new player the current game state
     Events.GameStateChanged:FireClient(player, {
@@ -117,10 +118,19 @@ local function handlePlayerJoined(player)
 end
 
 local function handlePlayerLeft(player: Player)
+    local ownedCanvasList = ServerStates.PlayerState[player].ownedCanvas
+    local canvasTTL = PlayerStore:getPlayer(tostring(player.UserId)).drawingTTLAfterPlayerLeft
+    -- Spawn a task that removes the player's canvas after the TTL.
+    task.spawn(function()
+        task.wait(canvasTTL)
+        for _, canvas in ipairs(ownedCanvasList) do
+            CanvasManager.resetCanvas(canvas)
+        end
+    end)
+
     -- Remove player from active players list
     ServerStates.PlayerState[player] = nil
     ServerStates.PlayerIdToPlayerMap[tostring(player.UserId)] = nil
-    -- TODO: Spawn task that remove player canvas after TTL.
 end
 
 local function runDrawingPhase(player: Player, currentTheme: string)
