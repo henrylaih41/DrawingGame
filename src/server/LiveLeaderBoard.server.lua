@@ -3,9 +3,9 @@
 -- CONFIG
 --------------------------------------------------------------------
 local TOP_MAP_NAME        = "TopPointsV2"     -- MemoryStore SortedMap
-local KEY_TTL_SECONDS     = 7 * 24 * 3600     -- 30 days(auto-evicts idle entries)
+local KEY_TTL_SECONDS     = 7 * 24 * 3600     -- 7 days(auto-evicts idle entries)
 local MAX_ROWS            = 100               -- hard cap
-local OVERFLOW_FETCH      = MAX_ROWS + 1       -- grab one extra to trim
+local CACHE_UPDATE_INTERVAL = 60 * 60
 
 --------------------------------------------------------------------
 -- SERVICES
@@ -22,6 +22,7 @@ local TopMap     = MS:GetSortedMap(TOP_MAP_NAME)
 -- PUBLIC API TABLE
 --------------------------------------------------------------------
 local LB = {}          -- module to return
+local cachedTopScores = nil
 
 LB.MAX_ROWS = MAX_ROWS
 --------------------------------------------------------------------
@@ -67,11 +68,24 @@ game.Players.PlayerAdded:Connect(function(plr)
 end)
 
 Events.RequestTopScores.OnServerEvent:Connect(function(player)
-    -- TODO: We should cache the leader board data in the server.
-    -- TODO: Also a worker thread the updates the cached data every x seconds.
     local playerData = PlayerStore:getPlayer(tostring(player.UserId))
-    local topScores = TopMap:GetRangeAsync(Enum.SortDirection.Descending, MAX_ROWS)
+    local topScores = cachedTopScores
+
+    -- If the cached data is not available, fetch it from the map.
+    if topScores == nil then
+        topScores = TopMap:GetRangeAsync(Enum.SortDirection.Descending, MAX_ROWS)
+        cachedTopScores = topScores
+    end
+
     Events.ReceiveTopScores:FireClient(player, topScores, playerData)
+end)
+
+-- Spawn a task that updates the cached data every x seconds.
+task.spawn(function()
+    while true do
+        task.wait(CACHE_UPDATE_INTERVAL)
+        cachedTopScores = TopMap:GetRangeAsync(Enum.SortDirection.Descending, MAX_ROWS)
+    end
 end)
 
 --------------------------------------------------------------------
