@@ -16,6 +16,7 @@ local Buttons = TopLevelContainer:WaitForChild("Buttons")
 local TrophyCount = TopLevelContainer:WaitForChild("TrophyCount")
 local CoinFrame = TopLevelContainer:WaitForChild("CoinFrame")
 local PencilFrame = TopLevelContainer:WaitForChild("PencilFrame")
+local LikeFrame = TopLevelContainer:WaitForChild("LikeFrame")
 local FeedbackButton = Buttons:WaitForChild("FeedbackButton")
 local RankingButton = Buttons:WaitForChild("RankingButton")
 local GalleryButton = Buttons:WaitForChild("GalleryButton")
@@ -36,7 +37,8 @@ local toggle_objects = {
     RankingButton,
     TrophyCount,
     CoinFrame,
-    PencilFrame
+    PencilFrame,
+    LikeFrame
 }
 -- Set up events
 local Events = ReplicatedStorage:WaitForChild("Events")
@@ -149,11 +151,13 @@ local function onPlayerDataUpdated(playerData)
     local trophyCount = TrophyCount.count
     local coinCount = CoinFrame.count
     local pencilCount = PencilFrame.count
+    local likeCount = LikeFrame.count
 
     if playerData then
         trophyCount.Text = tostring(playerData.TotalPoints)
         coinCount.Text = tostring(playerData.coins)
         pencilCount.Text = tostring(playerData.Energy) .. " / " .. tostring(playerData.maximumEnergy)
+        likeCount.Text = tostring(playerData.LikeQuota) .. " / " .. tostring(playerData.maximumLikeQuota)
     else
         warn("Player data is nil")
     end

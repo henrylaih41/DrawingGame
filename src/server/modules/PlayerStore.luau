@@ -11,6 +11,7 @@ local defaultMaximumGallerySize = 3
 -- TODO: Set this to production value.
 local defaultDrawingTTLAfterPlayerLeft = 10
 local defaultMaximumEnergy = 3
+local defaultMaximumLikeQuota = 10
 local energyRefreshInterval = 60 -- 12 * 60 * 60 -- 12 hours
 
 -- Define schema for player data
@@ -108,19 +109,22 @@ function PlayerStore:getPlayer(playerId: string, playerName: string?)
             TotalPoints               = 0,
             PreviousTotalPoints       = 0,
             coins                     = 0,
-            drawingTTLAfterPlayerLeft = defaultDrawingTTLAfterPlayerLeft,
             -- TODO: Update this based on player type or TotalPoints.
             Energy                    = defaultMaximumEnergy,
+            LikeQuota                 = defaultMaximumLikeQuota,
             lastEnergyUpdate          = os.time(),
         }
     end 
 
     -- Self healing
     data.Name                      = data.Name or playerName
-    data.maximumGallerySize        = data.maximumGallerySize or defaultMaximumGallerySize
-    data.lastEnergyUpdate          = data.lastEnergyUpdate or os.time()
+    data.TotalPlayCount            = data.TotalPlayCount or 0
+    data.TotalPoints               = data.TotalPoints or 0
     data.PreviousTotalPoints       = data.PreviousTotalPoints or data.TotalPoints
     data.coins                     = data.coins or 0
+    data.Energy                    = data.Energy or defaultMaximumEnergy
+    data.LikeQuota                 = data.LikeQuota or defaultMaximumLikeQuota
+    data.lastEnergyUpdate          = data.lastEnergyUpdate or os.time()
 
     if data.Name == nil then
         warn("Player name is nil for " .. playerId)
@@ -128,6 +132,7 @@ function PlayerStore:getPlayer(playerId: string, playerName: string?)
     
     -- TODO: Update these value based on player type or TotalPoints.
     data.maximumEnergy = defaultMaximumEnergy
+    data.maximumLikeQuota = defaultMaximumLikeQuota
     data.drawingTTLAfterPlayerLeft = defaultDrawingTTLAfterPlayerLeft
     data.maximumGallerySize = defaultMaximumGallerySize
 
@@ -135,8 +140,13 @@ function PlayerStore:getPlayer(playerId: string, playerName: string?)
         data.Energy = data.maximumEnergy
     end
 
+    if data.LikeQuota > data.maximumLikeQuota then
+        data.LikeQuota = data.maximumLikeQuota
+    end
+
     if os.time() - data.lastEnergyUpdate > energyRefreshInterval then
         data.Energy         = data.maximumEnergy
+        data.LikeQuota      = data.maximumLikeQuota
         data.lastEnergyUpdate = os.time()
         self:savePlayer(playerId, data)
     end
@@ -159,10 +169,14 @@ end
 ---------------------------------------------------------------------
 -- WRITE ------------------------------------------------------------
 ---------------------------------------------------------------------
-function PlayerStore:savePlayer(playerId: string, data: PlayerData)
+function PlayerStore:savePlayer(playerId: string, data: PlayerData, flush: boolean?)
     assert(playerId, "Missing playerId")
     assert(data,   "Missing playerData")
     local key = ckey(playerId)
+
+    if flush == nil then
+        flush = true
+    end
 
     -- schema validation
     local valid, errs = playerDataSchema:validate(data)
@@ -176,14 +190,14 @@ function PlayerStore:savePlayer(playerId: string, data: PlayerData)
         warn("Could not acquire player write lock for " .. playerId)
     end
 
-    -- write-through: DataStore first (durable)
-    local ok, err = DataStoreHelper:_performDataStoreOperationWithRetry(
-        PlayersDataStore, "SetAsync", key, data
-    )
+    if flush then
+        local ok, err = DataStoreHelper:_performDataStoreOperationWithRetry(
+            PlayersDataStore, "SetAsync", key, data
+        )
 
-    if not ok then
-        warn(("PlayerStore: failed to save %s: %s"):format(playerId, tostring(err)))
-        return false, "Failed to save: " .. tostring(err)
+        if not ok then
+            warn(("PlayerStore: failed to save %s: %s"):format(playerId, tostring(err)))
+        end
     end
 
     -- update cache

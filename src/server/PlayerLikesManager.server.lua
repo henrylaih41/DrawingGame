@@ -11,6 +11,19 @@ local FLUSH_INTERVAL = 1
 local playerLikesCache = {}
 
 Events.LikeDrawing.OnServerEvent:Connect(function(player, likedPlayerId, canvasId)
+    local playerData = PlayerStore:getPlayer(player.UserId)
+
+    if playerData.LikeQuota <= 0 then
+        Events.ShowNotification:FireClient(
+            player, "You don't have any likes left!", "red")
+        return
+    end
+
+    playerData.LikeQuota = playerData.LikeQuota - 1
+
+    PlayerStore:savePlayer(player.UserId, playerData, false)
+    Events.PlayerDataUpdated:FireClient(player, playerData)
+
     local playerLikes = playerLikesCache[likedPlayerId] or 0
     playerLikesCache[likedPlayerId] = playerLikes + 1
 

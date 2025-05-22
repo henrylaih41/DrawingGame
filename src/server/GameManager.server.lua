@@ -253,6 +253,7 @@ local function runGradingPhase(player: Player, currentTheme: ThemeStore.Theme)
 
             local playerData = PlayerStore:getPlayer(tostring(player.UserId))
             playerData.TotalPlayCount = playerData.TotalPlayCount + 1
+            PlayerStore:savePlayer(tostring(player.UserId), playerData, false)
 
             local compressedImageData = nil
             result, errorMessage, compressedImageData = BackendService:submitDrawingToBackendForGrading(player, imageData, currentTheme)

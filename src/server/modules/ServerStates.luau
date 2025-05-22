@@ -1,9 +1,6 @@
 local ServerStates = {}
 
 -- Constants
-ServerStates.MAX_PLAYERS = 1
-ServerStates.COUNTDOWN_TIME = 1
-ServerStates.VOTING_TIME = 30 -- 30 seconds for voting
 
 -- Variables shared between server scripts
 ServerStates.CanvasState = {}
