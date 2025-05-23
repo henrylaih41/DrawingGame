@@ -50,8 +50,13 @@ local function teleportPlayerToCanvas(player, canvasModel)
 end
 
 local function initialize()
+    local displayCanvasList = CollectionService:GetTagged("DisplayCanvas")
     -- existing canvases
     for _, c in pairs(CollectionService:GetTagged("Canvas")) do
+        -- Skip the canvases that are used for display
+        if table.find(displayCanvasList, c) then
+            continue
+        end
         attachDrawingPrompts(c)
     end
 

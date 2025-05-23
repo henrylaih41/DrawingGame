@@ -114,8 +114,8 @@ end
 local RENDER_RADIUS        = GameConstants.RENDER_RADIUS
 local UNRENDER_RADIUS      = GameConstants.UNRENDER_RADIUS
 local RENDER_CHECK_INTERVAL = 1          -- scan canvases every N s
-local OPS_PER_STEP         = 2          -- max renders per Heartbeat
-local OPS_PER_SECOND       = 6          -- global cap (helps low-end GPUs)
+local OPS_PER_STEP         = 4          -- max renders per Heartbeat
+local OPS_PER_SECOND       = 10          -- global cap (helps low-end GPUs)
 --------------------------------------------------------------
 
 -- small utility --------------------------------------------------------------

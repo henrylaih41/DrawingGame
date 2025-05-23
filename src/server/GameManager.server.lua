@@ -119,8 +119,8 @@ local function handlePlayerJoined(player)
     task.spawn(function()
         task.wait(3)
         local topPlays = TopPlaysCacheService.fetch(tostring(player.UserId))
-        for i, c in pairs(CollectionService:GetTagged("Canvas")) do
-            local topPlay = topPlays[i % (#topPlays - 1)]
+        for i, c in pairs(CollectionService:GetTagged("DisplayCanvas")) do
+            local topPlay = topPlays[i % #topPlays + 1]
             if (topPlay == nil) then
                 continue
             end

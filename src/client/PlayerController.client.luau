@@ -20,3 +20,5 @@ Events.GameStateChanged.OnClientEvent:Connect(function(stateData)
     end
 end)
 
+LocalPlayer.CameraMaxZoomDistance = 20
+LocalPlayer.CameraMinZoomDistance = 5
