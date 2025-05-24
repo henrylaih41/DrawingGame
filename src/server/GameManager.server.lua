@@ -281,8 +281,6 @@ local function storeHighestScoringDrawing(player:Player, drawingData: PlayerBest
         -- Notify the client that a new best drawing for this theme has been saved
         Events.ReceiveNewBestDrawing:FireClient(player, {imageData = rawImageData, score = drawingData.score})
     end
-
-    -- TODO: Remove this
 end
 
 local function runGradingPhase(player: Player, currentTheme: ThemeStore.Theme)

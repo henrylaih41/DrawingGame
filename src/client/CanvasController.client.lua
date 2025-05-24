@@ -292,7 +292,6 @@ local function renderCanvasController()
             end
         end
 
-        warn(CommonHelper.getEditableImageMemoryUsage())
         task.wait(RENDER_CHECK_INTERVAL)
     end
 end
