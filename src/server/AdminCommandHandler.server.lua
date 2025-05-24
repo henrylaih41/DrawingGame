@@ -1,9 +1,9 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Events = ReplicatedStorage:WaitForChild("Events")
+local ServerScriptService = game:GetService("ServerScriptService")
+local ServerConfig = require(ServerScriptService.modules.ServerConfig)
 -- Define authorized admin UserIds
-local AdminUserIds = {
-    [8240890430] = true, -- your user id here
-}
+local AdminUserIds = ServerConfig.ADMIN_USER_IDS
 local function packValue(userId, playerName, points)
     -- Anything you want to keep for the row can live in here
     return {

@@ -5,6 +5,11 @@ local GameConfig = {
     THEME_LIST_LIMIT = 100,
     THEME_LIST_ROWS_PER_PAGE = 20,
     SELECTED_COLOR = Color3.fromRGB(128, 208, 255),
+
+    -- Client side configurable constants
+    TROPHY_SOUND_ID = "rbxassetid://111277558339395",
+    HIGH_SCORE_SOUND_ID = "rbxassetid://79723856625266",
+    DEBUG_INPUTUTILS = true,
 }
 
 return GameConfig
