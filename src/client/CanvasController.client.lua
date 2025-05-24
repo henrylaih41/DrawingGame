@@ -126,7 +126,6 @@ local function clearCanvas(canvas)
     ClientState.DrawingCanvas[canvas].imageData = nil
     ClientState.DrawingCanvas[canvas].playerId = nil
     ClientState.DrawingCanvas[canvas].canvasId = nil
-    ClientState.DrawingCanvas[canvas].guiInitialized = false
 end
 
 local function init()
@@ -233,8 +232,12 @@ RunService.Heartbeat:Connect(function()
         local job = table.remove(queue, 1)        -- pop first (FIFO)
         local data = ClientState.DrawingCanvas[job.canvas]
         if data then
-            if job.op == "render" and not data.rendered and data.imageData and data.guiInitialized then
-                CommonHelper.renderToCanvas(ClientState, job.canvas, data)
+            if job.op == "render" and not data.rendered and data.imageData then
+                if data.guiInitialized then
+                    CommonHelper.renderToCanvas(ClientState, job.canvas, data)
+                else
+                    enqueue(job.canvas, "render", job.dist)
+                end
             elseif job.op == "unrender" and data.rendered then
                 CommonHelper.unrenderCanvas(ClientState, job.canvas)
             end
