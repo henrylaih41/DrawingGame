@@ -32,6 +32,8 @@ function DisplayCanvasSelector.selectRandomDrawing(topScores, fetchTopPlays, use
             end
         end
     end
+
+    warn("SelectRandomDrawing: No drawing found")
     return nil
 end
 

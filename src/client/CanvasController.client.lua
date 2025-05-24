@@ -28,9 +28,9 @@ local function GetPixelsPerStud()
     if tier == "High" then
         return 50
     elseif tier == "Medium" then
-        return 35
+        return 40
     else
-        return 25
+        return 30
     end
 end
 

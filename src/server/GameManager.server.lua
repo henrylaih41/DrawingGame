@@ -94,6 +94,7 @@ end
 local function populateDisplayCanvases()
     -- Avoid re-populating if already done
     if next(ServerStates.DisplayCanvasDrawings) ~= nil then
+        warn("Display canvas drawings already populated")
         return
     end
 
@@ -126,12 +127,11 @@ local function populateDisplayCanvases()
     end
 
     -- Signal that the display canvas drawings are ready
-    ServerStates.DisplayCanvasDrawingsReadyEvent:Fire()
+    ServerStates.ServerDisplayImageReady = true
 end
 
 -- Player Management
 local function handlePlayerJoined(player)
-    warn(player.UserId)
     -- Update the player state.
     ServerStates.PlayerState[player] = {
         ownedCanvas = {},
@@ -159,12 +159,9 @@ local function handlePlayerJoined(player)
 
     -- Send cached display canvas drawings to the newly joined player.
     task.spawn(function()
-        local displayCanvasCount = #CollectionService:GetTagged("DisplayCanvas")
-        if #ServerStates.DisplayCanvasDrawings ~= displayCanvasCount then
-            ServerStates.DisplayCanvasDrawingsReadyEvent.Event:Wait()
+        while not ServerStates.ServerDisplayImageReady do
+            task.wait(ServerConfig.DISPLAY_CANVAS.POLL_INTERVAL_SECONDS)
         end
-
-        task.wait(ServerConfig.DISPLAY_CANVAS.JOIN_DELAY_SECONDS)
 
         for canvas, drawing in pairs(ServerStates.DisplayCanvasDrawings) do
             if canvas == nil then
@@ -515,7 +512,6 @@ local function attachSurfaceGui(canvasModel : Model,
     ----------------------------------------------------------------
     -- 0. Validate inputs
     ----------------------------------------------------------------
-    warn("attachSurfaceGui")
     local board = canvasModel.PrimaryPart
     if not board then
         error(("attachSurfaceGui: %q has no PrimaryPart"):format(canvasModel:GetFullName()))

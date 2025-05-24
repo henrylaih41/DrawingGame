@@ -12,9 +12,10 @@ ServerStates.PlayerIdToPlayerMap = {}
 -- This table holds the drawings shown on display canvases. Each canvas
 -- instance maps to data that is sent to clients when they join.
 ServerStates.DisplayCanvasDrawings = {}
--- Fired when DisplayCanvasDrawings has been populated during server start.
-ServerStates.DisplayCanvasDrawingsReadyEvent = Instance.new("BindableEvent")
 
+-- This is a flag that is set to true when the server has finished populating
+-- the display canvas drawings.
+ServerStates.ServerDisplayImageReady = false
 
 return ServerStates
 

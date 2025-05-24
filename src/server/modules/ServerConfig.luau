@@ -46,6 +46,7 @@ ServerConfig.DISPLAY_CANVAS = {
     MAX_RANDOM_ATTEMPTS = 5,
     JOIN_DELAY_SECONDS = 0,
     CHOOSE_FROM_TOP_N_PLAYERS = 20,
+    POLL_INTERVAL_SECONDS = 0.1,
 }
 
 return ServerConfig
