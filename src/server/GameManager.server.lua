@@ -11,7 +11,7 @@ local PlayerStore = require(ServerScriptService.modules.PlayerStore)
 local TopPlaysStore = require(ServerScriptService.modules.TopPlaysStore)
 local PlayerBestDrawingsStore = require(ServerScriptService.modules.PlayerBestDrawingsStore)
 local TopPlaysCacheService = require(ServerScriptService.modules.TopPlaysCacheService)
-local LiveLeaderBoard = require(ServerScriptService.LiveLeaderBoard)
+local LeaderboardService = require(ServerScriptService.modules.LeaderboardService)
 
 -- Modules
 local CanvasDraw = require(ReplicatedStorage.Modules.Canvas.CanvasDraw)
@@ -96,7 +96,7 @@ local function populateDisplayCanvases()
         return
     end
 
-    local topScores = LiveLeaderBoard.getCachedTopScores()
+    local topScores = LeaderboardService.getCachedTopScores()
     if not topScores or #topScores == 0 then
         warn("No top scores available to populate display canvases")
         return
