@@ -9,7 +9,7 @@ return function()
             local start = os.clock()
             local result = CanvasUtils.waitForCanvasInit(state, canvas, 0.1)
             expect(result).to.equal(nil)
-            expect(os.clock() - start).to.be.at.least(0.1)
+            expect((os.clock() - start) > 0.1)
             canvas:Destroy()
         end)
 
