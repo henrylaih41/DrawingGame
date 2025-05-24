@@ -50,6 +50,7 @@ createEvent("ShowConfirmationBox")
 createEvent("DeleteGalleryDrawing")
 createEvent("SaveToGallery")
 createEvent("LikeDrawing")
+createEvent("RequestDisplayCanvasDrawing")
 -- Set the parent of the Events folder
 Events.Parent = ReplicatedStorage
-print("Events setup complete") 
+print("Events setup complete")  

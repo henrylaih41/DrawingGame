@@ -158,23 +158,6 @@ local function handlePlayerJoined(player)
     Events.PlayerDataUpdated:FireClient(player, playerData)
 
     -- Send cached display canvas drawings to the newly joined player.
-    task.spawn(function()
-        while not ServerStates.ServerDisplayImageReady do
-            task.wait(ServerConfig.DISPLAY_CANVAS.POLL_INTERVAL_SECONDS)
-        end
-
-        task.wait(ServerConfig.DISPLAY_CANVAS.JOIN_DELAY_SECONDS)
-        for canvas, drawing in pairs(ServerStates.DisplayCanvasDrawings) do
-            if canvas == nil then
-                warn("Canvas is nil in handlePlayerJoined")
-                return
-            end
-            if drawing then
-                Events.DrawToCanvas:FireClient(player, drawing.imageData,
-                    {themeName = drawing.themeName, canvas = canvas, playerId = drawing.playerId, drawingId = drawing.drawingId})
-            end
-        end
-    end)
 end
 
 local function handlePlayerLeft(player: Player)
@@ -502,6 +485,37 @@ local function handleDeleteGalleryDrawing(player, uuid)
     sendTopPlaysToClient(player, tostring(player.UserId), topPlays)
 end
 
+local function handleDisplayCanvasDrawingRequest(player: Player, canvas: Instance)
+    if not CollectionService:HasTag(canvas, "DisplayCanvas") then
+        warn("Player " .. player.Name .. " requested drawing for non-DisplayCanvas")
+        return
+    end
+    
+    -- Check if we have drawing data for this canvas
+    local drawing = ServerStates.DisplayCanvasDrawings[canvas]
+
+    -- Add timeout mechanism
+    local maxWaitTime = ServerConfig.DISPLAY_CANVAS.MAX_WAIT_TIME -- Maximum wait time in seconds
+    local startTime = os.time()
+    
+    while drawing == nil do
+        drawing = ServerStates.DisplayCanvasDrawings[canvas]
+        -- Check if we've exceeded the timeout
+        if os.time() - startTime >= maxWaitTime then
+            warn("Timed out waiting for drawing for canvas requested by player " .. player.Name)
+            return
+        end
+        task.wait(1)
+    end
+
+    if drawing then
+        Events.DrawToCanvas:FireClient(player, drawing.imageData,
+            {themeName = drawing.themeName, canvas = canvas, playerId = drawing.playerId, drawingId = drawing.drawingId})
+    else
+        Events.DrawToCanvas:FireClient(player, nil, {canvas = canvas})
+    end
+end
+
 -- ServerScriptService/CanvasSurface.lua
 local function attachSurfaceGui(canvasModel : Model,
                                 pixelsPerStud : number,
@@ -620,6 +634,7 @@ local function init()
     Events.SaveToGallery.OnServerEvent:Connect(handleSaveToGallery)
     Events.TestEvent.OnServerEvent:Connect(function(player)
     end)
+    Events.RequestDisplayCanvasDrawing.OnServerEvent:Connect(handleDisplayCanvasDrawingRequest)
 end
 
 -- Start the module

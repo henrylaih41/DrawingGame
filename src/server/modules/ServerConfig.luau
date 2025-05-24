@@ -47,6 +47,7 @@ ServerConfig.DISPLAY_CANVAS = {
     JOIN_DELAY_SECONDS = 5,
     CHOOSE_FROM_TOP_N_PLAYERS = 20,
     POLL_INTERVAL_SECONDS = 0.1,
+    MAX_WAIT_TIME = 10,
 }
 
 ServerConfig.LIKES = {
