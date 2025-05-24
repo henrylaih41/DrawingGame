@@ -55,7 +55,8 @@ local function initCanvas(instance)
         rendered = false,
         editableImage = nil,
         playerId = nil,
-        canvasId = nil
+        canvasId = nil,
+        guiInitialized = false
     }
     
     -- Wait for the like button with a configurable timeout
@@ -115,6 +116,8 @@ local function initCanvas(instance)
             local pxW = math.clamp(math.floor(widthStuds * pixelsPerStud), 32, 2048)
             local pxH = math.clamp(math.floor(heightStuds * pixelsPerStud), 32, 2048)
             gui.CanvasSize = Vector2.new(pxW, pxH)
+            
+            ClientState.DrawingCanvas[instance].guiInitialized = true
         end
     end)
 end
@@ -123,6 +126,7 @@ local function clearCanvas(canvas)
     ClientState.DrawingCanvas[canvas].imageData = nil
     ClientState.DrawingCanvas[canvas].playerId = nil
     ClientState.DrawingCanvas[canvas].canvasId = nil
+    ClientState.DrawingCanvas[canvas].guiInitialized = false
 end
 
 local function init()
@@ -229,7 +233,7 @@ RunService.Heartbeat:Connect(function()
         local job = table.remove(queue, 1)        -- pop first (FIFO)
         local data = ClientState.DrawingCanvas[job.canvas]
         if data then
-            if job.op == "render"   and not data.rendered and data.imageData then
+            if job.op == "render" and not data.rendered and data.imageData and data.guiInitialized then
                 CommonHelper.renderToCanvas(ClientState, job.canvas, data)
             elseif job.op == "unrender" and data.rendered then
                 CommonHelper.unrenderCanvas(ClientState, job.canvas)
