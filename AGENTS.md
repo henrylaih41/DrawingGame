@@ -3,6 +3,7 @@
 ## Coding guidelines
 1. Do not hardcode any constant, alway make them configurable
 2. When writing Roblox server or client scripts, keep in mind of the possibile initialization delay. Also use WaitForChild if possible, never assume anything to always exists, follow general good Roblox development practice.
+3. For the error handling code path, use warn to log the error or if something we wait for is not available.
 
 ## Testing Instructions
 For each PR, try to add unit test. 

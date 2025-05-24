@@ -1,5 +1,10 @@
 {
   "name": "CanvasDrawProject",
+  "globIgnorePaths": [
+    "src/server/tests",
+    "src/client/tests",
+    "**/*.spec.lua"
+  ],
   "tree": {
     "$className": "DataModel",
     "ReplicatedStorage": {
@@ -25,6 +30,10 @@
           "$className": "Folder",
           "$path": "src/modules/gameData"
         }
+      },
+      "DevPackages": {
+        "$className": "Folder",
+        "$path": "DevPackages"
       },
       "RemoteEvents": {
         "$className": "Folder"

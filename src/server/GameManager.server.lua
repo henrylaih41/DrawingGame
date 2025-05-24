@@ -15,6 +15,7 @@ local LeaderboardService = require(ServerScriptService.modules.LeaderboardServic
 
 -- Modules
 local CanvasDraw = require(ReplicatedStorage.Modules.Canvas.CanvasDraw)
+local DisplayCanvasSelector = require(ServerScriptService.modules.DisplayCanvasSelector)
 local BackendService = require(ServerScriptService.modules.BackendService)
 local ThemeStore = require(ServerScriptService.modules.ThemeStore)
 local ServerStates = require(ServerScriptService.modules.ServerStates)
@@ -102,30 +103,23 @@ local function populateDisplayCanvases()
         return
     end
 
+    local usedDrawingIds = {}
+
     for _, canvas in pairs(CollectionService:GetTagged("DisplayCanvas")) do
-        local drawing
-        for _ = 1, ServerConfig.DISPLAY_CANVAS.MAX_RANDOM_ATTEMPTS do
-            local entry = topScores[math.random(1, #topScores)]
-            if entry then
-                local uid = tostring(entry.key or entry.value.uid)
-                local topPlays = TopPlaysCacheService.fetch(uid)
-                if topPlays and #topPlays > 0 then
-                    local topPlay = topPlays[math.random(1, #topPlays)]
-                    drawing = {
-                        imageData = CanvasDraw.DecompressImageDataCustom(topPlay.imageData),
-                        themeName = topPlay.theme,
-                        playerId = topPlay.playerId,
-                        drawingId = topPlay.uuid,
-                    }
-                    break
-                end
-            end
+        local drawing = DisplayCanvasSelector.selectRandomDrawing(
+            topScores,
+            TopPlaysCacheService.fetch,
+            usedDrawingIds,
+            ServerConfig.DISPLAY_CANVAS.MAX_RANDOM_ATTEMPTS
+        )
+
+        if canvas == nil then
+            warn("Canvas is nil in populateDisplayCanvases")
+            return
         end
 
         if drawing then
             ServerStates.DisplayCanvasDrawings[canvas] = drawing
-            Events.DrawToCanvas:FireAllClients(drawing.imageData,
-                {themeName = drawing.themeName, canvas = canvas, playerId = drawing.playerId, drawingId = drawing.drawingId})
         else
             ServerStates.DisplayCanvasDrawings[canvas] = nil
         end
@@ -165,11 +159,18 @@ local function handlePlayerJoined(player)
 
     -- Send cached display canvas drawings to the newly joined player.
     task.spawn(function()
-        if next(ServerStates.DisplayCanvasDrawings) == nil then
+        local displayCanvasCount = #CollectionService:GetTagged("DisplayCanvas")
+        if #ServerStates.DisplayCanvasDrawings ~= displayCanvasCount then
             ServerStates.DisplayCanvasDrawingsReadyEvent.Event:Wait()
         end
+
         task.wait(ServerConfig.DISPLAY_CANVAS.JOIN_DELAY_SECONDS)
+
         for canvas, drawing in pairs(ServerStates.DisplayCanvasDrawings) do
+            if canvas == nil then
+                warn("Canvas is nil in handlePlayerJoined")
+                return
+            end
             if drawing then
                 Events.DrawToCanvas:FireClient(player, drawing.imageData,
                     {themeName = drawing.themeName, canvas = canvas, playerId = drawing.playerId, drawingId = drawing.drawingId})
@@ -320,6 +321,11 @@ local function runGradingPhase(player: Player, currentTheme: ThemeStore.Theme)
                 } 
                 
                 storeHighestScoringDrawing(player, drawingData)
+
+                if playerState.canvas == nil then
+                    warn("Canvas is nil in runGradingPhase")
+                    return
+                end
 
                 -- TODO, once the grading is done, we check if the image is appropriate to be displayed.
                 Events.DrawToCanvas:FireAllClients(imageData, 

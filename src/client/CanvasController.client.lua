@@ -7,6 +7,7 @@ local Events = ReplicatedStorage:WaitForChild("Events")
 local CommonHelper = require(ReplicatedStorage.Modules.Utils.CommonHelper)
 local CollectionService = game:GetService("CollectionService")
 local NotificationService = require(ReplicatedStorage.Modules.Utils.NotificationService)
+local CanvasUtils = require(ReplicatedStorage.Modules.Utils.CanvasUtils)
 local stopRendering = false
 local initialized = false
 
@@ -27,9 +28,9 @@ local function GetPixelsPerStud()
     if tier == "High" then
         return 50
     elseif tier == "Medium" then
-        return 30
+        return 35
     else
-        return 15
+        return 25
     end
 end
 
@@ -116,8 +117,9 @@ local function initCanvas(instance)
             local pxW = math.clamp(math.floor(widthStuds * pixelsPerStud), 32, 2048)
             local pxH = math.clamp(math.floor(heightStuds * pixelsPerStud), 32, 2048)
             gui.CanvasSize = Vector2.new(pxW, pxH)
-            
             ClientState.DrawingCanvas[instance].guiInitialized = true
+        else
+            warn("Failed to adjust SurfaceGui resolution for canvas")
         end
     end)
 end
@@ -147,8 +149,20 @@ local function init()
         metadata: {themeName: string, canvas: Instance, playerId: string, drawingId: string})
         local canvas = metadata.canvas
 
+        if (canvas == nil) then
+            warn("Canvas is nil for event", metadata)
+            return
+        end
+
+        -- Wait for the canvas to be registered in ClientState
+        local canvasData = CanvasUtils.waitForCanvasInit(ClientState, canvas)
+        if not canvasData then
+            warn("Canvas failed to initialize for event", canvas)
+            return
+        end
+
         -- Every time a new drawing is drawn, we reset the like button color.
-        local likeButton = ClientState.DrawingCanvas[canvas].likeButton
+        local likeButton = canvasData.likeButton
 
         if likeButton then
             likeButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -157,9 +171,9 @@ local function init()
         CommonHelper.unrenderCanvas(ClientState, canvas)
         -- Set the image data for the canvas.
         if imageData then
-            ClientState.DrawingCanvas[canvas].imageData = imageData
-            ClientState.DrawingCanvas[canvas].playerId = metadata.playerId
-            ClientState.DrawingCanvas[canvas].canvasId = metadata.drawingId
+            canvasData.imageData = imageData
+            canvasData.playerId = metadata.playerId
+            canvasData.canvasId = metadata.drawingId
         else
             clearCanvas(canvas)
         end
