@@ -22,7 +22,8 @@ local CanvasManager = require(ServerScriptService.modules.CanvasManager)
 -- Remote events
 local Events = ReplicatedStorage:WaitForChild("Events")
 
-local DEBUG_ENABLED = true
+local ServerConfig = require(ServerScriptService.modules.ServerConfig)
+local DEBUG_ENABLED = ServerConfig.DEBUG_ENABLED
 
 local function getDifficultyMultiplier(difficulty: string)
     if difficulty == "Easy" then

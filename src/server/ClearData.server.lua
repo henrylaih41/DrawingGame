@@ -6,9 +6,11 @@ local HASH_MAPS   = {}
 -- INTERNAL CONSTANTS
 -------------------------------------------------------------------
 local MS             = game:GetService("MemoryStoreService")
-local BATCH_SIZE     = 100            -- max items to fetch per call
-local YIELD_SECONDS  = 0.10           -- small pause between batches
-local MAX_RETRIES    = 5              -- retry on transient InternalError
+local ServerScriptService = game:GetService("ServerScriptService")
+local ServerConfig = require(ServerScriptService.modules.ServerConfig)
+local BATCH_SIZE     = ServerConfig.CLEAR_DATA.BATCH_SIZE            -- max items to fetch per call
+local YIELD_SECONDS  = ServerConfig.CLEAR_DATA.YIELD_SECONDS           -- small pause between batches
+local MAX_RETRIES    = ServerConfig.CLEAR_DATA.MAX_RETRIES              -- retry on transient InternalError
 
 -------------------------------------------------------------------
 -- HELPER: safe MemoryStore call with exponential back-off
