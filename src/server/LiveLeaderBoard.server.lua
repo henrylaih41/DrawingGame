@@ -25,6 +25,14 @@ local LB = {}          -- module to return
 local cachedTopScores = nil
 
 LB.MAX_ROWS = MAX_ROWS
+--- Returns the cached list of top scores. The cache will be populated from the
+--  MemoryStore on first request.
+function LB.getCachedTopScores()
+    if cachedTopScores == nil then
+        cachedTopScores = TopMap:GetRangeAsync(Enum.SortDirection.Descending, MAX_ROWS)
+    end
+    return cachedTopScores
+end
 --------------------------------------------------------------------
 -- INTERNAL UTILITIES
 --------------------------------------------------------------------
