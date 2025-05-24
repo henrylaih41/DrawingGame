@@ -11,6 +11,7 @@ local PlayerStore = require(ServerScriptService.modules.PlayerStore)
 local TopPlaysStore = require(ServerScriptService.modules.TopPlaysStore)
 local PlayerBestDrawingsStore = require(ServerScriptService.modules.PlayerBestDrawingsStore)
 local TopPlaysCacheService = require(ServerScriptService.modules.TopPlaysCacheService)
+local LiveLeaderBoard = require(ServerScriptService.LiveLeaderBoard)
 
 -- Modules
 local CanvasDraw = require(ReplicatedStorage.Modules.Canvas.CanvasDraw)
@@ -88,6 +89,52 @@ local function sendLoginMessage(player: Player, playerData: PlayerStore.PlayerDa
     Events.ShowNotification:FireClient(player, message, "green", delayTime)
 end
 
+-- Selects random drawings from the top players to populate display canvases.
+local function populateDisplayCanvases()
+    -- Avoid re-populating if already done
+    if next(ServerStates.DisplayCanvasDrawings) ~= nil then
+        return
+    end
+
+    local topScores = LiveLeaderBoard.getCachedTopScores()
+    if not topScores or #topScores == 0 then
+        warn("No top scores available to populate display canvases")
+        return
+    end
+
+    for _, canvas in pairs(CollectionService:GetTagged("DisplayCanvas")) do
+        local drawing
+        for _ = 1, ServerConfig.DISPLAY_CANVAS.MAX_RANDOM_ATTEMPTS do
+            local entry = topScores[math.random(1, #topScores)]
+            if entry then
+                local uid = tostring(entry.key or entry.value.uid)
+                local topPlays = TopPlaysCacheService.fetch(uid)
+                if topPlays and #topPlays > 0 then
+                    local topPlay = topPlays[math.random(1, #topPlays)]
+                    drawing = {
+                        imageData = CanvasDraw.DecompressImageDataCustom(topPlay.imageData),
+                        themeName = topPlay.theme,
+                        playerId = topPlay.playerId,
+                        drawingId = topPlay.uuid,
+                    }
+                    break
+                end
+            end
+        end
+
+        if drawing then
+            ServerStates.DisplayCanvasDrawings[canvas] = drawing
+            Events.DrawToCanvas:FireAllClients(drawing.imageData,
+                {themeName = drawing.themeName, canvas = canvas, playerId = drawing.playerId, drawingId = drawing.drawingId})
+        else
+            ServerStates.DisplayCanvasDrawings[canvas] = nil
+        end
+    end
+
+    -- Signal that the display canvas drawings are ready
+    ServerStates.DisplayCanvasDrawingsReadyEvent:Fire()
+end
+
 -- Player Management
 local function handlePlayerJoined(player)
     warn(player.UserId)
@@ -116,19 +163,17 @@ local function handlePlayerJoined(player)
     -- Tell the new player the current player data
     Events.PlayerDataUpdated:FireClient(player, playerData)
 
-    -- TODO: This is just for testing purpose. In prod, we should use drawings in player's gallery.
+    -- Send cached display canvas drawings to the newly joined player.
     task.spawn(function()
-        task.wait(3)
-        local topPlays = TopPlaysCacheService.fetch(tostring(player.UserId))
-        for i, c in pairs(CollectionService:GetTagged("DisplayCanvas")) do
-            local topPlay = topPlays[i % #topPlays + 1]
-            if (topPlay == nil) then
-                continue
+        if next(ServerStates.DisplayCanvasDrawings) == nil then
+            ServerStates.DisplayCanvasDrawingsReadyEvent.Event:Wait()
+        end
+        task.wait(ServerConfig.DISPLAY_CANVAS.JOIN_DELAY_SECONDS)
+        for canvas, drawing in pairs(ServerStates.DisplayCanvasDrawings) do
+            if drawing then
+                Events.DrawToCanvas:FireClient(player, drawing.imageData,
+                    {themeName = drawing.themeName, canvas = canvas, playerId = drawing.playerId, drawingId = drawing.drawingId})
             end
-            local theme = topPlay.theme
-            local imageData = CanvasDraw.DecompressImageDataCustom(topPlay.imageData)
-            Events.DrawToCanvas:FireAllClients(imageData, 
-            {themeName = theme, canvas = c, playerId = topPlay.playerId, drawingId = topPlay.uuid})
         end
     end)
 end
@@ -552,10 +597,14 @@ local function init()
         if faceAttr then
             local faceEnum = Enum.NormalId[faceAttr] 
             attachSurfaceGui(c, 50, 2048, faceEnum)
+
         else
             attachSurfaceGui(c, 50, 2048)
         end
     end
+
+    -- Populate the display canvases once using top player drawings.
+    task.spawn(populateDisplayCanvases)
 
     -- Connect event handlers
     Players.PlayerAdded:Connect(handlePlayerJoined)

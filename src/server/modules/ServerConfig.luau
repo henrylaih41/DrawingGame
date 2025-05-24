@@ -41,4 +41,10 @@ ServerConfig.PROMPT = {
     TELEPORT_HEIGHT = 0,
 }
 
+-- Display canvas settings
+ServerConfig.DISPLAY_CANVAS = {
+    MAX_RANDOM_ATTEMPTS = 5,
+    JOIN_DELAY_SECONDS = 3,
+}
+
 return ServerConfig
