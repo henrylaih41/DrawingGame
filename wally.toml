@@ -1,0 +1,11 @@
+[package]                    # metadata about *this* package
+name = "user/drawing-game"
+version = "0.1.0"
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "dev"
+
+
+[dependencies]               # runtime deps
+
+[dev-dependencies]           # **only** installed with `wally install --dev`
+TestEZ       = "roblox/testez@>=0.4"

@@ -28,9 +28,9 @@ local function GetPixelsPerStud()
     if tier == "High" then
         return 50
     elseif tier == "Medium" then
-        return 30
+        return 35
     else
-        return 15
+        return 25
     end
 end
 
@@ -150,7 +150,7 @@ local function init()
         -- Wait for the canvas to be registered in ClientState
         local canvasData = CanvasUtils.waitForCanvasInit(ClientState, canvas)
         if not canvasData then
-            warn("Canvas failed to initialize for event", canvas:GetFullName())
+            warn("Canvas failed to initialize for event", canvas)
             return
         end
 

@@ -26,6 +26,10 @@
           "$path": "src/modules/gameData"
         }
       },
+      "DevPackages": {
+        "$className": "Folder",
+        "$path": "DevPackages"
+      },
       "RemoteEvents": {
         "$className": "Folder"
       }
