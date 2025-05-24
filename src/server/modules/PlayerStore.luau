@@ -9,7 +9,6 @@ local MemoryStoreService   = game:GetService("MemoryStoreService")
 local CacheMap             = MemoryStoreService:GetSortedMap("PlayerDataCache") --:contentReference[oaicite:2]{index=2}
 
 local defaultMaximumGallerySize = ServerConfig.DEFAULT_MAXIMUM_GALLERY_SIZE
--- TODO: Set this to production value.
 local defaultDrawingTTLAfterPlayerLeft = ServerConfig.DEFAULT_DRAWING_TTL_AFTER_PLAYER_LEFT
 local defaultMaximumEnergy = ServerConfig.DEFAULT_MAXIMUM_ENERGY
 local defaultMaximumLikeQuota = ServerConfig.DEFAULT_MAXIMUM_LIKE_QUOTA

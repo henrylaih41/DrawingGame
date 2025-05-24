@@ -3,9 +3,9 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local ServerStates = require(ServerScriptService.modules.ServerStates)
 local PlayerStore = require(ServerScriptService.modules.PlayerStore)
 local Events = ReplicatedStorage:WaitForChild("Events")
+local ServerConfig = require(ServerScriptService.modules.ServerConfig)
 
--- TODO: Make this configurable in a central server-side config file.
-local FLUSH_INTERVAL = 1
+local FLUSH_INTERVAL = ServerConfig.LIKES.FLUSH_INTERVAL
 
 -- We store the likes to this cache and flush it to the database every x seconds.
 local playerLikesCache = {}

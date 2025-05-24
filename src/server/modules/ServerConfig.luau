@@ -49,4 +49,8 @@ ServerConfig.DISPLAY_CANVAS = {
     POLL_INTERVAL_SECONDS = 0.1,
 }
 
+ServerConfig.LIKES = {
+    FLUSH_INTERVAL = 1,
+}
+
 return ServerConfig
