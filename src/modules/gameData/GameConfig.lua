@@ -10,6 +10,8 @@ local GameConfig = {
     TROPHY_SOUND_ID = "rbxassetid://111277558339395",
     HIGH_SCORE_SOUND_ID = "rbxassetid://79723856625266",
     DEBUG_INPUTUTILS = true,
+    -- Timeouts
+    CANVAS_INIT_TIMEOUT = 5,
 }
 
 return GameConfig
