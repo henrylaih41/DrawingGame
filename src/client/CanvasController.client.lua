@@ -21,6 +21,22 @@ local function GetDeviceTier()
     end
 end
 
+-- TODO: Refactor this to a common module.
+local function waitForChildWhichIsA(parent, className, recursive, timeout)
+    timeout = timeout or 10
+    local startTime = tick()
+    
+    while tick() - startTime < timeout do
+        local found = parent:FindFirstChildWhichIsA(className, recursive)
+        if found then
+            return found
+        end
+        task.wait(0.1)
+    end
+    
+    return nil
+end
+
 local function initCanvas(instance)
     ClientState.DrawingCanvas[instance] = {
         imageData = nil,
@@ -29,35 +45,35 @@ local function initCanvas(instance)
         playerId = nil,
         canvasId = nil
     }
-
-    local likeButton = instance:FindFirstChildWhichIsA("ImageButton", true)
+    
+    -- Wait for the like button with a 5 second timeout
+    local likeButton = waitForChildWhichIsA(instance, "ImageButton", true, 5)
     ClientState.DrawingCanvas[instance].likeButton = likeButton
-
-    if likeButton then
+    
+    if not likeButton then
+        warn("Like button failed to load for canvas:", instance:GetFullName())
+        return
+    else 
         likeButton.Activated:Connect(function()
-            -- Check if the drawing is empty.
-            if ClientState.DrawingCanvas[instance].canvasId == nil or 
-               ClientState.DrawingCanvas[instance].playerId == nil then
+            local canvasData = ClientState.DrawingCanvas[instance]
+            
+            -- Check if the drawing is empty
+            if not canvasData.canvasId or not canvasData.playerId then
                 NotificationService:ShowNotification("You cannot like an empty drawing.", "red")
                 return
             end
-
-            -- Check if the drawing is already liked.
-            if table.find(ClientState.likedDrawings, 
-                ClientState.DrawingCanvas[instance].canvasId) then
+            
+            -- Check if the drawing is already liked
+            if table.find(ClientState.likedDrawings, canvasData.canvasId) then
                 NotificationService:ShowNotification("You already liked this drawing.", "red")
                 return
             end
-
-            -- Add the drawing to the liked drawings.
-            table.insert(ClientState.likedDrawings, 
-                ClientState.DrawingCanvas[instance].canvasId)
-
-            Events.LikeDrawing:FireServer(
-                ClientState.DrawingCanvas[instance].playerId,
-                ClientState.DrawingCanvas[instance].canvasId)
-
-            -- Update the like button color.
+            
+            -- Add the drawing to the liked drawings
+            table.insert(ClientState.likedDrawings, canvasData.canvasId)
+            Events.LikeDrawing:FireServer(canvasData.playerId, canvasData.canvasId)
+            
+            -- Update the like button color
             likeButton.BackgroundColor3 = Color3.fromRGB(100, 161, 231)
         end)
     end
