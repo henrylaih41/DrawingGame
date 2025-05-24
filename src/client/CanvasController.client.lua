@@ -6,6 +6,7 @@ local Events = ReplicatedStorage:WaitForChild("Events")
 local CommonHelper = require(ReplicatedStorage.Modules.Utils.CommonHelper)
 local CollectionService = game:GetService("CollectionService")
 local NotificationService = require(ReplicatedStorage.Modules.Utils.NotificationService)
+local CanvasUtils = require(ReplicatedStorage.Modules.Utils.CanvasUtils)
 local stopRendering = false
 local initialized = false
 
@@ -104,8 +105,15 @@ local function init()
         metadata: {themeName: string, canvas: Instance, playerId: string, drawingId: string})
         local canvas = metadata.canvas
 
+        -- Wait for the canvas to be registered in ClientState
+        local canvasData = CanvasUtils.waitForCanvasInit(ClientState, canvas)
+        if not canvasData then
+            warn("Canvas failed to initialize for event", canvas:GetFullName())
+            return
+        end
+
         -- Every time a new drawing is drawn, we reset the like button color.
-        local likeButton = ClientState.DrawingCanvas[canvas].likeButton
+        local likeButton = canvasData.likeButton
 
         if likeButton then
             likeButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -114,9 +122,9 @@ local function init()
         CommonHelper.unrenderCanvas(ClientState, canvas)
         -- Set the image data for the canvas.
         if imageData then
-            ClientState.DrawingCanvas[canvas].imageData = imageData
-            ClientState.DrawingCanvas[canvas].playerId = metadata.playerId
-            ClientState.DrawingCanvas[canvas].canvasId = metadata.drawingId
+            canvasData.imageData = imageData
+            canvasData.playerId = metadata.playerId
+            canvasData.canvasId = metadata.drawingId
         else
             clearCanvas(canvas)
         end
