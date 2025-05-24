@@ -163,6 +163,7 @@ local function handlePlayerJoined(player)
             task.wait(ServerConfig.DISPLAY_CANVAS.POLL_INTERVAL_SECONDS)
         end
 
+        task.wait(ServerConfig.DISPLAY_CANVAS.JOIN_DELAY_SECONDS)
         for canvas, drawing in pairs(ServerStates.DisplayCanvasDrawings) do
             if canvas == nil then
                 warn("Canvas is nil in handlePlayerJoined")
