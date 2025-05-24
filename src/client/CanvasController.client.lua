@@ -147,6 +147,11 @@ local function init()
         metadata: {themeName: string, canvas: Instance, playerId: string, drawingId: string})
         local canvas = metadata.canvas
 
+        if (canvas == nil) then
+            warn("Canvas is nil for event", metadata)
+            return
+        end
+
         -- Wait for the canvas to be registered in ClientState
         local canvasData = CanvasUtils.waitForCanvasInit(ClientState, canvas)
         if not canvasData then

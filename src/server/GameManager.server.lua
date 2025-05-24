@@ -113,10 +113,13 @@ local function populateDisplayCanvases()
             ServerConfig.DISPLAY_CANVAS.MAX_RANDOM_ATTEMPTS
         )
 
+        if canvas == nil then
+            warn("Canvas is nil in populateDisplayCanvases")
+            return
+        end
+
         if drawing then
             ServerStates.DisplayCanvasDrawings[canvas] = drawing
-            Events.DrawToCanvas:FireAllClients(drawing.imageData,
-                {themeName = drawing.themeName, canvas = canvas, playerId = drawing.playerId, drawingId = drawing.drawingId})
         else
             ServerStates.DisplayCanvasDrawings[canvas] = nil
         end
@@ -156,11 +159,18 @@ local function handlePlayerJoined(player)
 
     -- Send cached display canvas drawings to the newly joined player.
     task.spawn(function()
-        if next(ServerStates.DisplayCanvasDrawings) == nil then
+        local displayCanvasCount = #CollectionService:GetTagged("DisplayCanvas")
+        if #ServerStates.DisplayCanvasDrawings ~= displayCanvasCount then
             ServerStates.DisplayCanvasDrawingsReadyEvent.Event:Wait()
         end
+
         task.wait(ServerConfig.DISPLAY_CANVAS.JOIN_DELAY_SECONDS)
+
         for canvas, drawing in pairs(ServerStates.DisplayCanvasDrawings) do
+            if canvas == nil then
+                warn("Canvas is nil in handlePlayerJoined")
+                return
+            end
             if drawing then
                 Events.DrawToCanvas:FireClient(player, drawing.imageData,
                     {themeName = drawing.themeName, canvas = canvas, playerId = drawing.playerId, drawingId = drawing.drawingId})
@@ -311,6 +321,11 @@ local function runGradingPhase(player: Player, currentTheme: ThemeStore.Theme)
                 } 
                 
                 storeHighestScoringDrawing(player, drawingData)
+
+                if playerState.canvas == nil then
+                    warn("Canvas is nil in runGradingPhase")
+                    return
+                end
 
                 -- TODO, once the grading is done, we check if the image is appropriate to be displayed.
                 Events.DrawToCanvas:FireAllClients(imageData, 

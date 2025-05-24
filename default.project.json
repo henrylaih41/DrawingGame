@@ -1,5 +1,10 @@
 {
   "name": "CanvasDrawProject",
+  "globIgnorePaths": [
+    "src/server/tests",
+    "src/client/tests",
+    "**/*.spec.lua"
+  ],
   "tree": {
     "$className": "DataModel",
     "ReplicatedStorage": {

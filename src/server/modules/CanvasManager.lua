@@ -10,6 +10,11 @@ local CanvasManager = {}
 
 -- Resets a canvas to its default state and makes it available for registration
 function CanvasManager.resetCanvas(canvas)
+    if canvas == nil then
+        warn("Canvas is nil in resetCanvas")
+        return
+    end
+
     print("Resetting canvas")
     -- Unregister the canvas.
     ServerStates.CanvasState[canvas].registered = false
