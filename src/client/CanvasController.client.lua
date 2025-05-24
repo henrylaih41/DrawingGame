@@ -1,5 +1,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GameConstants = require(ReplicatedStorage.Modules.GameData.GameConstants)
+local GameConfig   = require(ReplicatedStorage.Modules.GameData.GameConfig)
 local LocalPlayer = game:GetService("Players").LocalPlayer
 local ClientState = require(LocalPlayer:WaitForChild("PlayerScripts"):WaitForChild("ClientState"))
 local Events = ReplicatedStorage:WaitForChild("Events")
@@ -19,6 +20,17 @@ local function GetDeviceTier()
         return "Medium"
     else
         return "Low"
+    end
+end
+
+local function GetPixelsPerStud()
+    local tier = GetDeviceTier()
+    if tier == "High" then
+        return 50
+    elseif tier == "Medium" then
+        return 30
+    else
+        return 15
     end
 end
 
@@ -47,14 +59,14 @@ local function initCanvas(instance)
         canvasId = nil
     }
     
-    -- Wait for the like button with a 5 second timeout
-    local likeButton = waitForChildWhichIsA(instance, "ImageButton", true, 5)
+    -- Wait for the like button with a configurable timeout
+    local likeButton = waitForChildWhichIsA(instance, "ImageButton", true, GameConfig.CANVAS_INIT_TIMEOUT)
     ClientState.DrawingCanvas[instance].likeButton = likeButton
-    
+
     if not likeButton then
         warn("Like button failed to load for canvas:", instance:GetFullName())
         return
-    else 
+    else
         likeButton.Activated:Connect(function()
             local canvasData = ClientState.DrawingCanvas[instance]
             
@@ -78,6 +90,34 @@ local function initCanvas(instance)
             likeButton.BackgroundColor3 = Color3.fromRGB(100, 161, 231)
         end)
     end
+
+    -- Adjust the SurfaceGui's resolution based on device capability
+    task.spawn(function()
+        local board = instance.PrimaryPart
+        if not board then
+            return
+        end
+        local gui = board:WaitForChild("CanvasGui", GameConfig.CANVAS_INIT_TIMEOUT)
+        if gui then
+            local pixelsPerStud = GetPixelsPerStud()
+            gui.PixelsPerStud = pixelsPerStud
+
+            local size = board.Size
+            local widthStuds, heightStuds
+            local face = gui.Face
+            if face == Enum.NormalId.Front or face == Enum.NormalId.Back then
+                widthStuds, heightStuds = size.X, size.Y
+            elseif face == Enum.NormalId.Left or face == Enum.NormalId.Right then
+                widthStuds, heightStuds = size.Z, size.Y
+            else
+                widthStuds, heightStuds = size.X, size.Z
+            end
+
+            local pxW = math.clamp(math.floor(widthStuds * pixelsPerStud), 32, 2048)
+            local pxH = math.clamp(math.floor(heightStuds * pixelsPerStud), 32, 2048)
+            gui.CanvasSize = Vector2.new(pxW, pxH)
+        end
+    end)
 end
 
 local function clearCanvas(canvas)
