@@ -5,10 +5,11 @@
 local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
+local ServerConfig = require(ServerScriptService.modules.ServerConfig)
 local CanvasDraw = require(ReplicatedStorage.Modules.Canvas.CanvasDraw)
 local SchemaValidator = require(ServerScriptService.modules.SchemaValidator)
 local BackendService = {}
-local DEBUG_ENABLED = true
+local DEBUG_ENABLED = ServerConfig.DEBUG_ENABLED
 
 -- Debug print function that only outputs when debugging is enabled
 local function debugPrint(message, ...)
@@ -18,11 +19,10 @@ local function debugPrint(message, ...)
 end
 
 -- Configuration
-BackendService.BaseUrl = "https://drawing-backend.vercel.app"
--- BackendService.BaseUrl = "http://localhost:3000"
+BackendService.BaseUrl = ServerConfig.BACKEND_BASE_URL
 BackendService.Endpoints = {
-    OPENAI = "/api/openai",
-    FEEDBACK = "/api/feedback"
+    OPENAI = ServerConfig.OPENAI_ENDPOINT,
+    FEEDBACK = ServerConfig.FEEDBACK_ENDPOINT,
 }
 
 -- Default options for requests

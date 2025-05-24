@@ -2,17 +2,18 @@ local DataStoreService = game:GetService("DataStoreService")
 local ServerScriptService = game:GetService("ServerScriptService")
 local DataStoreHelper = require(ServerScriptService.modules.DataStoreHelper)
 local SchemaValidator = require(ServerScriptService.modules.SchemaValidator)
+local ServerConfig = require(ServerScriptService.modules.ServerConfig)
 local PlayerStore = {}
 local PlayersDataStore = DataStoreService:GetDataStore("Players")
 local MemoryStoreService   = game:GetService("MemoryStoreService")
 local CacheMap             = MemoryStoreService:GetSortedMap("PlayerDataCache") --:contentReference[oaicite:2]{index=2}
 
-local defaultMaximumGallerySize = 3
+local defaultMaximumGallerySize = ServerConfig.DEFAULT_MAXIMUM_GALLERY_SIZE
 -- TODO: Set this to production value.
-local defaultDrawingTTLAfterPlayerLeft = 10
-local defaultMaximumEnergy = 3
-local defaultMaximumLikeQuota = 10
-local energyRefreshInterval = 60 -- 12 * 60 * 60 -- 12 hours
+local defaultDrawingTTLAfterPlayerLeft = ServerConfig.DEFAULT_DRAWING_TTL_AFTER_PLAYER_LEFT
+local defaultMaximumEnergy = ServerConfig.DEFAULT_MAXIMUM_ENERGY
+local defaultMaximumLikeQuota = ServerConfig.DEFAULT_MAXIMUM_LIKE_QUOTA
+local energyRefreshInterval = ServerConfig.ENERGY_REFRESH_INTERVAL -- 12 * 60 * 60 -- 12 hours
 
 -- Define schema for player data
 local playerDataSchema = SchemaValidator.createSchema({
@@ -43,10 +44,10 @@ export type PlayerData = {
 }
 
 -- tuning ----------------------------------------------------------------
-local CACHE_TTL_SECONDS    = 30*60          -- 30 min cache
-local LOCK_TTL_SECONDS     = 5              -- 5 s mutex
-local LOCK_RETRIES         = 5
-local LOCK_RETRY_DELAY     = 0.4
+local CACHE_TTL_SECONDS    = ServerConfig.CACHE_TTL_SECONDS          -- 30 min cache
+local LOCK_TTL_SECONDS     = ServerConfig.LOCK_TTL_SECONDS           -- 5 s mutex
+local LOCK_RETRIES         = ServerConfig.LOCK_RETRIES
+local LOCK_RETRY_DELAY     = ServerConfig.LOCK_RETRY_DELAY
 -------------------------------------------------------------------------
 
 -- helpers ---------------------------------------------------------------

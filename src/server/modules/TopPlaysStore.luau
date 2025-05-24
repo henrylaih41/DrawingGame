@@ -2,11 +2,12 @@ local DataStoreService = game:GetService("DataStoreService")
 local HttpService = game:GetService("HttpService")
 local ServerScriptService = game:GetService("ServerScriptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerConfig = require(ServerScriptService.modules.ServerConfig)
 local GameConfig = require(ReplicatedStorage.Modules.GameData.GameConfig)
 local DataStoreHelper = require(ServerScriptService.modules.DataStoreHelper)
 local PlayerBestDrawingsStore = require(ServerScriptService.modules.PlayerBestDrawingsStore)
 local TopPlaysDataStore = DataStoreService:GetDataStore("TopPlays")
-local DEBUG_ENABLED = true
+local DEBUG_ENABLED = ServerConfig.DEBUG_ENABLED
 
 -- Debug print function that only outputs when debugging is enabled
 local function debugPrint(message, ...)

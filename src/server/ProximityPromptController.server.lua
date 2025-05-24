@@ -1,6 +1,7 @@
 local CollectionService = game:GetService("CollectionService")
 local ServerScriptService = game:GetService("ServerScriptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerConfig = require(ServerScriptService.modules.ServerConfig)
 local ServerStates = require(ServerScriptService.modules.ServerStates)
 local GameConstants = require(ReplicatedStorage.Modules.GameData.GameConstants)
 local Events = ReplicatedStorage:WaitForChild("Events")
@@ -15,8 +16,8 @@ local function attachDrawingPrompts(canvasModel)
     local prompt = Instance.new("ProximityPrompt")
     prompt.Name = "RegisterCanvasPrompt"
     prompt.RequiresLineOfSight   = false
-    prompt.HoldDuration          = 0.5
-    prompt.MaxActivationDistance = 5 
+    prompt.HoldDuration          = ServerConfig.PROMPT.HOLD_DURATION
+    prompt.MaxActivationDistance = ServerConfig.PROMPT.MAX_ACTIVATION_DISTANCE
     prompt.ActionText            = "Claim"   -- we'll show our own SurfaceGui
     prompt.ObjectText            = "Canvas"
     prompt.Parent = board
@@ -24,8 +25,8 @@ local function attachDrawingPrompts(canvasModel)
     CollectionService:AddTag(prompt, "CanvasPrompt")
 end
 
-local TELEPORT_DISTANCE = 2   -- studs in front of the board
-local TELEPORT_HEIGHT   = 0    -- studs up
+local TELEPORT_DISTANCE = ServerConfig.PROMPT.TELEPORT_DISTANCE   -- studs in front of the board
+local TELEPORT_HEIGHT   = ServerConfig.PROMPT.TELEPORT_HEIGHT    -- studs up
 
 local function teleportPlayerToCanvas(player, canvasModel)
     local char = player.Character

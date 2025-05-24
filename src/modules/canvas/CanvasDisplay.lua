@@ -1,11 +1,12 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ImageDataConstructor = require(ReplicatedStorage.Modules.Canvas.ImageDataConstructor)
 local DebugUtils = require(ReplicatedStorage.Modules.Services.DebugUtils)
+local GameConfig = require(ReplicatedStorage.Modules.GameData.GameConfig)
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 
 local CanvasDisplay = {}
-local DebugFlag = false
+local DebugFlag = GameConfig.DEBUG_INPUTUTILS
 
 -- Debug logging function using DebugUtils
 --- Logs a message to the console if DebugFlag is enabled.
@@ -17,8 +18,8 @@ local function log(...)
 end
 
 -- Sound effect for trophy appearance
-local TROPHY_SOUND_ID = "rbxassetid://111277558339395"
-local HIGH_SCORE_SOUND_ID = "rbxassetid://79723856625266" -- Add a celebration sound for high scores
+local TROPHY_SOUND_ID = GameConfig.TROPHY_SOUND_ID
+local HIGH_SCORE_SOUND_ID = GameConfig.HIGH_SCORE_SOUND_ID -- Add a celebration sound for high scores
 local soundsFolder = ReplicatedStorage:FindFirstChild("Sounds")
 assert(soundsFolder ~= nil, "Sounds folder not found in ReplicatedStorage")
 

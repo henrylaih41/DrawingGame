@@ -1,9 +1,10 @@
 local UIS = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local DebugUtils  = require(ReplicatedStorage.Modules.Services.DebugUtils)
+local GameConfig = require(ReplicatedStorage.Modules.GameData.GameConfig)
 local InputUtils = {}
 
-local DebugFlag = true
+local DebugFlag = GameConfig.DEBUG_INPUTUTILS
 local function log(...)
     if DebugFlag then DebugUtils.print("DrawingCanvas:", ...) end
 end
