@@ -183,7 +183,7 @@ end
 initialize()
 
 -- Check for Admin
-if Players.LocalPlayer.UserId == 8240890430 then
+if Players.LocalPlayer.UserId == 8240890430 and false then
     local LoadTheme = TopLevelContainer:WaitForChild("LoadTheme")
     local UpdateLeaderBoard = TopLevelContainer:WaitForChild("UpdateLeaderBoard")
     local UpdateThemeSummaries = TopLevelContainer:WaitForChild("UpdateThemeSummaries")

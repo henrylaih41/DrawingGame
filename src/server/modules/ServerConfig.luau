@@ -10,10 +10,10 @@ ServerConfig.DEBUG_ENABLED = true
 
 -- Player defaults
 ServerConfig.DEFAULT_MAXIMUM_GALLERY_SIZE = 3
-ServerConfig.DEFAULT_DRAWING_TTL_AFTER_PLAYER_LEFT = 10
+ServerConfig.DEFAULT_DRAWING_TTL_AFTER_PLAYER_LEFT = 60 * 60 * 3 -- 3 hours
 ServerConfig.DEFAULT_MAXIMUM_ENERGY = 3
 ServerConfig.DEFAULT_MAXIMUM_LIKE_QUOTA = 10
-ServerConfig.ENERGY_REFRESH_INTERVAL = 60 -- seconds
+ServerConfig.ENERGY_REFRESH_INTERVAL = 60 * 60 * 12 -- seconds
 
 -- DataStore/MemoryStore tuning
 ServerConfig.CACHE_TTL_SECONDS = 30 * 60 -- 30 minutes
