@@ -115,6 +115,8 @@ local function initCanvas(instance)
             local pxW = math.clamp(math.floor(widthStuds * pixelsPerStud), 32, 2048)
             local pxH = math.clamp(math.floor(heightStuds * pixelsPerStud), 32, 2048)
             gui.CanvasSize = Vector2.new(pxW, pxH)
+        else
+            warn("Failed to adjust SurfaceGui resolution for canvas")
         end
     end)
 end

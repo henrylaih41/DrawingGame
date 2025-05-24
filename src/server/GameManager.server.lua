@@ -105,7 +105,7 @@ local function populateDisplayCanvases()
     for _, canvas in pairs(CollectionService:GetTagged("DisplayCanvas")) do
         local drawing
         for _ = 1, ServerConfig.DISPLAY_CANVAS.MAX_RANDOM_ATTEMPTS do
-            local entry = topScores[math.random(1, #topScores)]
+            local entry = topScores[math.random(1, ServerConfig.DISPLAY_CANVAS.CHOOSE_FROM_TOP_N_PLAYERS)]
             if entry then
                 local uid = tostring(entry.key or entry.value.uid)
                 local topPlays = TopPlaysCacheService.fetch(uid)
