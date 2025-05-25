@@ -17,7 +17,7 @@ ServerConfig.DEFAULT_MAXIMUM_LIKE_QUOTA = 10
 ServerConfig.ENERGY_REFRESH_INTERVAL = 60 * 60 * 12 -- seconds
 
 -- DataStore/MemoryStore tuning
-ServerConfig.CACHE_TTL_SECONDS = 5 * 60 -- 30 minutes
+ServerConfig.CACHE_TTL_SECONDS = 1 * 60 -- 1 minutes
 ServerConfig.LOCK_TTL_SECONDS = 5
 ServerConfig.LOCK_RETRIES = 5
 ServerConfig.LOCK_RETRY_DELAY = 0.4
