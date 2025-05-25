@@ -17,9 +17,9 @@ Events.RegisterCanvas.OnClientEvent:Connect(function(canvas)
 
     if frame:FindFirstChild("DrawPrompt") then return end
 
-    local drawPrompt = PromptUtils.createPrompt("DrawPrompt", "Draw", "Canvas", 0.5, 5, Enum.KeyCode.E)
+    local drawPrompt = PromptUtils.createPrompt("DrawPrompt", "Draw", "Canvas", 0.5, 8, Enum.KeyCode.E)
     drawPrompt.Parent = canvas:FindFirstChild("CanvasFrame")
-    local unregisterPrompt = PromptUtils.createPrompt("UnregisterCanvasPrompt", "Unclaim", "Canvas", 0.5, 5, Enum.KeyCode.U)
+    local unregisterPrompt = PromptUtils.createPrompt("UnregisterCanvasPrompt", "Unclaim", "Canvas", 0.5, 8, Enum.KeyCode.U)
     unregisterPrompt.UIOffset = Vector2.new(0, 80)
     unregisterPrompt.Parent = canvas:FindFirstChild("CanvasFrame")
 end)

@@ -23,6 +23,8 @@ local GalleryButton = Buttons:WaitForChild("GalleryButton")
 local UiToggleButton = Buttons:WaitForChild("UiToggleButton")
 local FeedbackCancelButton = FeedbackContainer:WaitForChild("CancelButton")
 local FeedbackSubmitButton = FeedbackContainer:WaitForChild("SubmitButton")
+local TutorialFrame = TopLevelContainer:WaitForChild("TutorialFrame")
+local TutorialCloseButton = TutorialFrame:WaitForChild("CloseButton")
 
 -- Add a variable to track last submission time
 local lastFeedbackSubmission = 0
@@ -134,6 +136,10 @@ local function onGameStateChanged(stateData)
     end
 end
 
+local function onTutorialCloseButtonClicked()
+    TutorialFrame.Visible = not TutorialFrame.Visible
+end
+
 -- Apply button effects and on click events
 table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(RankingButton, onRankingClicked))
 table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(FeedbackButton, onFeedbackClicked))
@@ -141,6 +147,7 @@ table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(FeedbackCancelBut
 table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(FeedbackSubmitButton, onFeedbackSubmitClicked))
 table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(GalleryButton, onGalleryClicked))
 table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(UiToggleButton, onUiToggleClicked))
+table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(TutorialCloseButton, onTutorialCloseButtonClicked))
 -- Need to get a better press image
 -- table.insert(cleanupFunctions, ButtonEffects.applyButtonPressEffect(SinglePlayerButton, "rbxassetid://140453037167378"))
 

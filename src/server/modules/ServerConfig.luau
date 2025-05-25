@@ -36,7 +36,7 @@ ServerConfig.ADMIN_USER_IDS = {
 -- Proximity prompt settings
 ServerConfig.PROMPT = {
     HOLD_DURATION = 0.5,
-    MAX_ACTIVATION_DISTANCE = 5,
+    MAX_ACTIVATION_DISTANCE = 8,
     TELEPORT_DISTANCE = 2,
     TELEPORT_HEIGHT = 0,
 }
