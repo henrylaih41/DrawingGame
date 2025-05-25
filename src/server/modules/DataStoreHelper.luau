@@ -51,7 +51,7 @@ function DataStoreHelper:_performDataStoreOperationWithRetry(dataStore, operatio
     local MAX_RETRIES = 5
     local success, result
     for attempt = 1, MAX_RETRIES do
-        self:printDataStoreQuota(operation)
+        -- Removed self:printDataStoreQuota(operation) to reduce logging overhead
         success, result = pcall(function()
             if operation == "GetAsync" then
                 return dataStore:GetAsync(key)
