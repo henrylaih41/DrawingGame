@@ -92,12 +92,6 @@ end
 
 -- Selects random drawings from the top players to populate display canvases.
 local function populateDisplayCanvases()
-    -- Avoid re-populating if already done
-    if next(ServerStates.DisplayCanvasDrawings) ~= nil then
-        warn("Display canvas drawings already populated")
-        return
-    end
-
     local topScores = LeaderboardService.getCachedTopScores()
     if not topScores or #topScores == 0 then
         warn("No top scores available to populate display canvases")
@@ -120,9 +114,9 @@ local function populateDisplayCanvases()
         end
 
         if drawing then
-            ServerStates.DisplayCanvasDrawings[canvas] = drawing
+            ServerStates.CanvasState[canvas].drawing = drawing
         else
-            ServerStates.DisplayCanvasDrawings[canvas] = nil
+            ServerStates.CanvasState[canvas].drawing = nil
         end
     end
 
@@ -135,7 +129,7 @@ local function handlePlayerJoined(player)
     -- Update the player state.
     ServerStates.PlayerState[player] = {
         ownedCanvas = {},
-        maximumOwnedCanvas = 1,
+        maximumOwnedCanvas = ServerConfig.DEFAULT_MAXIMUM_OWNED_CANVAS,
         state = GameConstants.PlayerStateEnum.IDLE,
         playerDrawings = nil,
         playerScores = nil,
@@ -164,13 +158,17 @@ local function handlePlayerLeft(player: Player)
     local playerData = PlayerStore:getPlayer(tostring(player.UserId))
     local ownedCanvasList = ServerStates.PlayerState[player].ownedCanvas
     local canvasTTL = playerData.drawingTTLAfterPlayerLeft
+
     -- Spawn a task that removes the player's canvas after the TTL.
-    task.spawn(function()
-        task.wait(canvasTTL)
-        for _, canvas in ipairs(ownedCanvasList) do
+    for _, canvas in ipairs(ownedCanvasList) do
+        task.spawn(function()
+            -- Only let the drawing live if there is drawing data.
+            if (ServerStates.CanvasState[canvas].drawing) then
+                task.wait(canvasTTL)
+            end 
             CanvasManager.resetCanvas(canvas)
-        end
-    end)
+        end)
+    end
 
     -- Remove player from active players list
     ServerStates.PlayerState[player] = nil
@@ -305,10 +303,21 @@ local function runGradingPhase(player: Player, currentTheme: ThemeStore.Theme)
                     warn("Canvas is nil in runGradingPhase")
                     return
                 end
-
+                
                 -- TODO, once the grading is done, we check if the image is appropriate to be displayed.
+
+                -- Save the player drawing data to the canvas state so we can display it to other players
+                -- that join the game later.
+                ServerStates.CanvasState[playerState.canvas].drawing = {
+                        imageData = imageData,
+                        themeName = drawingData.themeName,
+                        playerId = drawingData.playerId,
+                        drawingId = drawingData.uuid,
+                }
+
+            -- If the canvas is registered, we request the drawing data from the server.
                 Events.DrawToCanvas:FireAllClients(imageData, 
-                    {themeName = currentTheme.Name, canvas = playerState.canvas, 
+                    {themeName = drawingData.themeName, canvas = playerState.canvas, 
                      playerId = drawingData.playerId, drawingId = drawingData.uuid})
             else
                 warn("Grading failed")
@@ -486,27 +495,21 @@ local function handleDeleteGalleryDrawing(player, uuid)
 end
 
 local function handleDisplayCanvasDrawingRequest(player: Player, canvas: Instance)
-    if not CollectionService:HasTag(canvas, "DisplayCanvas") then
-        warn("Player " .. player.Name .. " requested drawing for non-DisplayCanvas")
-        return
-    end
-    
-    -- Check if we have drawing data for this canvas
-    local drawing = ServerStates.DisplayCanvasDrawings[canvas]
-
     -- Add timeout mechanism
     local maxWaitTime = ServerConfig.DISPLAY_CANVAS.MAX_WAIT_TIME -- Maximum wait time in seconds
     local startTime = os.time()
     
-    while drawing == nil do
-        drawing = ServerStates.DisplayCanvasDrawings[canvas]
+    while ServerStates.ServerDisplayImageReady == false do
         -- Check if we've exceeded the timeout
         if os.time() - startTime >= maxWaitTime then
-            warn("Timed out waiting for drawing for canvas requested by player " .. player.Name)
+            warn("Timed out waiting for ServerDisplayImageReady to be true")
             return
         end
         task.wait(1)
     end
+
+    -- Check if we have drawing data for this canvas
+    local drawing = ServerStates.CanvasState[canvas].drawing
 
     if drawing then
         Events.DrawToCanvas:FireClient(player, drawing.imageData,
@@ -605,7 +608,8 @@ local function init()
     for _, c in pairs(CollectionService:GetTagged("Canvas")) do
         ServerStates.CanvasState[c] = {
             registered = false,
-            ownerPlayer = nil
+            ownerPlayer = nil,
+            drawing = nil
         }
 
         local faceAttr = c:GetAttribute("CanvasFace")

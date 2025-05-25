@@ -116,8 +116,9 @@ local function initCanvas(instance)
             local pxW = math.clamp(math.floor(widthStuds * pixelsPerStud), 32, 2048)
             local pxH = math.clamp(math.floor(heightStuds * pixelsPerStud), 32, 2048)
             gui.CanvasSize = Vector2.new(pxW, pxH)
-            
-            if CollectionService:HasTag(instance, "DisplayCanvas") then
+
+            -- We request for all the canvases to be displayed if there is any drawing data.
+            if CollectionService:HasTag(instance, "Canvas") then
                 -- Wait for canvas to be fully initialized
                 local canvasData = CanvasUtils.waitForCanvasInit(ClientState, instance)
                 if canvasData then

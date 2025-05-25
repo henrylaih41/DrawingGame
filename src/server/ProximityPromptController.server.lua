@@ -102,8 +102,8 @@ local function initialize()
             warn("DrawCanvas triggered by non-owner player")
             return
         end
-        -- Teleport the player to the canvas.
-        teleportPlayerToCanvas(player, canvas)
+        -- -- Teleport the player to the canvas.
+        -- teleportPlayerToCanvas(player, canvas)
     end)
 
     Events.UnregisterCanvas.OnServerEvent:Connect(function(player, canvas)

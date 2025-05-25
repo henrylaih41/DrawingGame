@@ -20,6 +20,7 @@ function CanvasManager.resetCanvas(canvas)
     ServerStates.CanvasState[canvas].registered = false
     ServerStates.CanvasState[canvas].ownerPlayer = nil
     ServerStates.CanvasState[canvas].ownedCanvasIndex = nil
+    ServerStates.CanvasState[canvas].drawing = nil
     
     -- Re-enable the register prompt.
     local registerPrompt = canvas:FindFirstChild("CanvasFrame"):FindFirstChild("RegisterCanvasPrompt")

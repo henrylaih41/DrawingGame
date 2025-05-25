@@ -22,6 +22,7 @@ function DisplayCanvasSelector.selectRandomDrawing(topScores, fetchTopPlays, use
                 local topPlay = topPlays[math.random(1, #topPlays)]
                 if not usedDrawingIds[topPlay.uuid] then
                     usedDrawingIds[topPlay.uuid] = true
+                    -- TODO: Refactor this into a common function.
                     return {
                         imageData = CanvasDraw.DecompressImageDataCustom(topPlay.imageData),
                         themeName = topPlay.theme,
