@@ -52,7 +52,7 @@ ServerConfig.DISPLAY_CANVAS = {
 }
 
 ServerConfig.LIKES = {
-    FLUSH_INTERVAL = 1,
+    FLUSH_INTERVAL = 30, -- Changed from 1 to 30 seconds to reduce MemoryStore/DataStore load
 }
 
 return ServerConfig
