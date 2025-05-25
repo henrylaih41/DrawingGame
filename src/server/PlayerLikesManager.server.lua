@@ -15,7 +15,7 @@ Events.LikeDrawing.OnServerEvent:Connect(function(player, likedPlayerId, canvasI
 
     if playerData.LikeQuota <= 0 then
         Events.ShowNotification:FireClient(
-            player, "You don't have any likes left!", "red")
+            player, "You don't have any likes left! Likes are refilled every 12 hours!.", "red")
         return
     end
 

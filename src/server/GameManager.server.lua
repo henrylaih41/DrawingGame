@@ -444,7 +444,7 @@ local function handlestartDrawing(player: Player, theme_uuid: string)
     local playerData = PlayerStore:getPlayer(tostring(player.UserId))
 
     if playerData.Energy <= 0 then
-        Events.ShowNotification:FireClient(player, "You don't have enough energy to draw.", "red")
+        Events.ShowNotification:FireClient(player, "You don't have enough energy to draw. Energy is refilled every 12 hours!.", "red")
         return
     else
         -- Consume one energy.
