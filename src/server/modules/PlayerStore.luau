@@ -22,10 +22,7 @@ local playerDataSchema = SchemaValidator.createSchema({
     PreviousTotalPoints = { type = "number", required = true },
     Energy = { type = "number", required = true },
     coins = { type = "number", required = true },
-    topPlaysWithoutImage = { type = "table", required = false},
-    maximumGallerySize = { type = "number", required = true },
-    drawingTTLAfterPlayerLeft = { type = "number", required = true },
-    maximumEnergy = { type = "number", required = true },
+    LikeQuota = { type = "number", required = true },
     lastEnergyUpdate = { type = "number", required = true }
 })
 
@@ -36,11 +33,29 @@ export type PlayerData = {
     PreviousTotalPoints: number,
     Energy: number,
     coins: number,
-    maximumGallerySize: number,
-    drawingTTLAfterPlayerLeft: number,  
-    maximumEnergy: number,
+    LikeQuota: number,
     lastEnergyUpdate: number
 }
+
+-- Trimmed down version for MemoryStore caching (target: <100 bytes per user)
+export type PlayerCacheData = {
+    Name: string,
+    TotalPoints: number,
+    Energy: number,
+    LikeQuota: number,
+    lastEnergyUpdate: number,
+    coins: number
+}
+
+-- Schema for cache data validation
+local playerCacheDataSchema = SchemaValidator.createSchema({
+    Name = { type = "string", required = true },
+    TotalPoints = { type = "number", required = true },
+    Energy = { type = "number", required = true },
+    LikeQuota = { type = "number", required = true },
+    lastEnergyUpdate = { type = "number", required = true },
+    coins = { type = "number", required = true }
+})
 
 -- tuning ----------------------------------------------------------------
 local CACHE_TTL_SECONDS    = ServerConfig.CACHE_TTL_SECONDS          -- 30 min cache
@@ -52,8 +67,23 @@ local LOCK_RETRY_DELAY     = ServerConfig.LOCK_RETRY_DELAY
 -- helpers ---------------------------------------------------------------
 local function ckey(id: string) return "Player_"..id end
 local function lkey(id: string) return "PlayerLock_"..id end
-local function enc(t: any)   return t end
-local function dec(s: any)   return s end
+
+-- Convert full PlayerData to trimmed PlayerCacheData for MemoryStore
+local function enc(playerData: PlayerData): PlayerCacheData
+    return {
+        Name = playerData.Name,
+        TotalPoints = playerData.TotalPoints,
+        Energy = playerData.Energy,
+        LikeQuota = playerData.LikeQuota,
+        lastEnergyUpdate = playerData.lastEnergyUpdate,
+        coins = playerData.coins
+    }
+end
+
+-- Convert PlayerCacheData back to partial PlayerData (missing fields will be filled from DataStore or defaults)
+local function dec(cacheData: PlayerCacheData): PlayerData
+    return cacheData
+end
 -------------------------------------------------------------------------
 
 -- lock helper (atomic via UpdateAsync) ----------------------------------
@@ -83,13 +113,20 @@ function PlayerStore:getPlayer(playerId: string, playerName: string?)
     local key = ckey(playerId)
     local success, data = nil, nil
 
-    -- 1) MemoryStore fast-path
+    -- 1) MemoryStore fast-path - get cache data only
     local ok, cached = pcall(function() return CacheMap:GetAsync(key) end)
+    local cacheData = nil
     if ok and cached then
-        data = dec(cached)
+        cacheData = cached
+        -- Validate cache data
+        local valid, errs = playerCacheDataSchema:validate(cacheData)
+        if not valid then
+            warn(("PlayerStore: invalid cache schema for %s: %s"):format(playerId, tostring(errs)))
+            cacheData = nil
+        end
     end
 
-    -- 2) DataStore fallback
+    -- 2) DataStore fallback for full data
     if not data then
         success, data = DataStoreHelper:_performDataStoreOperationWithRetry(
             PlayersDataStore, "GetAsync", key, nil, true
@@ -101,7 +138,12 @@ function PlayerStore:getPlayer(playerId: string, playerName: string?)
         end
     end
 
-    -- 3) default + healing if first visit
+    -- 3) If we have cache data but no full data, create full data from cache
+    if cacheData and not data then
+        data = dec(cacheData)
+    end
+
+    -- 4) default + healing if first visit
     if not data then
         data = {
             Name                      = playerName,
@@ -130,7 +172,7 @@ function PlayerStore:getPlayer(playerId: string, playerName: string?)
         warn("Player name is nil for " .. playerId)
     end
     
-    -- TODO: Update these value based on player type or TotalPoints.
+    -- Compute these values on-demand instead of storing them
     data.maximumEnergy = defaultMaximumEnergy
     data.maximumLikeQuota = defaultMaximumLikeQuota
     data.drawingTTLAfterPlayerLeft = defaultDrawingTTLAfterPlayerLeft
@@ -151,14 +193,14 @@ function PlayerStore:getPlayer(playerId: string, playerName: string?)
         self:savePlayer(playerId, data)
     end
 
-    -- 4) validate
+    -- 5) validate
     local valid, errs = playerDataSchema:validate(data)
     if not valid then
-        warn(("PlayerStore: invalid schema for %s: %s"):format(playerId, enc(errs)))
+        warn(("PlayerStore: invalid schema for %s: %s"):format(playerId, tostring(errs)))
         return nil, "Invalid player data schema"
     end
 
-    -- 5) back-fill cache (best effort)
+    -- 6) back-fill cache (best effort) - store only essential fields
     pcall(function()
         CacheMap:SetAsync(key, enc(data), CACHE_TTL_SECONDS)
     end)
@@ -200,7 +242,7 @@ function PlayerStore:savePlayer(playerId: string, data: PlayerData, flush: boole
         end
     end
 
-    -- update cache
+    -- update cache with trimmed data
     pcall(function()
         CacheMap:SetAsync(key, enc(data), CACHE_TTL_SECONDS)
         CacheMap:RemoveAsync(lkey(playerId)) 
