@@ -12,7 +12,6 @@ local BILLBOARD_SIZE = UDim2.new(4, 0, 1, 0)
 local BILLBOARD_OFFSET = Vector3.new(0, 2, 0)
 local NAME_TEXT_SIZE = UDim2.new(1, 0, 0.5, 0)
 local RANK_TEXT_SIZE = UDim2.new(1, 0, 0.3, 0)
-local POINTS_TEXT_SIZE = UDim2.new(1, 0, 0.2, 0)
 
 -- Rank colors based on tier
 local RANK_COLORS = {
@@ -104,21 +103,6 @@ local function createPlayerBillboard(player, character)
     rankLabel.Text = ""
     rankLabel.Parent = frame
     
-    -- Create points label
-    local pointsLabel = Instance.new("TextLabel")
-    pointsLabel.Name = "PointsLabel"
-    pointsLabel.Size = POINTS_TEXT_SIZE
-    pointsLabel.Position = UDim2.new(0, 0, 0.8, 0)
-    pointsLabel.BackgroundTransparency = 1
-    pointsLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-    pointsLabel.TextStrokeTransparency = 0.5
-    pointsLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-    pointsLabel.Font = Enum.Font.Gotham
-    pointsLabel.TextScaled = true
-    pointsLabel.Text = ""
-    pointsLabel.Visible = true -- Hide points by default
-    pointsLabel.Parent = frame
-    
     -- Parent the BillboardGui to the character
     billboardGui.Parent = character
     
@@ -127,7 +111,6 @@ local function createPlayerBillboard(player, character)
         billboard = billboardGui,
         nameLabel = nameLabel,
         rankLabel = rankLabel,
-        pointsLabel = pointsLabel
     }
     
     return billboardGui
@@ -149,12 +132,9 @@ local function updatePlayerBillboard(player, playerData)
     local billboardData = playerBillboards[player.UserId]
     if not billboardData then return end
     
-    -- Update the rank label
-    billboardData.rankLabel.Text = rank
+    -- Update the rank label with points included
+    billboardData.rankLabel.Text = string.format("%s (%s)", rank, tostring(points))
     billboardData.rankLabel.TextColor3 = RANK_COLORS[rank] or Color3.fromRGB(255, 255, 255)
-    
-    -- Update the points label (hidden by default)
-    billboardData.pointsLabel.Text = tostring(points) .. " pts"
 end
 
 -- Function to handle when a player's character is added
