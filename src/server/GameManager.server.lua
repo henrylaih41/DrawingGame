@@ -61,6 +61,21 @@ local function debugPrint(message, ...)
     end
 end
 
+local function updatePlayerDataCache(player: Player, playerData: PlayerStore.PlayerData)
+    local userId = tostring(player.UserId)
+    ServerStates.PlayerDataCache[userId] = {
+        UserId = userId,
+        Name = playerData.Name,
+        TotalPoints = playerData.TotalPoints
+    }
+end
+
+local function broadcastPlayerDataUpdate(player: Player, playerData: PlayerStore.PlayerData)
+    updatePlayerDataCache(player, playerData)
+    Events.PlayerDataUpdated:FireClient(player, playerData)
+    Events.AllPlayersDataUpdated:FireAllClients(ServerStates.PlayerDataCache)
+end
+
 local function UpdatePlayerStateAndNotifyClient(player: Player, newState: string, additionalData)
     local playerState = ServerStates.PlayerState[player]
     debugPrint("Transitioning from %s to %s", playerState.state, newState)
@@ -152,7 +167,10 @@ local function handlePlayerJoined(player)
     })
 
     -- Tell the new player the current player data
-    Events.PlayerDataUpdated:FireClient(player, playerData)
+    broadcastPlayerDataUpdate(player, playerData)
+    
+    -- Initialize cache entry for new player
+    updatePlayerDataCache(player, playerData)
 
     -- Send cached display canvas drawings to the newly joined player.
 end
@@ -250,7 +268,7 @@ local function storeHighestScoringDrawing(player:Player, drawingData: PlayerBest
     local playerData = PlayerStore:getPlayer(tostring(player.UserId))
     playerData.TotalPoints = playerData.TotalPoints + drawingData.points
     PlayerStore:savePlayer(tostring(player.UserId), playerData)
-    Events.PlayerDataUpdated:FireClient(player, playerData)
+    broadcastPlayerDataUpdate(player, playerData)
     Events.ShowNotification:FireClient(player, "You earned " .. drawingData.points .. " points!", "green")
     
     -- Save the drawing if needed
@@ -642,6 +660,9 @@ local function init()
     Events.TestEvent.OnServerEvent:Connect(function(player)
     end)
     Events.RequestDisplayCanvasDrawing.OnServerEvent:Connect(handleDisplayCanvasDrawingRequest)
+    Events.UIToggleStateChanged.OnServerEvent:Connect(function(player, showUI)
+        Events.UIToggleStateChanged:FireAllClients(showUI)
+    end)
 end
 
 -- Start the module

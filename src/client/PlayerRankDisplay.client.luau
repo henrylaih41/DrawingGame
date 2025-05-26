@@ -7,6 +7,8 @@ local RankConfig = require(ReplicatedStorage.Modules.GameData.RankConfig)
 -- Get references to events
 local Events = ReplicatedStorage:WaitForChild("Events")
 local PlayerDataUpdatedEvent = Events:WaitForChild("PlayerDataUpdated")
+local AllPlayersDataUpdatedEvent = Events:WaitForChild("AllPlayersDataUpdated")
+local UIToggleStateChangedEvent = Events:WaitForChild("UIToggleStateChanged")
 
 -- Constants for BillboardGui appearance
 local BILLBOARD_SIZE = UDim2.new(4, 0, 1, 0)
@@ -22,6 +24,18 @@ end
 
 -- Store BillboardGuis for each player
 local playerBillboards = {}
+
+-- Track UI toggle state
+local showUI = true
+
+-- Function to update billboard visibility based on UI toggle state
+local function updateBillboardVisibility()
+    for _, billboardData in pairs(playerBillboards) do
+        if billboardData.billboard then
+            billboardData.billboard.Enabled = showUI
+        end
+    end
+end
 
 -- Function to create a BillboardGui for a player
 local function createPlayerBillboard(player, character)
@@ -86,6 +100,9 @@ local function createPlayerBillboard(player, character)
     
     -- Parent the BillboardGui to the character
     billboardGui.Parent = character
+    
+    -- Set initial visibility based on UI toggle state
+    billboardGui.Enabled = showUI
     
     -- Store the BillboardGui
     playerBillboards[player.UserId] = {
@@ -176,7 +193,7 @@ local function onPlayerRemoving(player)
     onCharacterRemoved(player)
 end
 
--- Function to handle when player data is updated
+-- Function to handle when player data is updated (local player only)
 local function onPlayerDataUpdated(playerData)
     if not playerData then return end
     
@@ -184,8 +201,29 @@ local function onPlayerDataUpdated(playerData)
     updatePlayerBillboard(LocalPlayer, playerData)
 end
 
--- Connect to the PlayerDataUpdated event
+-- Function to handle when all players data is updated
+local function onAllPlayersDataUpdated(allPlayerData)
+    if not allPlayerData then return end
+    
+    -- Update billboards for all players
+    for userId, playerData in pairs(allPlayerData) do
+        local player = Players:GetPlayerByUserId(tonumber(userId))
+        if player then
+            updatePlayerBillboard(player, playerData)
+        end
+    end
+end
+
+-- Function to handle UI toggle state changes
+local function onUIToggleStateChanged(newShowUI)
+    showUI = newShowUI
+    updateBillboardVisibility()
+end
+
+-- Connect to events
 PlayerDataUpdatedEvent.OnClientEvent:Connect(onPlayerDataUpdated)
+AllPlayersDataUpdatedEvent.OnClientEvent:Connect(onAllPlayersDataUpdated)
+UIToggleStateChangedEvent.OnClientEvent:Connect(onUIToggleStateChanged)
 
 -- Connect to the PlayerAdded and PlayerRemoving events
 Players.PlayerAdded:Connect(onPlayerAdded)

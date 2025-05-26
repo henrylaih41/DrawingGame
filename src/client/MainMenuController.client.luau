@@ -46,6 +46,7 @@ local toggle_objects = {
 local Events = ReplicatedStorage:WaitForChild("Events")
 local GameStateChangedEvent = Events:WaitForChild("GameStateChanged")
 local PlayerDataUpdatedEvent = Events:WaitForChild("PlayerDataUpdated")
+local UIToggleStateChangedEvent = Events:WaitForChild("UIToggleStateChanged")
 
 -- Game state constants
 local GameState = {
@@ -86,6 +87,8 @@ local function onUiToggleClicked()
             object.Visible = false
         end
     end
+    -- Broadcast UI toggle state to other systems
+    UIToggleStateChangedEvent:FireServer(showUI)
 end
 
 local function onFeedbackClicked()
@@ -224,4 +227,4 @@ if Players.LocalPlayer.UserId == 8240890430 and false then
 end
 
 -- Return cleanup function if needed by a parent system
-return cleanup 
+return cleanup    

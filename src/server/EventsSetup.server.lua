@@ -51,6 +51,8 @@ createEvent("DeleteGalleryDrawing")
 createEvent("SaveToGallery")
 createEvent("LikeDrawing")
 createEvent("RequestDisplayCanvasDrawing")
+createEvent("AllPlayersDataUpdated")
+createEvent("UIToggleStateChanged")
 -- Set the parent of the Events folder
 Events.Parent = ReplicatedStorage
-print("Events setup complete")  
+print("Events setup complete")      

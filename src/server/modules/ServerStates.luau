@@ -12,6 +12,8 @@ ServerStates.PlayerIdToPlayerMap = {}
 -- This is a flag that is set to true when the server has finished populating
 -- the display canvas drawings.
 ServerStates.ServerDisplayImageReady = false
+-- Cache minimal player data for broadcasting to all clients
+ServerStates.PlayerDataCache = {}
 
 return ServerStates
 
