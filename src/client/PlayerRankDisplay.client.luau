@@ -26,11 +26,18 @@ local playerBillboards = {}
 -- Function to create a BillboardGui for a player
 local function createPlayerBillboard(player, character)
     -- Check if character exists
-    if not character then return end
+    if not character then 
+        warn("Character not found for " .. player.Name)
+        return 
+    end
     
     -- Get the head to attach the BillboardGui to
-    local head = character:FindFirstChild("Head")
-    if not head then return end
+    local head = character:WaitForChild("Head", GameConfig.HUMANOID_INIT_TIMEOUT)
+
+    if not head then 
+        warn("Head not found for " .. player.Name)
+        return 
+    end
     
     -- Create BillboardGui
     local billboardGui = Instance.new("BillboardGui")
@@ -159,6 +166,7 @@ local function onPlayerAdded(player)
     
     -- If the player already has a character, create a BillboardGui for them
     if player.Character then
+        warn("Player character added : " .. player.Name)
         onCharacterAdded(player, player.Character)
     end
 end
@@ -185,6 +193,7 @@ Players.PlayerRemoving:Connect(onPlayerRemoving)
 
 -- Initialize existing players
 for _, player in ipairs(Players:GetPlayers()) do
+    warn("Creating billboard for Player : " .. player.Name)
     onPlayerAdded(player)
 end
 
