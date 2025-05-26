@@ -13,7 +13,7 @@ local Events = ReplicatedStorage:WaitForChild("Events")
 game.Players.PlayerAdded:Connect(function(plr)
     -- simple debounce: one read per join
     task.spawn(function()
-        local playerData = PlayerStore:getPlayer(tostring(plr.UserId), plr.Name)
+        local playerData = PlayerStore:getPlayer(tostring(plr.UserId))
         local points = playerData["TotalPoints"]
         -- hard code threshold for now
         if points > 14 then
@@ -23,7 +23,7 @@ game.Players.PlayerAdded:Connect(function(plr)
 end)
 
 Events.RequestTopScores.OnServerEvent:Connect(function(player)
-    local playerData = PlayerStore:getPlayer(tostring(player.UserId), player.Name)
+    local playerData = PlayerStore:getPlayer(tostring(player.UserId))
     local topScores = LeaderboardService.getCachedTopScores()
 
     Events.ReceiveTopScores:FireClient(player, topScores, playerData)

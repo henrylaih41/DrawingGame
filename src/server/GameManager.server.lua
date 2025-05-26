@@ -139,7 +139,7 @@ local function handlePlayerJoined(player)
     ServerStates.PlayerIdToPlayerMap[tostring(player.UserId)] = player
 
     -- Load the persistent player data.
-    local playerData = PlayerStore:getPlayer(tostring(player.UserId), player.Name)
+    local playerData = PlayerStore:getPlayer(tostring(player.UserId))
 
     -- Save it back to the store so we can self heal player Name.
     PlayerStore:savePlayer(tostring(player.UserId), playerData)
