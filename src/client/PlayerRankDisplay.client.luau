@@ -3,12 +3,12 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local GameConfig = require(ReplicatedStorage.Modules.GameData.GameConfig)
 local RankConfig = require(ReplicatedStorage.Modules.GameData.RankConfig)
+local UIToggleService = require(script.Parent:WaitForChild("UIToggleService"))
 
 -- Get references to events
 local Events = ReplicatedStorage:WaitForChild("Events")
 local PlayerDataUpdatedEvent = Events:WaitForChild("PlayerDataUpdated")
 local AllPlayersDataUpdatedEvent = Events:WaitForChild("AllPlayersDataUpdated")
-local UIToggleStateChangedEvent = Events:WaitForChild("UIToggleStateChanged")
 
 -- Constants for BillboardGui appearance
 local BILLBOARD_SIZE = UDim2.new(4, 0, 1, 0)
@@ -223,7 +223,7 @@ end
 -- Connect to events
 PlayerDataUpdatedEvent.OnClientEvent:Connect(onPlayerDataUpdated)
 AllPlayersDataUpdatedEvent.OnClientEvent:Connect(onAllPlayersDataUpdated)
-UIToggleStateChangedEvent.OnClientEvent:Connect(onUIToggleStateChanged)
+UIToggleService:OnUIToggleStateChanged(onUIToggleStateChanged)
 
 -- Connect to the PlayerAdded and PlayerRemoving events
 Players.PlayerAdded:Connect(onPlayerAdded)

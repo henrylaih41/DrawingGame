@@ -660,9 +660,6 @@ local function init()
     Events.TestEvent.OnServerEvent:Connect(function(player)
     end)
     Events.RequestDisplayCanvasDrawing.OnServerEvent:Connect(handleDisplayCanvasDrawingRequest)
-    Events.UIToggleStateChanged.OnServerEvent:Connect(function(player, showUI)
-        Events.UIToggleStateChanged:FireAllClients(showUI)
-    end)
 end
 
 -- Start the module

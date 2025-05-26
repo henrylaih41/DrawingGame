@@ -4,6 +4,7 @@ local Modules = ReplicatedStorage:WaitForChild("Modules")
 local Utils = Modules:WaitForChild("Utils")
 local ButtonEffects = require(Utils:WaitForChild("ButtonEffects"))
 local Players= game:GetService("Players")
+local UIToggleService = require(script.Parent:WaitForChild("UIToggleService"))
 
 -- Get references to UI elements
 local PlayerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
@@ -87,8 +88,8 @@ local function onUiToggleClicked()
             object.Visible = false
         end
     end
-    -- Broadcast UI toggle state to other systems
-    UIToggleStateChangedEvent:FireServer(showUI)
+    -- Use the UIToggleService to notify other client systems locally
+    UIToggleService:ToggleUI(showUI)
 end
 
 local function onFeedbackClicked()
@@ -227,4 +228,4 @@ if Players.LocalPlayer.UserId == 8240890430 and false then
 end
 
 -- Return cleanup function if needed by a parent system
-return cleanup    
+return cleanup      
