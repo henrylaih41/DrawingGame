@@ -23,6 +23,14 @@ Events.LikeDrawing.OnServerEvent:Connect(function(player, likedPlayerId, canvasI
 
     PlayerStore:savePlayer(player.UserId, playerData)
     Events.PlayerDataUpdated:FireClient(player, playerData)
+    
+    local userId = tostring(player.UserId)
+    ServerStates.PlayerDataCache[userId] = {
+        UserId = userId,
+        Name = playerData.Name,
+        TotalPoints = playerData.TotalPoints
+    }
+    Events.AllPlayersDataUpdated:FireAllClients(ServerStates.PlayerDataCache)
 
     local playerLikes = playerLikesCache[likedPlayerId] or 0
     playerLikesCache[likedPlayerId] = playerLikes + 1
@@ -46,6 +54,14 @@ local function flushPlayerLikesCache()
         -- Send the updated player data to the client if it is still in the server.
         if player then
             Events.PlayerDataUpdated:FireClient(player, playerData)
+            
+            local userId = tostring(playerId)
+            ServerStates.PlayerDataCache[userId] = {
+                UserId = userId,
+                Name = playerData.Name,
+                TotalPoints = playerData.TotalPoints
+            }
+            Events.AllPlayersDataUpdated:FireAllClients(ServerStates.PlayerDataCache)
         end
     end
 
