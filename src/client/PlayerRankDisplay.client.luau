@@ -2,6 +2,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local GameConfig = require(ReplicatedStorage.Modules.GameData.GameConfig)
+local RankConfig = require(ReplicatedStorage.Modules.GameData.RankConfig)
 
 -- Get references to events
 local Events = ReplicatedStorage:WaitForChild("Events")
@@ -13,41 +14,14 @@ local BILLBOARD_OFFSET = Vector3.new(0, 2, 0)
 local NAME_TEXT_SIZE = UDim2.new(1, 0, 0.5, 0)
 local RANK_TEXT_SIZE = UDim2.new(1, 0, 0.3, 0)
 
--- Rank colors based on tier
-local RANK_COLORS = {
-    ["Beginner"] = Color3.fromRGB(200, 200, 200),         -- Plain paper badge
-    ["Rookie Artist"] = Color3.fromRGB(150, 150, 150),    -- Pencil-grey badge
-    ["Sketch Star"] = Color3.fromRGB(135, 206, 235),      -- Pastel-blue badge
-    ["Art Adept"] = Color3.fromRGB(75, 0, 130),           -- Ink-indigo badge
-    ["Creative Pro"] = Color3.fromRGB(0, 128, 128),       -- Watercolor-teal badge
-    ["Studio Ace"] = Color3.fromRGB(0, 128, 0),           -- Acrylic-green badge
-    ["Canvas Champion"] = Color3.fromRGB(205, 127, 50),   -- Gold-bronze badge
-    ["Master Artist"] = Color3.fromRGB(255, 215, 0),      -- Polished-gold badge
-    ["Art Grandmaster"] = Color3.fromRGB(255, 145, 145),  -- Rose-gold badge
-    ["Legendary Creator"] = Color3.fromRGB(255, 0, 255)   -- Animated rainbow badge (using magenta as placeholder)
-}
+-- Pre-build a dictionary for quick color lookup by rank name
+local RANK_COLORS = {}
+for _, definition in ipairs(RankConfig.Definitions) do
+    RANK_COLORS[definition.name] = definition.color
+end
 
 -- Store BillboardGuis for each player
 local playerBillboards = {}
-
--- Function to determine player rank based on points
-local function getPlayerRank(points)
-    if not points or type(points) ~= "number" then
-        return nil
-    end
-    
-    if points >= 2081 then return "Legendary Creator"
-    elseif points >= 1581 then return "Art Grandmaster"
-    elseif points >= 1181 then return "Master Artist"
-    elseif points >= 881 then return "Canvas Champion"
-    elseif points >= 631 then return "Studio Ace"
-    elseif points >= 421 then return "Creative Pro"
-    elseif points >= 251 then return "Art Adept"
-    elseif points >= 121 then return "Sketch Star"
-    elseif points >= 31 then return "Rookie Artist"
-    else return "Beginner"
-    end
-end
 
 -- Function to create a BillboardGui for a player
 local function createPlayerBillboard(player, character)
@@ -124,17 +98,17 @@ local function updatePlayerBillboard(player, playerData)
     local points = playerData.TotalPoints
     if not points then return end
     
-    -- Get the player's rank
-    local rank = getPlayerRank(points)
-    if not rank then return end
-    
+    -- Get the player's rank information
+    local rankInfo = RankConfig.getRankForPoints(points)
+    if not rankInfo then return end
+
     -- Get the BillboardGui for this player
     local billboardData = playerBillboards[player.UserId]
     if not billboardData then return end
-    
+
     -- Update the rank label with points included
-    billboardData.rankLabel.Text = string.format("%s (%s)", rank, tostring(points))
-    billboardData.rankLabel.TextColor3 = RANK_COLORS[rank] or Color3.fromRGB(255, 255, 255)
+    billboardData.rankLabel.Text = string.format("%s (%s)", rankInfo.name, tostring(points))
+    billboardData.rankLabel.TextColor3 = rankInfo.color or Color3.fromRGB(255, 255, 255)
 end
 
 -- Function to handle when a player's character is added
