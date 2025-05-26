@@ -68,6 +68,11 @@ function BackendService:SendFeedbackRequest(playerName, playerId, feedback)
     assert(playerId, "Missing playerId parameter")
     assert(feedback, "Missing feedback parameter")
 
+    -- If the feedback is empty, don't send it to the backend
+    if feedback == "" then
+        return
+    end
+
     local requestBody = {
         playerName = tostring(playerName),
         playerId = tostring(playerId),

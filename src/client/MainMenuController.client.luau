@@ -154,19 +154,23 @@ table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(TutorialCloseButt
 -- Connect game state event
 GameStateChangedEvent.OnClientEvent:Connect(onGameStateChanged)
 
-local function onPlayerDataUpdated(playerData)
+local function onPlayerDataUpdated(data)
+    local player = data.player
+    local playerData = data.playerData
+
     local trophyCount = TrophyCount.count
     local coinCount = CoinFrame.count
     local pencilCount = PencilFrame.count
     local likeCount = LikeFrame.count
 
-    if playerData then
+    if playerData and player == Players.LocalPlayer then
         trophyCount.Text = tostring(playerData.TotalPoints)
         coinCount.Text = tostring(playerData.coins)
         pencilCount.Text = tostring(playerData.Energy) .. " / " .. tostring(playerData.maximumEnergy)
         likeCount.Text = tostring(playerData.LikeQuota) .. " / " .. tostring(playerData.maximumLikeQuota)
-    else
-        warn("Player data is nil")
+        if not playerData then
+            warn("Player data is nil")
+        end
     end
 end
 

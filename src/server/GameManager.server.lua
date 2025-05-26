@@ -151,10 +151,8 @@ local function handlePlayerJoined(player)
         state = GameConstants.PlayerStateEnum.IDLE
     })
 
-    -- Tell the new player the current player data
-    Events.PlayerDataUpdated:FireClient(player, playerData)
-
-    -- Send cached display canvas drawings to the newly joined player.
+    -- Tell the all players the current player data
+    Events.PlayerDataUpdated:FireAllClients({player = player, playerData = playerData})
 end
 
 local function handlePlayerLeft(player: Player)
@@ -250,7 +248,7 @@ local function storeHighestScoringDrawing(player:Player, drawingData: PlayerBest
     local playerData = PlayerStore:getPlayer(tostring(player.UserId))
     playerData.TotalPoints = playerData.TotalPoints + drawingData.points
     PlayerStore:savePlayer(tostring(player.UserId), playerData)
-    Events.PlayerDataUpdated:FireClient(player, playerData)
+    Events.PlayerDataUpdated:FireAllClients({player = player, playerData = playerData})
     Events.ShowNotification:FireClient(player, "You earned " .. drawingData.points .. " points!", "green")
     
     -- Save the drawing if needed
@@ -522,6 +520,14 @@ local function handleDisplayCanvasDrawingRequest(player: Player, canvas: Instanc
     end
 end
 
+local function handleRequestAllPlayerData(player)
+    -- TODO: We can cache this if datastore requests are limited.
+    for _, p in Players:GetPlayers() do
+        Events.PlayerDataUpdated:FireClient(
+            player, {player = p, playerData = PlayerStore:getPlayer(tostring(p.UserId))})
+    end
+end
+
 -- ServerScriptService/CanvasSurface.lua
 local function attachSurfaceGui(canvasModel : Model,
                                 pixelsPerStud : number,
@@ -642,6 +648,7 @@ local function init()
     Events.TestEvent.OnServerEvent:Connect(function(player)
     end)
     Events.RequestDisplayCanvasDrawing.OnServerEvent:Connect(handleDisplayCanvasDrawingRequest)
+    Events.RequestAllPlayerData.OnServerEvent:Connect(handleRequestAllPlayerData)
 end
 
 -- Start the module

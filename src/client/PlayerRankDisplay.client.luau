@@ -9,16 +9,10 @@ local Events = ReplicatedStorage:WaitForChild("Events")
 local PlayerDataUpdatedEvent = Events:WaitForChild("PlayerDataUpdated")
 
 -- Constants for BillboardGui appearance
-local BILLBOARD_SIZE = UDim2.new(4, 0, 1, 0)
+local BILLBOARD_SIZE = UDim2.new(4, 0, 1.5, 0)
 local BILLBOARD_OFFSET = Vector3.new(0, 2, 0)
 local NAME_TEXT_SIZE = UDim2.new(1, 0, 0.5, 0)
 local RANK_TEXT_SIZE = UDim2.new(1, 0, 0.3, 0)
-
--- Pre-build a dictionary for quick color lookup by rank name
-local RANK_COLORS = {}
-for _, definition in ipairs(RankConfig.Definitions) do
-    RANK_COLORS[definition.name] = definition.color
-end
 
 -- Store BillboardGuis for each player
 local playerBillboards = {}
@@ -133,11 +127,6 @@ local function onCharacterAdded(player, character)
 
     -- Create a new BillboardGui for the player
     local billboard = createPlayerBillboard(player, character)
-
-    -- If this is the local player, request their data to update the billboard
-    if player == LocalPlayer then
-        -- The server should send player data when they join, but we can request it if needed
-    end
 end
 
 -- Function to handle when a player's character is removed
@@ -166,7 +155,6 @@ local function onPlayerAdded(player)
     
     -- If the player already has a character, create a BillboardGui for them
     if player.Character then
-        warn("Player character added : " .. player.Name)
         onCharacterAdded(player, player.Character)
     end
 end
@@ -177,24 +165,30 @@ local function onPlayerRemoving(player)
 end
 
 -- Function to handle when player data is updated
-local function onPlayerDataUpdated(playerData)
+local function onPlayerDataUpdated(data)
+    local player = data.player
+    local playerData = data.playerData
+
     if not playerData then return end
     
-    -- Update the BillboardGui for the local player
-    updatePlayerBillboard(LocalPlayer, playerData)
+    updatePlayerBillboard(player, playerData)
 end
 
--- Connect to the PlayerDataUpdated event
-PlayerDataUpdatedEvent.OnClientEvent:Connect(onPlayerDataUpdated)
+local function init()
+    -- Connect to the PlayerDataUpdated event
+    PlayerDataUpdatedEvent.OnClientEvent:Connect(onPlayerDataUpdated)
 
--- Connect to the PlayerAdded and PlayerRemoving events
-Players.PlayerAdded:Connect(onPlayerAdded)
-Players.PlayerRemoving:Connect(onPlayerRemoving)
+    -- Connect to the PlayerAdded and PlayerRemoving events
+    Players.PlayerAdded:Connect(onPlayerAdded)
+    Players.PlayerRemoving:Connect(onPlayerRemoving)
 
--- Initialize existing players
-for _, player in ipairs(Players:GetPlayers()) do
-    warn("Creating billboard for Player : " .. player.Name)
-    onPlayerAdded(player)
+    -- Initialize existing players
+    for _, player in ipairs(Players:GetPlayers()) do
+        onPlayerAdded(player)
+    end
+
+    -- Request all player data from the server
+    Events.RequestAllPlayerData:FireServer()
 end
 
 -- Cleanup function
@@ -211,5 +205,8 @@ local function cleanup()
     playerBillboards = {}
 end
 
+init()
+
 -- Return cleanup function
 return cleanup
+

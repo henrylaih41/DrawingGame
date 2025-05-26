@@ -82,6 +82,14 @@ end
 ---------------------------------------------------------------------
 function PlayerStore:getPlayer(playerId: string)
     local player = Players:GetPlayerByUserId(tonumber(playerId))
+
+    local startTime = os.time()
+
+    while not player and os.time() - startTime < 5 do
+        task.wait(0.2)
+        player = Players:GetPlayerByUserId(tonumber(playerId))
+    end
+
     local playerName = player and player.Name or "Unknown"
 
     if not player then
