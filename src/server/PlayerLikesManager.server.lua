@@ -21,7 +21,7 @@ Events.LikeDrawing.OnServerEvent:Connect(function(player, likedPlayerId, canvasI
 
     playerData.LikeQuota = playerData.LikeQuota - 1
 
-    PlayerStore:savePlayer(player.UserId, playerData, false)
+    PlayerStore:savePlayer(player.UserId, playerData)
     Events.PlayerDataUpdated:FireClient(player, playerData)
 
     local playerLikes = playerLikesCache[likedPlayerId] or 0

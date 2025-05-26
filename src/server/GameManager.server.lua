@@ -141,6 +141,9 @@ local function handlePlayerJoined(player)
     -- Load the persistent player data.
     local playerData = PlayerStore:getPlayer(tostring(player.UserId), player.Name)
 
+    -- Save it back to the store so we can self heal player Name.
+    PlayerStore:savePlayer(tostring(player.UserId), playerData)
+
     sendLoginMessage(player, playerData)
 
     -- Tell the new player the current game state

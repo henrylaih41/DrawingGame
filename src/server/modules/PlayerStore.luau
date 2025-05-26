@@ -117,7 +117,10 @@ function PlayerStore:getPlayer(playerId: string, playerName: string?)
     end 
 
     -- Self healing
-    data.Name                      = data.Name or playerName
+    if playerName then
+        data.Name = playerName
+    end
+
     data.TotalPlayCount            = data.TotalPlayCount or 0
     data.TotalPoints               = data.TotalPoints or 0
     data.PreviousTotalPoints       = data.PreviousTotalPoints or data.TotalPoints
@@ -128,6 +131,7 @@ function PlayerStore:getPlayer(playerId: string, playerName: string?)
 
     if data.Name == nil then
         warn("Player name is nil for " .. playerId)
+        data.Name = "Unknown"
     end
     
     -- TODO: Update these value based on player type or TotalPoints.
