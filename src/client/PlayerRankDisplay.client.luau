@@ -1,6 +1,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
+local GameConfig = require(ReplicatedStorage.Modules.GameData.GameConfig)
 
 -- Get references to events
 local Events = ReplicatedStorage:WaitForChild("Events")
@@ -158,9 +159,20 @@ end
 
 -- Function to handle when a player's character is added
 local function onCharacterAdded(player, character)
+    -- Wait for the humanoid to exist to disable the default name tag
+    local humanoid = character:WaitForChild("Humanoid", GameConfig.HUMANOID_INIT_TIMEOUT)
+    if humanoid == nil then
+        warn("Humanoid not found for " .. player.Name)
+        return
+    end
+
+    if GameConfig.HIDE_DEFAULT_NAME then
+        humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+    end
+
     -- Create a new BillboardGui for the player
     local billboard = createPlayerBillboard(player, character)
-    
+
     -- If this is the local player, request their data to update the billboard
     if player == LocalPlayer then
         -- The server should send player data when they join, but we can request it if needed

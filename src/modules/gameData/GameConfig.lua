@@ -11,6 +11,8 @@ local GameConfig = {
     HIGH_SCORE_SOUND_ID = "rbxassetid://79723856625266",
     DEBUG_INPUTUTILS = true,
     CANVAS_INIT_TIMEOUT = 10,
+    HUMANOID_INIT_TIMEOUT = 10,
+    HIDE_DEFAULT_NAME = true,
 }
 
 return GameConfig
