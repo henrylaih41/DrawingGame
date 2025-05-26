@@ -115,7 +115,7 @@ local function createPlayerBillboard(player, character)
     pointsLabel.Font = Enum.Font.Gotham
     pointsLabel.TextScaled = true
     pointsLabel.Text = ""
-    pointsLabel.Visible = false -- Hide points by default
+    pointsLabel.Visible = true -- Hide points by default
     pointsLabel.Parent = frame
     
     -- Parent the BillboardGui to the character

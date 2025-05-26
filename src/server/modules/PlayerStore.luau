@@ -3,6 +3,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local DataStoreHelper = require(ServerScriptService.modules.DataStoreHelper)
 local SchemaValidator = require(ServerScriptService.modules.SchemaValidator)
 local ServerConfig = require(ServerScriptService.modules.ServerConfig)
+local Players = game:GetService("Players")
 local PlayerStore = {}
 local PlayersDataStore = DataStoreService:GetDataStore("Players")
 local MemoryStoreService   = game:GetService("MemoryStoreService")
@@ -79,7 +80,14 @@ end
 ---------------------------------------------------------------------
 -- READ -------------------------------------------------------------
 ---------------------------------------------------------------------
-function PlayerStore:getPlayer(playerId: string, playerName: string?)
+function PlayerStore:getPlayer(playerId: string)
+    local player = Players:GetPlayerByUserId(tonumber(playerId))
+    local playerName = player and player.Name or "Unknown"
+
+    if not player then
+        warn("Player not found for " .. playerId)
+    end
+
     local key = ckey(playerId)
     local success, data = nil, nil
 
@@ -115,12 +123,8 @@ function PlayerStore:getPlayer(playerId: string, playerName: string?)
             lastEnergyUpdate          = os.time(),
         }
     end 
-
     -- Self healing
-    if playerName then
-        data.Name = playerName
-    end
-
+    data.Name                      = data.Name or playerName
     data.TotalPlayCount            = data.TotalPlayCount or 0
     data.TotalPoints               = data.TotalPoints or 0
     data.PreviousTotalPoints       = data.PreviousTotalPoints or data.TotalPoints
@@ -129,11 +133,6 @@ function PlayerStore:getPlayer(playerId: string, playerName: string?)
     data.LikeQuota                 = data.LikeQuota or defaultMaximumLikeQuota
     data.lastEnergyUpdate          = data.lastEnergyUpdate or os.time()
 
-    if data.Name == nil then
-        warn("Player name is nil for " .. playerId)
-        data.Name = "Unknown"
-    end
-    
     -- TODO: Update these value based on player type or TotalPoints.
     data.maximumEnergy = defaultMaximumEnergy
     data.maximumLikeQuota = defaultMaximumLikeQuota
