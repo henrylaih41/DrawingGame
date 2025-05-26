@@ -85,7 +85,7 @@ function PlayerStore:getPlayer(playerId: string)
 
     local startTime = os.time()
 
-    while not player and os.time() - startTime < 5 do
+    while not player and os.time() - startTime < ServerConfig.PLAYER_DATA_TIMEOUT do
         task.wait(0.2)
         player = Players:GetPlayerByUserId(tonumber(playerId))
     end

@@ -10,9 +10,9 @@ ServerConfig.DEBUG_ENABLED = true
 
 -- Player defaults
 ServerConfig.DEFAULT_MAXIMUM_GALLERY_SIZE = 3
-ServerConfig.DEFAULT_DRAWING_TTL_AFTER_PLAYER_LEFT = 60 * 60 * 3 -- 3 hours
+ServerConfig.DEFAULT_DRAWING_TTL_AFTER_PLAYER_LEFT = 60 * 5 -- 5 minutes
 ServerConfig.DEFAULT_MAXIMUM_ENERGY = 3
-ServerConfig.DEFAULT_MAXIMUM_OWNED_CANVAS = 1
+ServerConfig.DEFAULT_MAXIMUM_OWNED_CANVAS = 3
 ServerConfig.DEFAULT_MAXIMUM_LIKE_QUOTA = 10
 ServerConfig.ENERGY_REFRESH_INTERVAL = 60 * 60 * 12 -- seconds
 
@@ -21,6 +21,9 @@ ServerConfig.CACHE_TTL_SECONDS = 1 * 60 -- 1 minutes
 ServerConfig.LOCK_TTL_SECONDS = 5
 ServerConfig.LOCK_RETRIES = 5
 ServerConfig.LOCK_RETRY_DELAY = 0.4
+
+-- Player data timeout
+ServerConfig.PLAYER_DATA_TIMEOUT = 15
 
 -- ClearData script settings
 ServerConfig.CLEAR_DATA = {
@@ -52,6 +55,7 @@ ServerConfig.DISPLAY_CANVAS = {
 }
 
 ServerConfig.LIKES = {
+    -- TODO: We should increase this after the player increases.
     FLUSH_INTERVAL = 1,
 }
 
