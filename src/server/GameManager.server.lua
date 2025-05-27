@@ -28,22 +28,22 @@ local Events = ReplicatedStorage:WaitForChild("Events")
 local ServerConfig = require(ServerScriptService.modules.ServerConfig)
 local DEBUG_ENABLED = ServerConfig.DEBUG_ENABLED
 
-local playerRequestQueues = {} -- [player] = {queue, lastProcessTime, requestsThisSecond}
+local displayCanvasRequestQueues = {} -- [player] = {queue, lastProcessTime, requestsThisSecond}
 
-local function getOrCreatePlayerQueue(player)
-    if not playerRequestQueues[player] then
-        playerRequestQueues[player] = {
+local function getOrCreateDisplayCanvasQueue(player)
+    if not displayCanvasRequestQueues[player] then
+        displayCanvasRequestQueues[player] = {
             queue = {},
             lastProcessTime = 0,
             requestsThisSecond = 0,
             windowStart = os.clock()
         }
     end
-    return playerRequestQueues[player]
+    return displayCanvasRequestQueues[player]
 end
 
-local function cleanupPlayerQueue(player)
-    playerRequestQueues[player] = nil
+local function cleanupDisplayCanvasQueue(player)
+    displayCanvasRequestQueues[player] = nil
 end
 
 local function getDifficultyMultiplier(difficulty: string)
@@ -175,8 +175,8 @@ local function handlePlayerJoined(player)
 end
 
 local function handlePlayerLeft(player: Player)
-    -- Clean up player queue
-    cleanupPlayerQueue(player)
+    -- Clean up display canvas queue
+    cleanupDisplayCanvasQueue(player)
     
     local playerData = PlayerStore:getPlayer(tostring(player.UserId))
     local ownedCanvasList = ServerStates.PlayerState[player].ownedCanvas
@@ -518,14 +518,14 @@ local function handleDeleteGalleryDrawing(player, uuid)
 end
 
 local function handleDisplayCanvasDrawingRequest(player: Player, canvas: Instance)
-    local playerQueue = getOrCreatePlayerQueue(player)
+    local displayQueue = getOrCreateDisplayCanvasQueue(player)
     
-    if #playerQueue.queue >= ServerConfig.DISPLAY_CANVAS.MAX_QUEUE_SIZE then
+    if #displayQueue.queue >= ServerConfig.DISPLAY_CANVAS.MAX_QUEUE_SIZE then
         warn("Display canvas request queue full for player:", player.Name)
         return
     end
     
-    table.insert(playerQueue.queue, {
+    table.insert(displayQueue.queue, {
         player = player,
         canvas = canvas,
         timestamp = os.clock()
@@ -562,25 +562,25 @@ end
 local function processRequestQueues()
     local now = os.clock()
     
-    for player, playerQueue in pairs(playerRequestQueues) do
+    for player, displayQueue in pairs(displayCanvasRequestQueues) do
         -- Reset rate limiting window if needed
-        if now - playerQueue.windowStart >= 1 then
-            playerQueue.requestsThisSecond = 0
-            playerQueue.windowStart = now
+        if now - displayQueue.windowStart >= 1 then
+            displayQueue.requestsThisSecond = 0
+            displayQueue.windowStart = now
         end
         
         local requestsProcessed = 0
-        while #playerQueue.queue > 0 
+        while #displayQueue.queue > 0 
               and requestsProcessed < ServerConfig.DISPLAY_CANVAS.REQUESTS_PER_STEP
-              and playerQueue.requestsThisSecond < ServerConfig.DISPLAY_CANVAS.REQUESTS_PER_SECOND do
+              and displayQueue.requestsThisSecond < ServerConfig.DISPLAY_CANVAS.REQUESTS_PER_SECOND do
             
-            local request = table.remove(playerQueue.queue, 1)
+            local request = table.remove(displayQueue.queue, 1)
             
             -- Check if player is still in game
             if request.player.Parent then
                 task.spawn(processDisplayCanvasRequest, request)
                 requestsProcessed = requestsProcessed + 1
-                playerQueue.requestsThisSecond = playerQueue.requestsThisSecond + 1
+                displayQueue.requestsThisSecond = displayQueue.requestsThisSecond + 1
             end
         end
     end
