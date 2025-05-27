@@ -52,6 +52,11 @@ ServerConfig.DISPLAY_CANVAS = {
     CHOOSE_FROM_TOP_N_PLAYERS = 30,
     POLL_INTERVAL_SECONDS = 0.1,
     MAX_WAIT_TIME = 10,
+    -- Rate limiting settings
+    REQUESTS_PER_SECOND = 5,
+    REQUESTS_PER_STEP = 2,
+    MAX_QUEUE_SIZE = 20,
+    PROCESS_INTERVAL = 0.2,
 }
 
 ServerConfig.LIKES = {
