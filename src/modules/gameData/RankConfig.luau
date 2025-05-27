@@ -31,4 +31,38 @@ function RankConfig.getRankForPoints(points: number)
     return nil
 end
 
+--- Returns the rank table for the given index where index 1 is the lowest rank.
+-- @param index number The rank index (1 = lowest).
+-- @return table? Rank table or nil if index invalid.
+function RankConfig.getRankByIndex(index: number)
+    if type(index) ~= "number" then
+        return nil
+    end
+
+    local count = #RankConfig.Definitions
+    if index < 1 or index > count then
+        return nil
+    end
+
+    return RankConfig.Definitions[count - index + 1]
+end
+
+--- Returns the index for the rank of the given points.
+-- @param points number The player's points.
+-- @return number? Index starting at 1 for the lowest rank, or nil if points invalid.
+function RankConfig.getRankIndexForPoints(points: number)
+    local rank = RankConfig.getRankForPoints(points)
+    if not rank then
+        return nil
+    end
+
+    for i, r in ipairs(RankConfig.Definitions) do
+        if r == rank then
+            return (#RankConfig.Definitions) - i + 1
+        end
+    end
+
+    return nil
+end
+
 return RankConfig
