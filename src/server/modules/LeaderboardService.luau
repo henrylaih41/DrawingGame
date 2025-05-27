@@ -6,7 +6,7 @@
 local TOP_MAP_NAME        = "TopPointsV2"     -- MemoryStore SortedMap
 local KEY_TTL_SECONDS     = 7 * 24 * 3600     -- 7 days(auto-evicts idle entries)
 local MAX_ROWS            = 100               -- hard cap
-local CACHE_UPDATE_INTERVAL = 60 * 60
+local CACHE_UPDATE_INTERVAL = 60 * 5
 
 --------------------------------------------------------------------
 -- SERVICES

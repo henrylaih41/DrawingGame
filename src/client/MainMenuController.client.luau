@@ -166,10 +166,10 @@ local function onPlayerDataUpdated(data)
     local player = data.player
     local playerData = data.playerData
 
-    local trophyCount = TrophyCount.count
-    local coinCount = CoinFrame.count
-    local pencilCount = PencilFrame.count
-    local likeCount = LikeFrame.count
+    local trophyCount = TrophyCount:WaitForChild("count")
+    local coinCount = CoinFrame:WaitForChild("count")
+    local pencilCount = PencilFrame:WaitForChild("count")
+    local likeCount = LikeFrame:WaitForChild("count")
 
     if playerData and player == Players.LocalPlayer then
         trophyCount.Text = tostring(playerData.TotalPoints)
