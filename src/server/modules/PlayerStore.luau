@@ -92,7 +92,7 @@ function PlayerStore:getPlayer(playerId: string, skipPlayerCheck: boolean?)
 
     local playerName = player and player.Name or "Unknown"
 
-    if not player then
+    if not player and not skipPlayerCheck then
         warn("Player not found for " .. playerId)
     end
 

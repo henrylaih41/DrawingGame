@@ -10,7 +10,7 @@ ServerConfig.DEBUG_ENABLED = true
 
 -- Player defaults
 ServerConfig.DEFAULT_MAXIMUM_GALLERY_SIZE = 3
-ServerConfig.DEFAULT_DRAWING_TTL_AFTER_PLAYER_LEFT = 60 * 5 -- 5 minutes
+ServerConfig.DEFAULT_DRAWING_TTL_AFTER_PLAYER_LEFT = 60 * 10 -- 5 minutes
 ServerConfig.DEFAULT_MAXIMUM_ENERGY = 3
 ServerConfig.DEFAULT_MAXIMUM_OWNED_CANVAS = 3
 ServerConfig.DEFAULT_MAXIMUM_LIKE_QUOTA = 10
@@ -47,11 +47,16 @@ ServerConfig.PROMPT = {
 
 -- Display canvas settings
 ServerConfig.DISPLAY_CANVAS = {
-    MAX_RANDOM_ATTEMPTS = 5,
+    MAX_RANDOM_ATTEMPTS = 15,
     JOIN_DELAY_SECONDS = 5,
-    CHOOSE_FROM_TOP_N_PLAYERS = 30,
+    CHOOSE_FROM_TOP_N_PLAYERS = 60,
     POLL_INTERVAL_SECONDS = 0.1,
     MAX_WAIT_TIME = 10,
+    -- Rate limiting settings
+    REQUESTS_PER_SECOND = 15,
+    REQUESTS_PER_STEP = 5,
+    MAX_QUEUE_SIZE = 1000,
+    PROCESS_INTERVAL = 0.2,
 }
 
 ServerConfig.LIKES = {
