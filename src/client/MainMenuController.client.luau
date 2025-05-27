@@ -10,10 +10,13 @@ local PlayerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui
 local MainMenuScreen = PlayerGui:WaitForChild("MainMenuScreen")
 local RankingScreen = PlayerGui:WaitForChild("RankingScreen")
 local RankingScreenTopLevelContainer = RankingScreen:WaitForChild("TopLevelContainer")
+local RankProgressScreen = PlayerGui:WaitForChild("RankProgressScreen")
+local RankProgressTopLevelContainer = RankProgressScreen:WaitForChild("TopLevelContainer")
 local TopLevelContainer = MainMenuScreen:WaitForChild("TopLevelContainer")
 local FeedbackContainer = TopLevelContainer:WaitForChild("FeedbackContainer")
 local Buttons = TopLevelContainer:WaitForChild("Buttons")
 local TrophyCount = TopLevelContainer:WaitForChild("TrophyCount")
+local InfoButton = TrophyCount:WaitForChild("InfoButton")
 local CoinFrame = TopLevelContainer:WaitForChild("CoinFrame")
 local PencilFrame = TopLevelContainer:WaitForChild("PencilFrame")
 local LikeFrame = TopLevelContainer:WaitForChild("LikeFrame")
@@ -120,6 +123,10 @@ local function onFeedbackSubmitClicked()
     end)
 end 
 
+local function onInfoButtonClicked()
+    RankProgressTopLevelContainer.Visible = not RankProgressTopLevelContainer.Visible
+end
+
 -- Function to handle game state changes
 local function onGameStateChanged(stateData)
     if stateData and stateData.state then
@@ -148,6 +155,7 @@ table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(FeedbackSubmitBut
 table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(GalleryButton, onGalleryClicked))
 table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(UiToggleButton, onUiToggleClicked))
 table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(TutorialCloseButton, onTutorialCloseButtonClicked))
+table.insert(cleanupFunctions, ButtonEffects.applyHoverEffects(InfoButton, onInfoButtonClicked))
 -- Need to get a better press image
 -- table.insert(cleanupFunctions, ButtonEffects.applyButtonPressEffect(SinglePlayerButton, "rbxassetid://140453037167378"))
 

@@ -6,13 +6,13 @@ local ServerConfig = require(ServerScriptService.modules.ServerConfig)
 local Players = game:GetService("Players")
 local PlayerStore = {}
 local PlayersDataStore = DataStoreService:GetDataStore("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RankConfig = require(ReplicatedStorage.Modules.GameData.RankConfig)
 local MemoryStoreService   = game:GetService("MemoryStoreService")
 local CacheMap             = MemoryStoreService:GetSortedMap("PlayerDataCache") --:contentReference[oaicite:2]{index=2}
 
-local defaultMaximumGallerySize = ServerConfig.DEFAULT_MAXIMUM_GALLERY_SIZE
 local defaultDrawingTTLAfterPlayerLeft = ServerConfig.DEFAULT_DRAWING_TTL_AFTER_PLAYER_LEFT
 local defaultMaximumEnergy = ServerConfig.DEFAULT_MAXIMUM_ENERGY
-local defaultMaximumLikeQuota = ServerConfig.DEFAULT_MAXIMUM_LIKE_QUOTA
 local energyRefreshInterval = ServerConfig.ENERGY_REFRESH_INTERVAL -- 12 * 60 * 60 -- 12 hours
 
 -- Define schema for player data
@@ -127,10 +127,10 @@ function PlayerStore:getPlayer(playerId: string, skipPlayerCheck: boolean?)
             coins                     = 0,
             -- TODO: Update this based on player type or TotalPoints.
             Energy                    = defaultMaximumEnergy,
-            LikeQuota                 = defaultMaximumLikeQuota,
             lastEnergyUpdate          = os.time(),
         }
     end 
+
     -- Self healing
     data.Name                      = data.Name or playerName
     data.TotalPlayCount            = data.TotalPlayCount or 0
@@ -138,14 +138,19 @@ function PlayerStore:getPlayer(playerId: string, skipPlayerCheck: boolean?)
     data.PreviousTotalPoints       = data.PreviousTotalPoints or data.TotalPoints
     data.coins                     = data.coins or 0
     data.Energy                    = data.Energy or defaultMaximumEnergy
-    data.LikeQuota                 = data.LikeQuota or defaultMaximumLikeQuota
     data.lastEnergyUpdate          = data.lastEnergyUpdate or os.time()
+
+
 
     -- TODO: Update these value based on player type or TotalPoints.
     data.maximumEnergy = defaultMaximumEnergy
-    data.maximumLikeQuota = defaultMaximumLikeQuota
     data.drawingTTLAfterPlayerLeft = defaultDrawingTTLAfterPlayerLeft
-    data.maximumGallerySize = defaultMaximumGallerySize
+
+    local playerRankInfo = RankConfig.getRankForPoints(data.TotalPoints)
+    data.maximumLikeQuota = playerRankInfo.maximumLikes
+    data.maximumGallerySize = playerRankInfo.gallerySize
+
+    data.LikeQuota = data.LikeQuota or data.maximumLikeQuota
 
     if data.Energy > data.maximumEnergy then
         data.Energy = data.maximumEnergy

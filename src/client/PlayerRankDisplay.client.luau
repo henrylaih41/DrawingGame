@@ -81,8 +81,24 @@ local function updatePlayerInfo(playerData)
     
     -- Highlight current rank
     for i, rankBar in ipairs(rankBars) do
+
+        local rankInfo = RankConfig.getRankByIndex(i)
+        for _, child in rankBar:GetChildren() do
+            if child:IsA("TextLabel") then
+                child.TextColor3 = rankInfo.color
+            end
+
+            if child.Name == "MaximumLikesLabel" then
+                child.Text = "MaximumLikes: " .. tostring(rankInfo.maximumLikes)
+            end
+
+            if child.Name == "GallerySizeLabel" then
+                child.Text = "GallerySize: " .. tostring(rankInfo.gallerySize)
+            end
+        end
+
         if i == currentIndex then
-            rankBar.BackgroundColor3 = GameConfig.SELECTED_COLOR
+            rankBar.BackgroundColor3 = Color3.fromRGB(90, 90, 90)
             rankBar.BorderSizePixel = 2
             rankBar.BorderColor3 = currentRank.color
         else
@@ -97,7 +113,7 @@ local function toggleRankScreen()
     TopLevelContainer.Visible = not TopLevelContainer.Visible
 
     -- This would play the animation
-    if RankProgressScreen.Visible and cachedPlayerData then
+    if TopLevelContainer.Visible and cachedPlayerData then
         updatePlayerInfo(cachedPlayerData)
     end
 end
