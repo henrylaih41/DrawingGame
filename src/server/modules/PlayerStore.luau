@@ -80,12 +80,12 @@ end
 ---------------------------------------------------------------------
 -- READ -------------------------------------------------------------
 ---------------------------------------------------------------------
-function PlayerStore:getPlayer(playerId: string)
+function PlayerStore:getPlayer(playerId: string, skipPlayerCheck: boolean?)
     local player = Players:GetPlayerByUserId(tonumber(playerId))
 
     local startTime = os.time()
 
-    while not player and os.time() - startTime < ServerConfig.PLAYER_DATA_TIMEOUT do
+    while not player and not skipPlayerCheck and os.time() - startTime < ServerConfig.PLAYER_DATA_TIMEOUT do
         task.wait(0.2)
         player = Players:GetPlayerByUserId(tonumber(playerId))
     end

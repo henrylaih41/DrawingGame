@@ -38,7 +38,7 @@ end)
 local function flushPlayerLikesCache()
 
     for playerId, likes in pairs(playerLikesCache) do
-        local playerData = PlayerStore:getPlayer(playerId)
+        local playerData = PlayerStore:getPlayer(playerId, true)
         playerData.TotalPoints = playerData.TotalPoints + likes
         PlayerStore:savePlayer(playerId, playerData)
         local player = ServerStates.PlayerIdToPlayerMap[playerId]
