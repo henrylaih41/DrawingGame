@@ -34,28 +34,9 @@ local CloseButton = Header:WaitForChild("CloseButton")
 
 local cachedPlayerData = nil
 
--- Create the rank data structure
-local RANKS = {
-    {tier = 1, name = "Beginner", minPoints = 0, maxPoints = 30, color = Color3.fromRGB(240, 240, 240), icon = "📄"},
-    {tier = 2, name = "Rookie Artist", minPoints = 31, maxPoints = 120, color = Color3.fromRGB(128, 128, 128), icon = "✏️"},
-    {tier = 3, name = "Sketch Star", minPoints = 121, maxPoints = 250, color = Color3.fromRGB(135, 206, 235), icon = "⭐"},
-    {tier = 4, name = "Art Adept", minPoints = 251, maxPoints = 420, color = Color3.fromRGB(75, 0, 130), icon = "🎨"},
-    {tier = 5, name = "Creative Pro", minPoints = 421, maxPoints = 630, color = Color3.fromRGB(64, 224, 208), icon = "🖌️"},
-    {tier = 6, name = "Studio Ace", minPoints = 631, maxPoints = 880, color = Color3.fromRGB(50, 205, 50), icon = "🎭"},
-    {tier = 7, name = "Canvas Champion", minPoints = 881, maxPoints = 1180, color = Color3.fromRGB(184, 134, 11), icon = "🏆"},
-    {tier = 8, name = "Master Artist", minPoints = 1181, maxPoints = 1580, color = Color3.fromRGB(255, 215, 0), icon = "👑"},
-    {tier = 9, name = "Art Grandmaster", minPoints = 1581, maxPoints = 2080, color = Color3.fromRGB(255, 182, 193), icon = "🌟"},
-    {tier = 10, name = "Legendary Creator", minPoints = 2081, maxPoints = math.huge, color = Color3.fromRGB(255, 105, 180), icon = "🌈", isAnimated = true}
-}
-
 -- Function to get rank by points
 local function getRankByPoints(points)
-    for _, rank in ipairs(RANKS) do
-        if points >= rank.minPoints and points <= rank.maxPoints then
-            return rank
-        end
-    end
-    return RANKS[1] -- Default to beginner if something goes wrong
+    return RankConfig.getRankForPoints(points) or RankConfig.getRankByIndex(1)
 end
 
 -- Function to update player info display
@@ -71,15 +52,16 @@ local function updatePlayerInfo(playerData)
     playerPointsLabel.Text = tostring(points) .. " Points"
     
     -- Calculate progress to next rank
-    local nextRank = RANKS[currentRank.tier + 1]
+    local currentIndex = RankConfig.getRankIndexForPoints(points) or 1
+    local nextRank = RankConfig.getRankByIndex(currentIndex + 1)
     local progressPercent = 0
     local progressText = ""
-    
+
     if nextRank then
-        local pointsInCurrentRank = points - currentRank.minPoints
-        local pointsNeededForNextRank = nextRank.minPoints - currentRank.minPoints
+        local pointsInCurrentRank = points - currentRank.threshold
+        local pointsNeededForNextRank = nextRank.threshold - currentRank.threshold
         progressPercent = math.clamp(pointsInCurrentRank / pointsNeededForNextRank, 0, 1)
-        local pointsToNext = nextRank.minPoints - points
+        local pointsToNext = nextRank.threshold - points
         progressText = pointsToNext .. " points to " .. nextRank.name
     else
         progressPercent = 1
@@ -99,7 +81,7 @@ local function updatePlayerInfo(playerData)
     
     -- Highlight current rank
     for i, rankBar in ipairs(rankBars) do
-        if i == currentRank.tier then
+        if i == currentIndex then
             rankBar.BackgroundColor3 = GameConfig.SELECTED_COLOR
             rankBar.BorderSizePixel = 2
             rankBar.BorderColor3 = currentRank.color
