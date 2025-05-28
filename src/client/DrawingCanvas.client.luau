@@ -518,14 +518,14 @@ GameStateChangedEvent.OnClientEvent:Connect(function(stateData)
     currentGameState = newState
 
     if newState == GameConstants.PlayerStateEnum.DRAWING then
-        local theme = stateData.theme.Name .. " [" .. stateData.theme.Difficulty .. "]"
+        local themeTitle = stateData.themeName.. " [" .. stateData.themeDifficulty .. "]"
         log("Drawing phase started")
         drawingScreen.Enabled = true
         if not canvasInitialized then initCanvas() end
         if timerRotateScript then
             timerRotateScript.start()
         end
-        canvasTopBar.Theme.Text = theme
+        canvasTopBar.Theme.Text = themeTitle
         canvasTopBar.Theme.AutoLocalize = true
         takeCanvasSnapshot()
         topLevelContainer.Visible = true

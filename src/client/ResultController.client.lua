@@ -190,7 +190,8 @@ end)
 --- @param stateData table Data containing the current game state and additional information.
 Events.GameStateChanged.OnClientEvent:Connect(function(stateData)
     assert(stateData ~= nil, "ResultController: stateData is nil")
-    local theme = stateData.theme
+    local themeName = stateData.themeName
+    local themeDifficulty = stateData.themeDifficulty
     log("ResultController: Game State Changed: ", stateData.state)
 
 
@@ -200,9 +201,9 @@ Events.GameStateChanged.OnClientEvent:Connect(function(stateData)
         feedbackContainer.Visible = false
         bestScoreContainer.Visible = false
         -- Set the theme text
-        resultCanvasTopBar.Theme.Text = theme.Name 
-        if theme.Difficulty then
-            resultCanvasTopBar.Theme.Text = resultCanvasTopBar.Theme.Text .. " [" .. theme.Difficulty .. "]"
+        resultCanvasTopBar.Theme.Text = themeName
+        if themeDifficulty then
+            resultCanvasTopBar.Theme.Text = resultCanvasTopBar.Theme.Text .. " [" .. themeDifficulty .. "]"
         end
         assert(resultScreen ~= nil, "ResultScreen is nil when trying to display results")
 

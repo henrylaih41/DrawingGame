@@ -35,12 +35,7 @@ BackendService.DefaultOptions = {
 }
 
 -- Function to send a request to the OpenAI endpoint
-function BackendService:SendOpenAIRequest(compressedImageData, prompt, theme, playerId)
-    assert(compressedImageData, "Missing compressedImageData parameter")
-    assert(prompt, "Missing prompt parameter")
-    assert(theme, "Missing theme parameter")
-    assert(playerId, "Missing playerId parameter")
-
+function BackendService:SendOpenAIRequest(compressedImageData, prompt, themeName: string, themeDifficulty: string, playerId: number)
     -- Schema for the image data understood by the server API.
     local imageDataForServer = {
         Pixels = compressedImageData.ImageBuffer,
@@ -53,9 +48,9 @@ function BackendService:SendOpenAIRequest(compressedImageData, prompt, theme, pl
         prompt = prompt,
         metadata = {
             playerId = playerId,
-            theme = theme.Name,
-            theme_difficulty = theme.Difficulty,
-            theme_uuid = theme.uuid
+            theme = themeName,
+            theme_difficulty = themeDifficulty,
+            theme_uuid = themeName 
         }
     }
     
@@ -151,7 +146,7 @@ function BackendService:ImageToBase64(image)
     -- you might just want to pass the base64 data through rather than converting it again
 end
 
-function BackendService:submitDrawingToBackendForGrading(player, imageData, theme)
+function BackendService:submitDrawingToBackendForGrading(player, imageData, themeName: string, themeDifficulty: string)
     -- Assert that we have valid image data before proceeding
     if not imageData then
         warn("submitDrawingToBackendForGrading called with nil imageData for player: " .. player.Name)
@@ -167,12 +162,7 @@ function BackendService:submitDrawingToBackendForGrading(player, imageData, them
         return nil, "Failed to compress image data"
     end
 
-    local prompt = "The theme is " .. theme.Name .. " and the guideline is " .. theme.GradingPrompt
-
-    if not prompt then
-        warn("submitDrawingToBackendForGrading failed to get prompt for player: " .. player.Name .. " with theme: " .. tostring(theme))
-        return nil, "Failed to get prompt"
-    end
+    local prompt = "The theme is " .. themeName .. " and the difficulty is " .. themeDifficulty
 
     local responseData, error =
         BackendService:SendOpenAIRequest(compressedImageData, prompt, theme, player.UserId)

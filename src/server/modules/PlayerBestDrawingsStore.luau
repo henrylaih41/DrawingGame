@@ -17,8 +17,8 @@ local function debugPrint(message, ...)
     end
 end
 
-function PlayerBestDrawingsStore:generateDrawingKey(playerId, theme_uuid)
-    return string.format("%d_%s", playerId, theme_uuid)
+function PlayerBestDrawingsStore:generateDrawingKey(playerId: number, themeName: string)
+    return string.format("%d_%s", playerId, themeName)
 end
 
 -- Define schema for image data
@@ -59,16 +59,17 @@ function PlayerBestDrawingsStore:createDrawingData(
     imageData, 
     score: number, 
     points: number, 
-    theme: ThemeStore.Theme, 
+    themeName: string,
+    themeDifficulty: string,
     playerId: string): DrawingData
     return {
         imageData = imageData,
         points = points,
         score = score,
         timestamp = os.time(),
-        theme = theme.Name,
-        theme_difficulty = theme.Difficulty,
-        theme_uuid = theme.uuid,
+        theme = themeName,
+        theme_difficulty = themeDifficulty,
+        theme_uuid = themeName,
         playerId = tostring(playerId),
         uuid = HttpService:GenerateGUID(false),
         likes = 0
@@ -76,12 +77,9 @@ function PlayerBestDrawingsStore:createDrawingData(
 end
 
 -- Function to get a player's drawing for a specific theme
-function PlayerBestDrawingsStore:getPlayerBestDrawing(player, theme_uuid: string)
-    assert(player, "Missing player parameter")
-    assert(theme_uuid, "Missing theme parameter")
-    
+function PlayerBestDrawingsStore:getPlayerBestDrawing(player, themeName: string)
     -- Create a unique key for this player and theme combination
-    local key = self:generateDrawingKey(player.UserId, theme_uuid)
+    local key = self:generateDrawingKey(player.UserId, themeName)
     
     -- Attempt to get the drawing data from the DataStore
     local success, result = pcall(function()
@@ -132,12 +130,8 @@ function PlayerBestDrawingsStore:getPlayerBestDrawing(player, theme_uuid: string
     end)
     
     if success and result then
-        debugPrint("Retrieved drawing for player %s, theme %s", player.Name, theme_uuid)
-        
         return result, nil
     elseif success then
-        -- No data found but operation succeeded
-        debugPrint("No drawing found for player %s, theme %s", player.Name, theme_uuid)
         return nil, "No drawing found"
     else
         -- Operation failed
@@ -146,11 +140,7 @@ function PlayerBestDrawingsStore:getPlayerBestDrawing(player, theme_uuid: string
     end
 end
 
-function PlayerBestDrawingsStore:savePlayerBestDrawing(player, theme_uuid: string, drawingData)
-    assert(player, "Missing player parameter")
-    assert(theme_uuid, "Missing theme parameter")
-    assert(drawingData, "Missing drawingData parameter")
-    
+function PlayerBestDrawingsStore:savePlayerBestDrawing(player, themeName: string, drawingData)
     -- Validate the drawing data against our schema
     local isValid, errorMessage = self.playerBestDrawingSchema:validate(drawingData)
     if not isValid then
@@ -163,7 +153,7 @@ function PlayerBestDrawingsStore:savePlayerBestDrawing(player, theme_uuid: strin
     end
     
     -- Create a unique key for this player and theme combination
-    local key = self:generateDrawingKey(player.UserId, theme_uuid)
+    local key = self:generateDrawingKey(player.UserId, themeName)
     
     -- Attempt to save the drawing data to the DataStore
     local success, result = pcall(function()
@@ -188,9 +178,6 @@ function PlayerBestDrawingsStore:savePlayerBestDrawing(player, theme_uuid: strin
     end)
     
     if success then
-        debugPrint("Successfully saved drawing for player %s, theme %s with score %s", 
-            player.Name, theme_uuid, tostring(drawingData.score))
-            
         return true, nil
     else
         warn("BackendService: Failed to save drawing - " .. tostring(result))

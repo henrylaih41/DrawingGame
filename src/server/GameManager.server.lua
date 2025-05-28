@@ -202,13 +202,12 @@ local function handlePlayerLeft(player: Player)
     PlayerStore:savePlayer(tostring(player.UserId), playerData)
 end
 
-local function runDrawingPhase(player: Player, currentTheme: string)
+local function runDrawingPhase(player: Player)
     local playerState = ServerStates.PlayerState[player]
     playerState.playerDrawings = nil
     playerState.playerScores = nil
     -- Wait for the player to submit.
     playerState.waitSignal.Event:Wait()
-    return currentTheme
 end
 
 local function sendTopPlaysToClient(player: Player, topPlaysUserId: string, topPlays)
@@ -288,7 +287,7 @@ local function storeHighestScoringDrawing(player:Player, drawingData: PlayerBest
     end
 end
 
-local function runGradingPhase(player: Player, currentTheme: ThemeStore.Theme)
+local function runGradingPhase(player: Player, themeName: string, themeDifficulty: string)
     local playerState = ServerStates.PlayerState[player]
     local imageData = playerState.playerDrawings
     if imageData then
@@ -296,20 +295,18 @@ local function runGradingPhase(player: Player, currentTheme: ThemeStore.Theme)
         task.spawn(function()
             local result = nil
             local errorMessage = nil
-            debugPrint("Submitting drawing for grading for player %s", player.Name)
-
             local playerData = PlayerStore:getPlayer(tostring(player.UserId))
             playerData.TotalPlayCount = playerData.TotalPlayCount + 1
             PlayerStore:savePlayer(tostring(player.UserId), playerData, false)
 
             local compressedImageData = nil
-            result, errorMessage, compressedImageData = BackendService:submitDrawingToBackendForGrading(player, imageData, currentTheme)
+            result, errorMessage, compressedImageData = BackendService:submitDrawingToBackendForGrading(player, imageData, themeName, themeDifficulty)
 
             if result and result.success then
                 local score = tonumber(result.result.Score) or 5
-                local points = score * getDifficultyMultiplier(currentTheme.Difficulty)
+                local points = score * getDifficultyMultiplier(themeDifficulty)
                 local drawingData = PlayerBestDrawingsStore:createDrawingData(
-                    compressedImageData, score, points, currentTheme, tostring(player.UserId))
+                    compressedImageData, score, points, themeName, themeDifficulty, tostring(player.UserId))
 
                 playerState.drawingData = drawingData
 
@@ -317,7 +314,8 @@ local function runGradingPhase(player: Player, currentTheme: ThemeStore.Theme)
                     drawing = imageData,
                     score = drawingData.score,
                     feedback = result.result.Feedback,
-                    theme = currentTheme
+                    themeName = themeName,
+                    themeDifficulty = themeDifficulty
                 } 
                 
                 storeHighestScoringDrawing(player, drawingData)
@@ -348,7 +346,8 @@ local function runGradingPhase(player: Player, currentTheme: ThemeStore.Theme)
                     drawing = imageData, 
                     score = 5, 
                     feedback = "Opps! Something went wrong. Sorry about that. Please try again later.",
-                    theme = currentTheme
+                    themeName = themeName,
+                    themeDifficulty = themeDifficulty
                 }
             end
 
@@ -394,25 +393,24 @@ local function handleSaveToGallery(player: Player, imageData: string)
 end
 
 -- Game Flow
-local function startDrawing(player: Player, theme_uuid: string)
+local function startDrawing(player: Player, themeName: string, themeDifficulty: string)
     local playerState = ServerStates.PlayerState[player]
-    local currentTheme = ThemeStore:getTheme(theme_uuid)
 
     -- === DRAWING PHASE ===
-    UpdatePlayerStateAndNotifyClient(player, GameConstants.PlayerStateEnum.DRAWING, {theme = currentTheme})
-    runDrawingPhase(player, currentTheme)
+    UpdatePlayerStateAndNotifyClient(player, GameConstants.PlayerStateEnum.DRAWING, {themeName = themeName, themeDifficulty = themeDifficulty})
+    runDrawingPhase(player)
     
         -- === GRADING PHASE (Single Player) ===
     UpdatePlayerStateAndNotifyClient(player, GameConstants.PlayerStateEnum.GRADING)
-    runGradingPhase(player, currentTheme)
+    runGradingPhase(player, themeName, themeDifficulty)
 
     -- Get the current best score for the theme
-    local bestScoreData, errorMessage = PlayerBestDrawingsStore:getPlayerBestDrawing(player, currentTheme.uuid)
+    local bestScoreData, errorMessage = PlayerBestDrawingsStore:getPlayerBestDrawing(player, themeName)
     local bestScore = nil   
 
     if not bestScoreData then
         if errorMessage then
-            warn("Error getting best score for theme %s: %s", currentTheme, errorMessage)
+            warn("Error getting best score for theme %s: %s", themeName, errorMessage)
         end
         bestScore = {
             drawing = nil,
@@ -430,7 +428,7 @@ local function startDrawing(player: Player, theme_uuid: string)
 
     -- === RESULTS PHASE ===
     UpdatePlayerStateAndNotifyClient(player, GameConstants.PlayerStateEnum.RESULTS, 
-        {bestScore = bestScore, playerScores = ServerStates.PlayerState[player].playerScores, theme = currentTheme})
+        {bestScore = bestScore, playerScores = ServerStates.PlayerState[player].playerScores, themeName = themeName, themeDifficulty = themeDifficulty})
     debugPrint("Displaying single-player results. Waiting for player to click menu button.")
     
     local connection
@@ -462,7 +460,7 @@ local function handleDrawingSubmission(player, imageData)
     playerState.waitSignal:Fire()
 end
 
-local function handlestartDrawing(player: Player, theme_uuid: string)
+local function handlestartDrawing(player: Player, themeName: string, themeDifficulty: string)
     -- Check if the player has enough energy to draw.
     local playerData = PlayerStore:getPlayer(tostring(player.UserId))
 
@@ -476,7 +474,7 @@ local function handlestartDrawing(player: Player, theme_uuid: string)
     end
     
     -- Start the game
-    startDrawing(player, theme_uuid)
+    startDrawing(player, themeName, themeDifficulty)
 end
 
 local function sendThemeListPageToClient(player)
