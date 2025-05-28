@@ -114,6 +114,7 @@ local function populateDisplayCanvases()
     local topScores = LeaderboardService.getCachedTopScores()
     if not topScores or #topScores == 0 then
         warn("No top scores available to populate display canvases")
+        ServerStates.ServerDisplayImageReady = true
         return
     end
 
@@ -129,7 +130,7 @@ local function populateDisplayCanvases()
 
         if canvas == nil then
             warn("Canvas is nil in populateDisplayCanvases")
-            return
+            continue
         end
 
         if drawing then
