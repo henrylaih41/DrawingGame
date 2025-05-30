@@ -109,7 +109,7 @@ local function updatePlayerInfo(playerData)
             end
 
             if child.Name == "MaximumLikesLabel" then
-                child.Text = "MaximumLikes: " .. tostring(rankInfo.maximumLikes)
+                child.Text = "Max Likes: " .. tostring(rankInfo.maximumLikes)
             end
 
             if child.Name == "GallerySizeLabel" then
