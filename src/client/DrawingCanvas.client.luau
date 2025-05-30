@@ -520,7 +520,6 @@ GameStateChangedEvent.OnClientEvent:Connect(function(stateData)
     if newState == GameConstants.PlayerStateEnum.DRAWING then
         local themeTitle = stateData.themeName.. " [" .. stateData.themeDifficulty .. "]"
         log("Drawing phase started")
-        drawingScreen.Enabled = true
         if not canvasInitialized then initCanvas() end
         if timerRotateScript then
             timerRotateScript.start()
@@ -532,7 +531,6 @@ GameStateChangedEvent.OnClientEvent:Connect(function(stateData)
         log("Drawing phase enabled")
     else
         log("Drawing Canvas received event:" .. newState)
-        drawingScreen.Enabled = false
         topLevelContainer.Visible = false
         if prev == GameConstants.PlayerStateEnum.DRAWING then
             log("Cleaning up drawing phase")
