@@ -7,6 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 local CollectionService = game:GetService("CollectionService")
 local RunService = game:GetService("RunService")
+local MarketplaceService = game:GetService("MarketplaceService")
 local GameConstants = require(ReplicatedStorage.Modules.GameData.GameConstants)
 local PlayerStore = require(ServerScriptService.modules.PlayerStore)
 local TopPlaysStore = require(ServerScriptService.modules.TopPlaysStore)
@@ -27,6 +28,10 @@ local Events = ReplicatedStorage:WaitForChild("Events")
 
 local ServerConfig = require(ServerScriptService.modules.ServerConfig)
 local DEBUG_ENABLED = ServerConfig.DEBUG_ENABLED
+
+-- Supporter Game Pass Configuration
+local SUPPORTER_GAMEPASS_ID = 1236506882
+local supporterStatusCache = {} -- Simple cache for supporter status
 
 local displayCanvasRequestQueues = {} -- [player] = {queue, lastProcessTime, requestsThisSecond}
 
@@ -144,6 +149,34 @@ local function populateDisplayCanvases()
     ServerStates.ServerDisplayImageReady = true
 end
 
+-- Function to check if player owns supporter game pass
+local function checkSupporterStatus(userId)
+    -- Check cache first
+    local cached = supporterStatusCache[tostring(userId)]
+    if cached ~= nil then
+        return cached
+    end
+    
+    -- Not in cache, check with MarketplaceService
+    local success, hasPass = pcall(function()
+        return MarketplaceService:UserOwnsGamePassAsync(userId, SUPPORTER_GAMEPASS_ID)
+    end)
+    
+    if success then
+        -- Update cache
+        supporterStatusCache[tostring(userId)] = hasPass
+        return hasPass
+    else
+        warn("Failed to check supporter status for user " .. userId)
+        return false
+    end
+end
+
+-- Function to clear supporter cache for a specific player
+local function clearSupporterCache(userId)
+    supporterStatusCache[tostring(userId)] = nil
+end
+
 -- Player Management
 local function handlePlayerJoined(player)
     -- Update the player state.
@@ -160,6 +193,9 @@ local function handlePlayerJoined(player)
 
     -- Load the persistent player data.
     local playerData = PlayerStore:getPlayer(tostring(player.UserId))
+    
+    -- Check supporter status and add to playerData
+    playerData.isSupporter = checkSupporterStatus(player.UserId)
 
     -- Save it back to the store so we can self heal player Name.
     PlayerStore:savePlayer(tostring(player.UserId), playerData)
@@ -178,6 +214,9 @@ end
 local function handlePlayerLeft(player: Player)
     -- Clean up display canvas queue
     cleanupDisplayCanvasQueue(player)
+    
+    -- Clear supporter cache for this player
+    clearSupporterCache(player.UserId)
     
     local playerData = PlayerStore:getPlayer(tostring(player.UserId))
     local ownedCanvasList = ServerStates.PlayerState[player].ownedCanvas
@@ -588,8 +627,11 @@ end
 local function handleRequestAllPlayerData(player)
     -- TODO: We can cache this if datastore requests are limited.
     for _, p in Players:GetPlayers() do
+        local playerData = PlayerStore:getPlayer(tostring(p.UserId))
+        -- Add supporter status to playerData
+        playerData.isSupporter = checkSupporterStatus(p.UserId)
         Events.PlayerDataUpdated:FireClient(
-            player, {player = p, playerData = PlayerStore:getPlayer(tostring(p.UserId))})
+            player, {player = p, playerData = playerData})
     end
 end
 

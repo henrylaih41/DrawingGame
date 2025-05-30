@@ -1,7 +1,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
-local MarketplaceService = game:GetService("MarketplaceService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local GameConfig = require(ReplicatedStorage.Modules.GameData.GameConfig)
@@ -19,13 +18,12 @@ local NAME_TEXT_SIZE = UDim2.new(1, 0, 0.5, 0) -- Adjusted size
 local RANK_TEXT_SIZE = UDim2.new(1, 0, 0.3, 0) -- Adjusted size
 local SUPPORTER_TEXT_SIZE = UDim2.new(1, 0, 0.2, 0) -- New size for supporter title
 
--- Supporter Game Pass Configuration
-local SUPPORTER_GAMEPASS_ID = 1236506882
+-- Supporter Title Configuration
 local SUPPORTER_TITLE_COLOR1 = Color3.fromRGB(255, 215, 0) -- Gold
 
 -- Store BillboardGuis for each player
 local playerBillboards = {}
-local playerSupporterStatus = {} -- Cache supporter status
+local playerCharacters = {} -- Store characters waiting for player data
 local rankBars = {}
 local TopLevelContainer = RankProgressScreen:WaitForChild("TopLevelContainer")
 local Header = TopLevelContainer:WaitForChild("Header")
@@ -140,33 +138,8 @@ local function toggleRankScreen()
     end
 end
 
--- Function to check if player owns supporter game pass
-local function isSupporter(userId)
-    -- Check cache first
-    if playerSupporterStatus[userId] ~= nil then
-        return playerSupporterStatus[userId]
-    end
-    
-    -- Check game pass ownership
-    local success, hasPass = pcall(function()
-        return MarketplaceService:UserOwnsGamePassAsync(userId, SUPPORTER_GAMEPASS_ID)
-    end)
-
-    if success then
-        playerSupporterStatus[userId] = hasPass
-        return hasPass 
-    else
-        warn("Failed to check supporter status for user " .. userId)
-        return false
-    end
-end
-
 -- Function to create animated supporter title
-local function createSupporterTitle(frame, player)
-    if not isSupporter(player.UserId) then
-        return nil
-    end
-    
+local function createSupporterTitle(frame)
     -- Create supporter title label
     local supporterLabel = Instance.new("TextLabel")
     supporterLabel.Name = "SupporterLabel"
@@ -188,7 +161,13 @@ local function createSupporterTitle(frame, player)
 end
 
 -- Function to create a BillboardGui for a player
-local function createPlayerBillboard(player, character)
+local function createPlayerBillboard(player, character, isSupporter)
+
+    -- Check if the player already has a BillboardGui
+    if playerBillboards[player.UserId] then
+        return
+    end
+
     -- Check if character exists
     if not character then 
         warn("Character not found for " .. player.Name)
@@ -249,7 +228,10 @@ local function createPlayerBillboard(player, character)
     rankLabel.Parent = frame
     
     -- Create supporter title if applicable
-    local supporterData = createSupporterTitle(frame, player)
+    local supporterData = nil
+    if isSupporter then
+        supporterData = createSupporterTitle(frame)
+    end
     
     -- Parent the BillboardGui to the character
     billboardGui.Parent = character
@@ -279,11 +261,32 @@ local function updatePlayerBillboard(player, playerData)
 
     -- Get the BillboardGui for this player
     local billboardData = playerBillboards[player.UserId]
-    if not billboardData then return end
+    if not billboardData then 
+        -- If no billboard exists but character exists, create one
+        if player.Character then
+            createPlayerBillboard(player, player.Character, playerData.isSupporter)
+            billboardData = playerBillboards[player.UserId]
+            if not billboardData then return end
+        else
+            return
+        end
+    end
 
     -- Update the rank label with points included
     billboardData.rankLabel.Text = string.format("%s (%s)", rankInfo.name, tostring(points))
     billboardData.rankLabel.TextColor3 = rankInfo.color or Color3.fromRGB(255, 255, 255)
+    
+    -- Update supporter status
+    if playerData.isSupporter and not billboardData.supporterData then
+        -- Player became a supporter, add the title
+        billboardData.supporterData = createSupporterTitle(billboardData.billboard.Container)
+    elseif not playerData.isSupporter and billboardData.supporterData then
+        -- Player is no longer a supporter, remove the title
+        if billboardData.supporterData.label then
+            billboardData.supporterData.label:Destroy()
+        end
+        billboardData.supporterData = nil
+    end
 end
 
 -- Function to handle when a player's character is added
@@ -299,8 +302,8 @@ local function onCharacterAdded(player, character)
         humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
     end
 
-    -- Create a new BillboardGui for the player
-    createPlayerBillboard(player, character)
+    -- Store the character and wait for player data
+    playerCharacters[player.UserId] = character
 end
 
 -- Function to handle when a player's character is removed
@@ -314,8 +317,9 @@ local function onCharacterRemoved(player)
         end
     end
     
-    -- Remove the player from our tracking table
+    -- Remove the player from our tracking tables
     playerBillboards[player.UserId] = nil
+    playerCharacters[player.UserId] = nil
 end
 
 -- Function to handle when a player is added to the game
@@ -354,7 +358,11 @@ local function onPlayerDataUpdated(data)
         cachedPlayerData = playerData
     end
     
-    updatePlayerBillboard(player, playerData)
+    -- Check if we have a character waiting for this player's data
+    local character = playerCharacters[player.UserId] or player.Character
+    if character then
+        updatePlayerBillboard(player, playerData)
+    end
 end
 
 local function init()
@@ -395,7 +403,7 @@ local function cleanup()
     
     -- Clear the tracking tables
     playerBillboards = {}
-    playerSupporterStatus = {}
+    playerCharacters = {}
 end
 
 init()
