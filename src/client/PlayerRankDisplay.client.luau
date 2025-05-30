@@ -1,6 +1,8 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
+local MarketplaceService = game:GetService("MarketplaceService")
+local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local GameConfig = require(ReplicatedStorage.Modules.GameData.GameConfig)
 local RankConfig = require(ReplicatedStorage.Modules.GameData.RankConfig)
@@ -12,12 +14,18 @@ local PlayerDataUpdatedEvent = Events:WaitForChild("PlayerDataUpdated")
 
 -- Constants for BillboardGui appearance
 local BILLBOARD_SIZE = UDim2.new(4, 0, 1.5, 0)
-local BILLBOARD_OFFSET = Vector3.new(0, 2, 0)
-local NAME_TEXT_SIZE = UDim2.new(1, 0, 0.5, 0)
-local RANK_TEXT_SIZE = UDim2.new(1, 0, 0.3, 0)
+local BILLBOARD_OFFSET = Vector3.new(0, 2, 0) -- Increased offset to make room for supporter title
+local NAME_TEXT_SIZE = UDim2.new(1, 0, 0.5, 0) -- Adjusted size
+local RANK_TEXT_SIZE = UDim2.new(1, 0, 0.3, 0) -- Adjusted size
+local SUPPORTER_TEXT_SIZE = UDim2.new(1, 0, 0.2, 0) -- New size for supporter title
+
+-- Supporter Game Pass Configuration
+local SUPPORTER_GAMEPASS_ID = 1236506882
+local SUPPORTER_TITLE_COLOR1 = Color3.fromRGB(255, 215, 0) -- Gold
 
 -- Store BillboardGuis for each player
 local playerBillboards = {}
+local playerSupporterStatus = {} -- Cache supporter status
 local rankBars = {}
 local TopLevelContainer = RankProgressScreen:WaitForChild("TopLevelContainer")
 local Header = TopLevelContainer:WaitForChild("Header")
@@ -132,6 +140,53 @@ local function toggleRankScreen()
     end
 end
 
+-- Function to check if player owns supporter game pass
+local function isSupporter(userId)
+    -- Check cache first
+    if playerSupporterStatus[userId] ~= nil then
+        return playerSupporterStatus[userId]
+    end
+    
+    -- Check game pass ownership
+    local success, hasPass = pcall(function()
+        return MarketplaceService:UserOwnsGamePassAsync(userId, SUPPORTER_GAMEPASS_ID)
+    end)
+
+    if success then
+        playerSupporterStatus[userId] = hasPass
+        return hasPass 
+    else
+        warn("Failed to check supporter status for user " .. userId)
+        return false
+    end
+end
+
+-- Function to create animated supporter title
+local function createSupporterTitle(frame, player)
+    if not isSupporter(player.UserId) then
+        return nil
+    end
+    
+    -- Create supporter title label
+    local supporterLabel = Instance.new("TextLabel")
+    supporterLabel.Name = "SupporterLabel"
+    supporterLabel.Size = SUPPORTER_TEXT_SIZE
+    supporterLabel.Position = UDim2.new(0, 0, 0.05, 0) -- Position above name
+    supporterLabel.BackgroundTransparency = 1
+    supporterLabel.TextColor3 = SUPPORTER_TITLE_COLOR1
+    supporterLabel.TextStrokeTransparency = 0
+    supporterLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    supporterLabel.Font = Enum.Font.GothamBold
+    supporterLabel.TextScaled = true
+    supporterLabel.Text = "⭐ SUPPORTER ⭐"
+    supporterLabel.Parent = frame
+    
+    -- Store animation cleanup
+    return {
+        label = supporterLabel,
+    }
+end
+
 -- Function to create a BillboardGui for a player
 local function createPlayerBillboard(player, character)
     -- Check if character exists
@@ -170,7 +225,7 @@ local function createPlayerBillboard(player, character)
     local nameLabel = Instance.new("TextLabel")
     nameLabel.Name = "NameLabel"
     nameLabel.Size = NAME_TEXT_SIZE
-    nameLabel.Position = UDim2.new(0, 0, 0, 0)
+    nameLabel.Position = UDim2.new(0, 0, 0.25, 0) -- Adjusted position
     nameLabel.BackgroundTransparency = 1
     nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     nameLabel.TextStrokeTransparency = 0.5
@@ -184,7 +239,7 @@ local function createPlayerBillboard(player, character)
     local rankLabel = Instance.new("TextLabel")
     rankLabel.Name = "RankLabel"
     rankLabel.Size = RANK_TEXT_SIZE
-    rankLabel.Position = UDim2.new(0, 0, 0.5, 0)
+    rankLabel.Position = UDim2.new(0, 0, 0.75, 0) -- Adjusted position
     rankLabel.BackgroundTransparency = 1
     rankLabel.TextStrokeTransparency = 0.5
     rankLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
@@ -192,6 +247,9 @@ local function createPlayerBillboard(player, character)
     rankLabel.TextScaled = true
     rankLabel.Text = ""
     rankLabel.Parent = frame
+    
+    -- Create supporter title if applicable
+    local supporterData = createSupporterTitle(frame, player)
     
     -- Parent the BillboardGui to the character
     billboardGui.Parent = character
@@ -201,6 +259,7 @@ local function createPlayerBillboard(player, character)
         billboard = billboardGui,
         nameLabel = nameLabel,
         rankLabel = rankLabel,
+        supporterData = supporterData
     }
     
     return billboardGui
@@ -248,8 +307,11 @@ end
 local function onCharacterRemoved(player)
     -- Clean up the BillboardGui for this player
     local billboardData = playerBillboards[player.UserId]
-    if billboardData and billboardData.billboard then
-        billboardData.billboard:Destroy()
+    if billboardData then
+        -- Destroy billboard
+        if billboardData.billboard then
+            billboardData.billboard:Destroy()
+        end
     end
     
     -- Remove the player from our tracking table
@@ -331,8 +393,9 @@ local function cleanup()
         end
     end
     
-    -- Clear the tracking table
+    -- Clear the tracking tables
     playerBillboards = {}
+    playerSupporterStatus = {}
 end
 
 init()
