@@ -88,6 +88,20 @@ local function updatePlayerInfo(playerData)
                 child.TextColor3 = rankInfo.color
             end
 
+            if child.Name == "PointsRange" then
+                local rank_i = RankConfig.getRankByIndex(i)
+                local rank_i_1 = RankConfig.getRankByIndex(i + 1)
+
+                local threshold_i = rank_i.threshold
+                local threshold_i_1 = "∞"
+
+                if rank_i_1 then
+                    threshold_i_1 = rank_i_1.threshold - 1
+                end 
+
+                child.Text = tostring(threshold_i) .. " - " .. tostring(threshold_i_1) .. " Points"
+            end
+
             if child.Name == "MaximumLikesLabel" then
                 child.Text = "MaximumLikes: " .. tostring(rankInfo.maximumLikes)
             end
