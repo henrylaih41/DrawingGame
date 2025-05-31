@@ -49,7 +49,7 @@ local BRUSH_SIZE_MIN, BRUSH_SIZE_MAX = 1, 20
 local PENCIL_BRUSH_SIZE  = 5   -- default
 local ERASER_BRUSH_SIZE  = 10  -- default
 
-local DRAWING_MODE             = "PENCIL"  -- "PENCIL" | "ERASER"
+local DRAWING_MODE             = "PENCIL"  -- "PENCIL" | "ERASER" | "ZOOM"
 local CURRENT_COLOR            = Color3.new(0,0,0)
 local CANVAS_BACKGROUND_COLOR
 
@@ -65,6 +65,24 @@ local uiConnections = {}
 local undoStack = {}
 local redoStack = {}
 local MAX_HISTORY = 20  -- Maximum number of states to remember
+
+-- Zoom variables
+local ZOOM_LEVEL = 1
+local ZOOM_MIN = 0.8
+local ZOOM_MAX = 3
+local ZOOM_STEP = 0.1
+local canvasOriginalSize = nil
+local canvasOriginalPosition = nil  -- Add this to store original position
+local zoomPinchDistance = nil
+
+-- Canvas drag variables for ZOOM mode
+local IS_DRAGGING_CANVAS = false
+local canvasDragStartPos = nil
+local canvasDragStartMouse = nil
+local MAX_DRAG_DISTANCE_SCALE = 1.5  -- Maximum 150% of viewport size the canvas can be dragged from origin
+
+-- Multi-touch tracking
+local activeTouches = {}  -- Track active touch inputs
 
 -- Add this near the top with other declarations
 local ScreenTransitionEvent = Instance.new("BindableEvent")
@@ -84,6 +102,7 @@ local drawingScreen, timeLabel, canvasContainer, canvasFrame, topLevelContainer,
 local brushIndicatorPencil, brushIndicatorEraser
 local canvas, cp
 local submitNotification
+local controlsFrame, colorPickerFrame  -- Add references to UI frames
 
 ------------------------------------------------------------------------
 -- 7️⃣  INDICATOR HELPERS
@@ -184,37 +203,93 @@ end
 ------------------------------------------------------------------------
 -- 9️⃣  UI BUTTON SETUP
 ------------------------------------------------------------------------
-local function updateModeButtonsAppearance(pencilButton, eraserButton)
-    -- Reset both buttons
+local function updateModeButtonsAppearance(pencilButton, eraserButton, magnifyingGlassButton)
+    -- Reset all buttons
     pencilButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     eraserButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    magnifyingGlassButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     
     -- Highlight active button
     if DRAWING_MODE == "PENCIL" then
         pencilButton.BackgroundColor3 = Color3.fromRGB(85, 85, 85)
-    else -- ERASER
+    elseif DRAWING_MODE == "ERASER" then
         eraserButton.BackgroundColor3 = Color3.fromRGB(85, 85, 85)
+    else -- ZOOM
+        magnifyingGlassButton.BackgroundColor3 = Color3.fromRGB(85, 85, 85)
     end
 end
 
-local function setupPencilAndEraserButtons(controls: Frame)
+local function applyZoom()
+    if not canvasFrame or not canvasOriginalSize then return end
+    
+    -- Apply zoom by scaling the canvas frame
+    local newSize = canvasOriginalSize * ZOOM_LEVEL
+    canvasFrame.Size = UDim2.new(0, newSize.X, 0, newSize.Y)
+end
+
+local function resetZoom()
+    ZOOM_LEVEL = 1
+    if canvasFrame and canvasOriginalSize then
+        canvasFrame.Size = UDim2.new(0, canvasOriginalSize.X, 0, canvasOriginalSize.Y)
+    end
+    -- Reset position as well
+    if canvasFrame and canvasOriginalPosition then
+        canvasFrame.Position = canvasOriginalPosition
+    end
+end
+
+local function snapCanvasToOrigin()
+    if not canvasFrame or not canvasOriginalPosition then return end
+    canvasFrame.Position = canvasOriginalPosition
+end
+
+local function checkCanvasBounds()
+    if not canvasFrame or not canvasOriginalPosition then return false end
+    
+    local currentPos = canvasFrame.Position
+    local originalX = canvasOriginalPosition.X.Offset
+    local originalY = canvasOriginalPosition.Y.Offset
+    local currentX = currentPos.X.Offset
+    local currentY = currentPos.Y.Offset
+    
+    local distance = math.sqrt((currentX - originalX)^2 + (currentY - originalY)^2)
+    
+    -- Calculate max distance based on viewport size
+    local viewportSize = workspace.CurrentCamera.ViewportSize
+    local maxDistance = math.min(viewportSize.X, viewportSize.Y) * MAX_DRAG_DISTANCE_SCALE
+    
+    return distance <= maxDistance
+end
+
+local function setupButtons(controls: Frame)
     local pencilButton = controls:WaitForChild("PencilButton")
     local eraserButton = controls:WaitForChild("EraserButton")
+    local magnifyingGlassButton = controls:WaitForChild("MagnifyingGlassButton")
 
     -- Setup pencil button
     local connections = {}
     table.insert(connections, pencilButton.MouseButton1Click:Connect(function()
         DRAWING_MODE = "PENCIL"
-        updateModeButtonsAppearance(pencilButton, eraserButton)
+        updateModeButtonsAppearance(pencilButton, eraserButton, magnifyingGlassButton)
         refreshIndicatorSizes()
     end))
     
     -- Setup eraser button
     table.insert(connections, eraserButton.MouseButton1Click:Connect(function()
         DRAWING_MODE = "ERASER"
-        updateModeButtonsAppearance(pencilButton, eraserButton)
+        updateModeButtonsAppearance(pencilButton, eraserButton, magnifyingGlassButton)
         refreshIndicatorSizes()
     end))
+    
+    -- Setup magnifying glass button
+    table.insert(connections, magnifyingGlassButton.MouseButton1Click:Connect(function()
+        DRAWING_MODE = "ZOOM"
+        updateModeButtonsAppearance(pencilButton, eraserButton, magnifyingGlassButton)
+        -- Hide brush indicators when in zoom mode
+        if brushIndicatorPencil then brushIndicatorPencil.Visible = false end
+        if brushIndicatorEraser then brushIndicatorEraser.Visible = false end
+    end))
+    
     -- Add cleanup function
     local cleanup = function()
         for _, connection in ipairs(connections) do
@@ -225,13 +300,13 @@ local function setupPencilAndEraserButtons(controls: Frame)
     
     -- Set initial button appearance based on default mode
     task.defer(function()
-        updateModeButtonsAppearance(pencilButton, eraserButton)
+        updateModeButtonsAppearance(pencilButton, eraserButton, magnifyingGlassButton)
     end)
 end
 
 local function setupUndoButton(controls: Frame)
     local undoButton = controls:WaitForChild("UndoButton")
-
+    
     local cleanup = ButtonEffects.applyHoverEffects(undoButton, function()
         if #undoStack > 1 and canvas then               -- at least two states
             local current = table.remove(undoStack)     -- pop current
@@ -338,6 +413,10 @@ local function initCanvas()
     submitNotification.Visible = false
 
     CANVAS_BACKGROUND_COLOR = canvasFrame.BackgroundColor3
+    
+    -- Store original canvas size and position for zoom
+    canvasOriginalSize = canvasFrame.AbsoluteSize
+    canvasOriginalPosition = canvasFrame.Position  -- Store original position
 
     local CanvasDraw = require(ReplicatedStorage.Modules.Canvas.CanvasDraw)
     local sz = canvasFrame.AbsoluteSize
@@ -384,12 +463,13 @@ local function initCanvas()
     ------------------------------------------------------------------
     -- SLIDERS
     ------------------------------------------------------------------
-    local sliders = topLevelContainer:WaitForChild("ColorPickerContainer")
-    bindBrushSlider(sliders:WaitForChild("BrushSizeSlider"),
+    local colorPicker = topLevelContainer:WaitForChild("ColorPickerContainer")
+    colorPickerFrame = colorPicker  -- Store reference for input checking
+    bindBrushSlider(colorPicker:WaitForChild("BrushSizeSlider"),
         function() return PENCIL_BRUSH_SIZE end,
         function(v) PENCIL_BRUSH_SIZE = v end)
 
-    bindBrushSlider(sliders:WaitForChild("EraserSizeSlider"),
+    bindBrushSlider(colorPicker:WaitForChild("EraserSizeSlider"),
         function() return ERASER_BRUSH_SIZE end,
         function(v) ERASER_BRUSH_SIZE = v end)
 
@@ -397,7 +477,8 @@ local function initCanvas()
     -- CONTROL BUTTONS
     ------------------------------------------------------------------
     local controls = topLevelContainer:WaitForChild("Controls")
-    setupPencilAndEraserButtons(controls)
+    controlsFrame = controls  -- Store reference for input checking
+    setupButtons(controls)
     setupClearButton(controls)
     setupSubmitButton(controls)
     setupUndoButton(controls)
@@ -409,6 +490,9 @@ local function initCanvas()
     local prevX, prevY
     local function handleDrawing(input: InputObject)
         if not canvas or not topLevelContainer.Visible then return end
+        
+        -- Don't draw in zoom mode
+        if DRAWING_MODE == "ZOOM" then return end
 
         local pos   = Vector2.new(input.Position.X, input.Position.Y)
         local inset = drawingScreen.IgnoreGuiInset and Vector2.new(0,0) or GuiService:GetGuiInset()
@@ -445,28 +529,123 @@ local function initCanvas()
     local uisInputBeganConnection
     local uisInputChangedDrawingConnection
     local uisInputEndedConnection
+    local uisMouseWheelConnection
+    local uisPinchConnection
+    local uisTouchStartedConnection
+    local uisTouchEndedConnection
+
+    -- Track touch inputs for multi-touch detection
+    uisTouchStartedConnection = UserInputService.TouchStarted:Connect(function(touch, gameProcessed)
+        activeTouches[touch] = true
+        
+        -- If multiple touches detected while dragging, cancel the drag
+        local touchCount = 0
+        for _ in pairs(activeTouches) do
+            touchCount = touchCount + 1
+        end
+        
+        if touchCount > 1 and IS_DRAGGING_CANVAS then
+            IS_DRAGGING_CANVAS = false
+            canvasDragStartPos = nil
+            canvasDragStartMouse = nil
+            log("Canvas drag cancelled - multiple touches detected")
+        end
+    end)
+    
+    uisTouchEndedConnection = UserInputService.TouchEnded:Connect(function(touch, gameProcessed)
+        activeTouches[touch] = nil
+    end)
 
     uisInputBeganConnection = UserInputService.InputBegan:Connect(function(i)
-        if currentGameState==GameConstants.PlayerStateEnum.DRAWING and (i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch) then
-            local pos = Vector2.new(i.Position.X, i.Position.Y)
-            local inset = drawingScreen.IgnoreGuiInset and Vector2.new(0,0) or GuiService:GetGuiInset()
-            pos -= Vector2.new(0, inset.Y)
-            
-            local cPos, cSize = canvasFrame.AbsolutePosition, canvasFrame.AbsoluteSize
-            if not (pos.X < cPos.X or pos.X > cPos.X+cSize.X or pos.Y < cPos.Y or pos.Y > cPos.Y+cSize.Y) then
-                IS_DRAWING = true
+        if currentGameState==GameConstants.PlayerStateEnum.DRAWING then
+            if DRAWING_MODE ~= "ZOOM" and (i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch) then
+                local pos = Vector2.new(i.Position.X, i.Position.Y)
+                local inset = drawingScreen.IgnoreGuiInset and Vector2.new(0,0) or GuiService:GetGuiInset()
+                pos -= Vector2.new(0, inset.Y)
+                
+                -- Check if click is on UI controls or color picker
+                if controlsFrame and colorPickerFrame then
+                    local controlsPos = controlsFrame.AbsolutePosition
+                    local controlsSize = controlsFrame.AbsoluteSize
+                    local colorPickerPos = colorPickerFrame.AbsolutePosition
+                    local colorPickerSize = colorPickerFrame.AbsoluteSize
+                    
+                    -- Check if click is within Controls frame
+                    if pos.X >= controlsPos.X and pos.X <= controlsPos.X + controlsSize.X and
+                       pos.Y >= controlsPos.Y and pos.Y <= controlsPos.Y + controlsSize.Y then
+                        log("Click on Controls - drawing prevented")
+                        return
+                    end
+                    
+                    -- Check if click is within ColorPicker frame
+                    if pos.X >= colorPickerPos.X and pos.X <= colorPickerPos.X + colorPickerSize.X and
+                       pos.Y >= colorPickerPos.Y and pos.Y <= colorPickerPos.Y + colorPickerSize.Y then
+                        log("Click on ColorPicker - drawing prevented")
+                        return
+                    end
+                end
+                
+                local cPos, cSize = canvasFrame.AbsolutePosition, canvasFrame.AbsoluteSize
+                if not (pos.X < cPos.X or pos.X > cPos.X+cSize.X or pos.Y < cPos.Y or pos.Y > cPos.Y+cSize.Y) then
+                    IS_DRAWING = true
+                end
+                log("Drawing input began")
+                handleDrawing(i)
+            elseif DRAWING_MODE == "ZOOM" and (i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch) then
+                -- Only start dragging if it's a single touch (or mouse)
+                local touchCount = 0
+                for _ in pairs(activeTouches) do
+                    touchCount = touchCount + 1
+                end
+                
+                -- For mouse input, always allow. For touch, only allow if single touch
+                if i.UserInputType == Enum.UserInputType.MouseButton1 or touchCount <= 1 then
+                    -- Start canvas dragging in ZOOM mode
+                    IS_DRAGGING_CANVAS = true
+                    canvasDragStartPos = canvasFrame.Position
+                    canvasDragStartMouse = Vector2.new(i.Position.X, i.Position.Y)
+                    log("Canvas drag started")
+                else
+                    log("Canvas drag prevented - multiple touches detected")
+                end
             end
-            log("Drawing input began")
-            handleDrawing(i)
         end
     end)
 
     uisInputChangedDrawingConnection = UserInputService.InputChanged:Connect(function(i)
         if IS_DRAWING and 
+            DRAWING_MODE ~= "ZOOM" and
             (i.UserInputType==Enum.UserInputType.MouseMovement or
              i.UserInputType==Enum.UserInputType.Touch) and
             currentGameState==GameConstants.PlayerStateEnum.DRAWING then
             handleDrawing(i)
+        elseif IS_DRAGGING_CANVAS and 
+            DRAWING_MODE == "ZOOM" and
+            (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) and
+            currentGameState==GameConstants.PlayerStateEnum.DRAWING then
+            -- Handle canvas dragging
+            if canvasDragStartPos and canvasDragStartMouse then
+                local currentMouse = Vector2.new(i.Position.X, i.Position.Y)
+                local delta = currentMouse - canvasDragStartMouse
+                
+                -- Update canvas position
+                canvasFrame.Position = UDim2.new(
+                    canvasDragStartPos.X.Scale,
+                    canvasDragStartPos.X.Offset + delta.X,
+                    canvasDragStartPos.Y.Scale,
+                    canvasDragStartPos.Y.Offset + delta.Y
+                )
+                
+                -- Check if canvas is within bounds
+                if not checkCanvasBounds() then
+                    -- Snap back if too far
+                    snapCanvasToOrigin()
+                    IS_DRAGGING_CANVAS = false
+                    canvasDragStartPos = nil
+                    canvasDragStartMouse = nil
+                    log("Canvas snapped back to origin - exceeded bounds")
+                end
+            end
         end
     end)
 
@@ -476,10 +655,42 @@ local function initCanvas()
                 log("Taking snapshot input ended")
                 -- Take snapshot when user finishes drawing
                 takeCanvasSnapshot()
+            elseif IS_DRAGGING_CANVAS then
+                IS_DRAGGING_CANVAS = false
+                canvasDragStartPos = nil
+                canvasDragStartMouse = nil
+                log("Canvas drag ended")
             end
             IS_DRAWING = false
             showActiveIndicator(false, Vector2.zero)
             prevX, prevY = nil, nil
+        end
+    end)
+    
+    -- Mouse wheel zoom for PC
+    uisMouseWheelConnection = UserInputService.InputChanged:Connect(function(input)
+        if DRAWING_MODE == "ZOOM" and input.UserInputType == Enum.UserInputType.MouseWheel then
+            local delta = input.Position.Z
+            ZOOM_LEVEL = math.clamp(ZOOM_LEVEL + (delta * ZOOM_STEP), ZOOM_MIN, ZOOM_MAX)
+            applyZoom()
+        end
+    end)
+    
+    -- Pinch zoom for mobile
+    uisPinchConnection = UserInputService.TouchPinch:Connect(function(touchPositions, scale, velocity, state)
+        if DRAWING_MODE == "ZOOM" and currentGameState == GameConstants.PlayerStateEnum.DRAWING then
+            if state == Enum.UserInputState.Begin then
+                zoomPinchDistance = scale
+            elseif state == Enum.UserInputState.Change then
+                if zoomPinchDistance then
+                    local scaleDelta = scale / zoomPinchDistance
+                    ZOOM_LEVEL = math.clamp(ZOOM_LEVEL * scaleDelta, ZOOM_MIN, ZOOM_MAX)
+                    applyZoom()
+                    zoomPinchDistance = scale
+                end
+            elseif state == Enum.UserInputState.End then
+                zoomPinchDistance = nil
+            end
         end
     end)
 
@@ -496,6 +707,22 @@ local function initCanvas()
         if uisInputEndedConnection then
             uisInputEndedConnection:Disconnect()
             uisInputEndedConnection = nil
+        end
+        if uisMouseWheelConnection then
+            uisMouseWheelConnection:Disconnect()
+            uisMouseWheelConnection = nil
+        end
+        if uisPinchConnection then
+            uisPinchConnection:Disconnect()
+            uisPinchConnection = nil
+        end
+        if uisTouchStartedConnection then
+            uisTouchStartedConnection:Disconnect()
+            uisTouchStartedConnection = nil
+        end
+        if uisTouchEndedConnection then
+            uisTouchEndedConnection:Disconnect()
+            uisTouchEndedConnection = nil
         end
         log("Cleaned up UserInputService connections for drawing canvas")
     end)
@@ -564,12 +791,21 @@ GameStateChangedEvent.OnClientEvent:Connect(function(stateData)
             
             -- Reset state variables
             IS_DRAWING = false
+            IS_DRAGGING_CANVAS = false
+            canvasDragStartPos = nil
+            canvasDragStartMouse = nil
             canvasInitialized = false
+            controlsFrame = nil  -- Clear UI frame references
+            colorPickerFrame = nil
+            table.clear(activeTouches)  -- Clear active touches
             cleanupConnections()
             
             -- Clear history stacks
             table.clear(undoStack)
             table.clear(redoStack)
+            
+            -- Reset zoom
+            resetZoom()
             
             log("Drawing phase cleanup complete")
         end
