@@ -35,6 +35,8 @@ local supporterStatusCache = {} -- Simple cache for supporter status
 
 local displayCanvasRequestQueues = {} -- [player] = {queue, lastProcessTime, requestsThisSecond}
 
+local playerReportCooldowns = {} -- [playerId] = lastReportTime
+local drawingReportData = {} -- [drawingId] = {count = number, reporters = {[playerId] = true}, canvasData = {...}}
 local function getOrCreateDisplayCanvasQueue(player)
     if not displayCanvasRequestQueues[player] then
         displayCanvasRequestQueues[player] = {
@@ -635,6 +637,98 @@ local function handleRequestAllPlayerData(player)
     end
 end
 
+local function handleReportDrawing(player, reportedPlayerId, canvas)
+    local canvasData = ServerStates.CanvasState[canvas]
+    local reporterPlayerId = tostring(player.UserId)
+    local currentTime = os.time()
+    
+    -- Check rate limiting - each player can only report once per hour (configurable)
+    local lastReportTime = playerReportCooldowns[reporterPlayerId]
+    local cooldownHours = ServerConfig.REPORT_DRAWING.RATE_LIMIT_HOURS
+    local cooldownSeconds = cooldownHours * 60 * 60
+    
+    if lastReportTime and (currentTime - lastReportTime) < cooldownSeconds then
+        local remainingTime = cooldownSeconds - (currentTime - lastReportTime)
+        local remainingMinutes = math.ceil(remainingTime / 60)
+        Events.ShowNotification:FireClient(player, 
+            "You can report again in " .. remainingMinutes .. " minutes.", "red")
+        return
+    end
+    
+    -- Check if there's actually a drawing to report
+    if not canvasData.drawing then
+        warn("No drawing found to report")
+        Events.ShowNotification:FireClient(player, "No drawing found to report.", "red")
+        return
+    end
+    
+    -- Prevent players from reporting their own drawings
+    if canvasData.drawing.playerId == reporterPlayerId then
+        Events.ShowNotification:FireClient(player, "You cannot report your own drawing.", "red")
+        return
+    end
+    
+    local drawingId = canvasData.drawing.drawingId
+    
+    -- Initialize report data for this drawing if it doesn't exist
+    if not drawingReportData[drawingId] then
+        drawingReportData[drawingId] = {
+            count = 0,
+            reporters = {},
+            canvasData = canvasData.drawing -- Store the drawing data
+        }
+    end
+    
+    -- Check if this player has already reported this drawing
+    if drawingReportData[drawingId].reporters[reporterPlayerId] then
+        Events.ShowNotification:FireClient(player, "You have already reported this drawing.", "yellow")
+        return
+    end
+    
+    -- Increment report count and add reporter
+    drawingReportData[drawingId].count = drawingReportData[drawingId].count + 1
+    drawingReportData[drawingId].reporters[reporterPlayerId] = true
+    
+    -- Update the cooldown for this player
+    playerReportCooldowns[reporterPlayerId] = currentTime
+    
+    local reportCount = drawingReportData[drawingId].count
+    debugPrint("Drawing %s now has %d report(s)", drawingId, reportCount)
+    
+    -- Only send to backend if drawing has been reported more than once
+    if reportCount >= ServerConfig.REPORT_DRAWING.REPORT_THRESHOLD then
+        -- Send the canvas drawing and reportedPlayerId to the backend
+        task.spawn(function()
+            local success, error = BackendService:SendDrawingReportRequest(
+                reporterPlayerId,
+                reportedPlayerId,
+                drawingId,
+                drawingReportData[drawingId].canvasData,
+                "Multiple reports - Inappropriate content"
+            )
+            
+            if success then
+                Events.ShowNotification:FireClient(player, 
+                    "Drawing reported successfully. This drawing has been flagged for review.", "green")
+                
+                -- Optionally clear the drawing immediately after multiple reports
+                -- Uncomment if you want automatic removal:
+                -- if canvasData.registered and canvasData.ownerPlayer then
+                --     CanvasManager.resetCanvas(canvas)
+                -- end
+            else
+                warn("Failed to report drawing to backend: " .. tostring(error))
+                Events.ShowNotification:FireClient(player, 
+                    "Failed to submit report. Please try again later.", "red")
+            end
+        end)
+    else
+        -- First report - just acknowledge it
+        Events.ShowNotification:FireClient(player, 
+            "Thank you for reporting. The drawing will be reviewed if reported again.", "yellow")
+    end
+end
+
 -- ServerScriptService/CanvasSurface.lua
 local function attachSurfaceGui(canvasModel : Model,
                                 pixelsPerStud : number,
@@ -763,6 +857,7 @@ local function init()
     end)
     Events.RequestDisplayCanvasDrawing.OnServerEvent:Connect(handleDisplayCanvasDrawingRequest)
     Events.RequestAllPlayerData.OnServerEvent:Connect(handleRequestAllPlayerData)
+    Events.ReportDrawing.OnServerEvent:Connect(handleReportDrawing)
 end
 
 -- Start the module

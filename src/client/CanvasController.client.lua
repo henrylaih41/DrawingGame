@@ -60,35 +60,74 @@ local function initCanvas(instance)
     }
     
     -- Wait for the like button with a configurable timeout
-    local likeButton = waitForChildWhichIsA(instance, "ImageButton", true, GameConfig.CANVAS_INIT_TIMEOUT)
-    ClientState.DrawingCanvas[instance].likeButton = likeButton
+    local Sign = instance:WaitForChild("Sign", GameConfig.CANVAS_INIT_TIMEOUT)
+    local GuiPart = Sign:WaitForChild("GuiPart")
 
-    if not likeButton then
-        warn("Like button failed to load for canvas:", instance:GetFullName())
-        return
+    local likeButton = nil
+
+    if GuiPart then
+        likeButton = GuiPart:WaitForChild("SurfaceGui"):WaitForChild("ImageButton")
+    end
+
+    local ReportGuiPart = instance:WaitForChild("ReportGuiPart", GameConfig.CANVAS_INIT_TIMEOUT)
+
+    local reportButton = nil
+
+    if ReportGuiPart then
+        reportButton = ReportGuiPart:WaitForChild("SurfaceGui"):WaitForChild("ReportButton")
+    end
+
+    ClientState.DrawingCanvas[instance].likeButton = likeButton
+    ClientState.DrawingCanvas[instance].reportButton = reportButton
+
+    if reportButton then
+        reportButton.Activated:Connect(function()
+            -- Show a confirmation box to the player
+            NotificationService:ShowConfirmationBox("Are you sure you want to report this drawing?")
+            local confirmed = NotificationService:GetConfirmation()
+            if not confirmed then
+                return
+            end
+
+            -- Report the drawing if the player confirms
+            local canvasData = ClientState.DrawingCanvas[instance]
+            if not canvasData.canvasId or not canvasData.playerId then
+                NotificationService:ShowNotification("You cannot report an empty drawing.", "red")
+                return
+            end
+
+            reportButton.BackgroundColor3 = Color3.fromRGB(231, 109, 100)
+            Events.ReportDrawing:FireServer(canvasData.playerId, instance)
+        end)
     else
+        warn("Report button failed to load for canvas:", instance:GetFullName())
+    end
+
+    if likeButton then
         likeButton.Activated:Connect(function()
             local canvasData = ClientState.DrawingCanvas[instance]
             
-            -- Check if the drawing is empty
-            if not canvasData.canvasId or not canvasData.playerId then
-                NotificationService:ShowNotification("You cannot like an empty drawing.", "red")
-                return
-            end
-            
-            -- Check if the drawing is already liked
-            if table.find(ClientState.likedDrawings, canvasData.canvasId) then
-                NotificationService:ShowNotification("You already liked this drawing.", "red")
-                return
-            end
-            
-            -- Add the drawing to the liked drawings
-            table.insert(ClientState.likedDrawings, canvasData.canvasId)
-            Events.LikeDrawing:FireServer(canvasData.playerId, canvasData.canvasId)
-            
-            -- Update the like button color
-            likeButton.BackgroundColor3 = Color3.fromRGB(100, 161, 231)
+        -- Check if the drawing is empty
+        if not canvasData.canvasId or not canvasData.playerId then
+            NotificationService:ShowNotification("You cannot like an empty drawing.", "red")
+            return
+        end
+        
+        -- Check if the drawing is already liked
+        if table.find(ClientState.likedDrawings, canvasData.canvasId) then
+            NotificationService:ShowNotification("You already liked this drawing.", "red")
+            return
+        end
+        
+        -- Add the drawing to the liked drawings
+        table.insert(ClientState.likedDrawings, canvasData.canvasId)
+        Events.LikeDrawing:FireServer(canvasData.playerId, canvasData.canvasId)
+        
+        -- Update the like button color
+        likeButton.BackgroundColor3 = Color3.fromRGB(100, 161, 231)
         end)
+    else
+        warn("Like button failed to load for canvas:", instance:GetFullName())
     end
 
     -- Adjust the SurfaceGui's resolution based on device capability
@@ -148,7 +187,7 @@ local function init()
 
     -- In case we missed any canvases, we can add them to the state.
     for _, c in pairs(CollectionService:GetTagged("Canvas")) do
-        initCanvas(c)
+        task.spawn(initCanvas, c)
     end
 
     -- We simple set the image data for the canvas.
@@ -172,9 +211,14 @@ local function init()
 
         -- Every time a new drawing is drawn, we reset the like button color.
         local likeButton = canvasData.likeButton
+        local reportButton = canvasData.reportButton
 
         if likeButton then
             likeButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        end
+
+        if reportButton then
+            reportButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
         end
 
         CommonHelper.unrenderCanvas(ClientState, canvas)

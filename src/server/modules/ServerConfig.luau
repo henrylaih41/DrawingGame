@@ -4,7 +4,7 @@ local ServerConfig = {}
 ServerConfig.BACKEND_BASE_URL = "https://drawing-backend.vercel.app"
 ServerConfig.OPENAI_ENDPOINT = "/api/openai"
 ServerConfig.FEEDBACK_ENDPOINT = "/api/feedback"
-
+ServerConfig.REPORT_DRAWING_ENDPOINT = "/api/report-drawing"
 -- Debug flag for server modules
 ServerConfig.DEBUG_ENABLED = true
 
@@ -62,6 +62,12 @@ ServerConfig.DISPLAY_CANVAS = {
 ServerConfig.LIKES = {
     -- TODO: We should increase this after the player increases.
     FLUSH_INTERVAL = 1,
+}
+
+-- Report drawing settings
+ServerConfig.REPORT_DRAWING = {
+    RATE_LIMIT_HOURS = 1, -- Players can only report once per hour
+    REPORT_THRESHOLD = 2, -- Number of reports needed before sending to backend
 }
 
 return ServerConfig

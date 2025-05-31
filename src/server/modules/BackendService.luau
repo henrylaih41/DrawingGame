@@ -23,6 +23,7 @@ BackendService.BaseUrl = ServerConfig.BACKEND_BASE_URL
 BackendService.Endpoints = {
     OPENAI = ServerConfig.OPENAI_ENDPOINT,
     FEEDBACK = ServerConfig.FEEDBACK_ENDPOINT,
+    REPORT_DRAWING = ServerConfig.REPORT_DRAWING_ENDPOINT,
 }
 
 -- Default options for requests
@@ -75,6 +76,45 @@ function BackendService:SendFeedbackRequest(playerName, playerId, feedback)
     }
     
     return self:Post(self.Endpoints.FEEDBACK, requestBody)
+end
+
+-- Function to report a drawing to the backend
+function BackendService:SendDrawingReportRequest(reporterPlayerId, reportedPlayerId, drawingId, canvasDrawingData, reason)
+    assert(reporterPlayerId, "Missing reporterPlayerId parameter")
+    assert(reportedPlayerId, "Missing reportedPlayerId parameter")
+    assert(drawingId, "Missing drawingId parameter")
+    assert(canvasDrawingData, "Missing canvasDrawingData parameter")
+    
+    reason = reason or "Inappropriate content"
+    
+    -- Compress the image data for transmission
+    local compressedImageData = CanvasDraw.CompressImageDataCustom(canvasDrawingData.imageData)
+    
+    if not compressedImageData then
+        warn("Failed to compress image data for report")
+        return nil, "Failed to compress image data"
+    end
+    
+    -- Schema for the image data understood by the server API
+    local imageDataForServer = {
+        Pixels = compressedImageData.ImageBuffer,
+        Width = compressedImageData.Width,
+        Height = compressedImageData.Height
+    }
+
+    local requestBody = {
+        reporterPlayerId = tostring(reporterPlayerId),
+        reportedPlayerId = tostring(reportedPlayerId),
+        drawingId = drawingId,
+        reason = reason,
+        imageData = imageDataForServer,
+        metadata = {
+            themeName = canvasDrawingData.themeName,
+            timestamp = os.time()
+        }
+    }
+    
+    return self:Post(self.Endpoints.REPORT_DRAWING, requestBody)
 end
 
 -- Base function to send a POST request to any endpoint
@@ -165,7 +205,7 @@ function BackendService:submitDrawingToBackendForGrading(player, imageData, them
     local prompt = "The theme is " .. themeName .. " and the difficulty is " .. themeDifficulty
 
     local responseData, error =
-        BackendService:SendOpenAIRequest(compressedImageData, prompt, theme, player.UserId)
+        BackendService:SendOpenAIRequest(compressedImageData, prompt, themeName, themeDifficulty, player.UserId)
 
     if not responseData then
         warn("submitDrawingToBackendForGrading failed to get response data for player: " .. player.Name)

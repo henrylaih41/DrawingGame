@@ -51,6 +51,7 @@ createEvent("DeleteGalleryDrawing")
 createEvent("SaveToGallery")
 createEvent("LikeDrawing")
 createEvent("RequestDisplayCanvasDrawing")
+createEvent("ReportDrawing")
 createEvent("RequestAllPlayerData")
 -- Set the parent of the Events folder
 Events.Parent = ReplicatedStorage

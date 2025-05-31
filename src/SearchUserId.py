@@ -16,5 +16,5 @@ def get_user_id_from_username(username: str) -> int:
         raise ValueError(f"Username '{username}' not found")
 
 # Example usage:
-user_id = get_user_id_from_username("CatSloth2011")
+user_id = get_user_id_from_username("leo_my888")
 print(user_id)  # Prints player's User ID

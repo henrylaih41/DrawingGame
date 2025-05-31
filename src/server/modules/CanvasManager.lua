@@ -16,6 +16,7 @@ function CanvasManager.resetCanvas(canvas)
     end
 
     print("Resetting canvas")
+    
     -- Unregister the canvas.
     ServerStates.CanvasState[canvas].registered = false
     ServerStates.CanvasState[canvas].ownerPlayer = nil
