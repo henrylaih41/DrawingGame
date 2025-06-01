@@ -728,11 +728,17 @@ local function handleReportDrawing(player, reportedPlayerId, canvas)
                     "Failed to submit report. Please try again later.", "red")
             end
         end)
+
+        -- Reset the canvas after a certain number of reports.
+        if reportCount >= ServerConfig.REPORT_DRAWING.RESET_CANVAS_AFTER_REPORTS then
+            CanvasManager.resetCanvas(canvas)
+        end
     else
         -- First report - just acknowledge it
         Events.ShowNotification:FireClient(player, 
             "Thank you for reporting. The drawing will be reviewed if reported again.", "yellow")
     end
+
 end
 
 -- ServerScriptService/CanvasSurface.lua

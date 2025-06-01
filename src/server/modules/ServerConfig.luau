@@ -68,6 +68,7 @@ ServerConfig.LIKES = {
 ServerConfig.REPORT_DRAWING = {
     RATE_LIMIT_HOURS = 1, -- Players can only report once per hour
     REPORT_THRESHOLD = 2, -- Number of reports needed before sending to backend
+    RESET_CANVAS_AFTER_REPORTS = 2, -- Number of reports needed before resetting the canvas
 }
 
 return ServerConfig
