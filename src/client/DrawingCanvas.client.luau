@@ -132,10 +132,10 @@ end
 
 local function refreshIndicatorSizes()
     if brushIndicatorPencil then
-        brushIndicatorPencil.Size = UDim2.fromOffset(PENCIL_BRUSH_SIZE*2, PENCIL_BRUSH_SIZE*2)
+        brushIndicatorPencil.Size = UDim2.fromOffset(PENCIL_BRUSH_SIZE*2*ZOOM_LEVEL, PENCIL_BRUSH_SIZE*2*ZOOM_LEVEL)
     end
     if brushIndicatorEraser then
-        brushIndicatorEraser.Size = UDim2.fromOffset(ERASER_BRUSH_SIZE*2, ERASER_BRUSH_SIZE*2)
+        brushIndicatorEraser.Size = UDim2.fromOffset(ERASER_BRUSH_SIZE*2*ZOOM_LEVEL, ERASER_BRUSH_SIZE*2*ZOOM_LEVEL)
     end
 end
 

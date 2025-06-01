@@ -13,6 +13,9 @@ local GameConfig = {
     CANVAS_INIT_TIMEOUT = 10,
     HUMANOID_INIT_TIMEOUT = 10,
     HIDE_DEFAULT_NAME = true,
+
+    -- Music
+    MUSIC_VOLUME = 0.2,
 }
 
 return GameConfig

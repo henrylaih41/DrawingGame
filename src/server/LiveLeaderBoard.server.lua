@@ -12,7 +12,7 @@ local updateLeaderboard = function(plr)
     local playerData = PlayerStore:getPlayer(tostring(plr.UserId), true)
     local points = playerData["TotalPoints"]
     -- hard code threshold for now
-    if points > 14 then
+    if points > 40 then
         LeaderboardService.putInMap(tostring(plr.UserId), plr.Name, points)
     end
 end
