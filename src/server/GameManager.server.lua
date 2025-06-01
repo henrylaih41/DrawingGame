@@ -644,6 +644,12 @@ local function handleReportDrawing(player, reportedPlayerId, canvas)
     
     -- Check rate limiting - each player can only report once per hour (configurable)
     local lastReportTime = playerReportCooldowns[reporterPlayerId]
+
+    -- Don't rate limit reports from the developer account.
+    if reporterPlayerId == "8240890430" then
+        lastReportTime = nil
+    end
+
     local cooldownHours = ServerConfig.REPORT_DRAWING.RATE_LIMIT_HOURS
     local cooldownSeconds = cooldownHours * 60 * 60
     
@@ -680,7 +686,7 @@ local function handleReportDrawing(player, reportedPlayerId, canvas)
     end
     
     -- Check if this player has already reported this drawing
-    if drawingReportData[drawingId].reporters[reporterPlayerId] then
+    if drawingReportData[drawingId].reporters[reporterPlayerId] and reporterPlayerId ~= "8240890430" then
         Events.ShowNotification:FireClient(player, "You have already reported this drawing.", "yellow")
         return
     end
