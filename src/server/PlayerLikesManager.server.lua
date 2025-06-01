@@ -4,13 +4,15 @@ local ServerStates = require(ServerScriptService.modules.ServerStates)
 local PlayerStore = require(ServerScriptService.modules.PlayerStore)
 local Events = ReplicatedStorage:WaitForChild("Events")
 local ServerConfig = require(ServerScriptService.modules.ServerConfig)
+local CanvasTTLManager = require(ServerScriptService.modules.CanvasTTLManager)
+local LeaderboardService = require(ServerScriptService.modules.LeaderboardService)
 
 local FLUSH_INTERVAL = ServerConfig.LIKES.FLUSH_INTERVAL
 
 -- We store the likes to this cache and flush it to the database every x seconds.
 local playerLikesCache = {}
 
-Events.LikeDrawing.OnServerEvent:Connect(function(player, likedPlayerId, canvasId)
+Events.LikeDrawing.OnServerEvent:Connect(function(player, likedPlayerId, canvasId, canvas)
     local playerData = PlayerStore:getPlayer(player.UserId)
 
     if playerData.LikeQuota <= 0 then
@@ -33,6 +35,11 @@ Events.LikeDrawing.OnServerEvent:Connect(function(player, likedPlayerId, canvasI
         Events.ShowNotification:FireClient(
             likedPlayer, ("Player %s liked your drawing!"):format(player.Name), "green")
     end
+
+    -- Extend the TTL of the canvas when the drawing is liked
+    if canvas then
+        CanvasTTLManager.extendCanvasTTL(canvas, ServerConfig.CANVAS_TTL.LIKE_EXTENSION_MINUTES)
+    end
 end)
 
 local function flushPlayerLikesCache()
@@ -47,6 +54,14 @@ local function flushPlayerLikesCache()
         if player then
             Events.PlayerDataUpdated:FireAllClients({player = player, playerData = playerData})
         end
+
+        local playerName = playerData.Name
+
+        if not playerName then
+            playerName = "Unknown"
+        end
+
+        LeaderboardService.putInMap(tostring(playerId), playerName, playerData.TotalPoints)
     end
 
     -- Clear the cache.

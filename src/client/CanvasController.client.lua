@@ -11,6 +11,8 @@ local CanvasUtils = require(ReplicatedStorage.Modules.Utils.CanvasUtils)
 local stopRendering = false
 local initialized = false
 
+local CanvasExpirationTime = {} -- [canvas] = expirationTime
+
 local function GetDeviceTier()
     local screenSize = workspace.CurrentCamera.ViewportSize
 
@@ -77,8 +79,12 @@ local function initCanvas(instance)
         reportButton = ReportGuiPart:WaitForChild("SurfaceGui"):WaitForChild("ReportButton")
     end
 
+    local TimerGuiPart = instance:WaitForChild("TimerGuiPart", GameConfig.CANVAS_INIT_TIMEOUT)
+    local timerLabel = TimerGuiPart:WaitForChild("SurfaceGui"):WaitForChild("TimerLabel")
+
     ClientState.DrawingCanvas[instance].likeButton = likeButton
     ClientState.DrawingCanvas[instance].reportButton = reportButton
+    ClientState.DrawingCanvas[instance].timerLabel = timerLabel
 
     if reportButton then
         reportButton.Activated:Connect(function()
@@ -121,13 +127,41 @@ local function initCanvas(instance)
         
         -- Add the drawing to the liked drawings
         table.insert(ClientState.likedDrawings, canvasData.canvasId)
-        Events.LikeDrawing:FireServer(canvasData.playerId, canvasData.canvasId)
+        Events.LikeDrawing:FireServer(canvasData.playerId, canvasData.canvasId, instance)
         
         -- Update the like button color
         likeButton.BackgroundColor3 = Color3.fromRGB(100, 161, 231)
         end)
     else
         warn("Like button failed to load for canvas:", instance:GetFullName())
+    end
+
+    if timerLabel then
+        timerLabel.Text = "00:00"
+        timerLabel.Visible = false
+
+        Events.CanvasTTLUpdated.OnClientEvent:Connect(function(canvas, expirationTime)
+            CanvasExpirationTime[canvas] = expirationTime
+        end)
+
+        task.spawn(function()
+            while true do
+                task.wait(1)
+                if CanvasExpirationTime[instance] then
+                    timerLabel.Visible = true
+                    local remainingTime = CanvasExpirationTime[instance] - os.time()
+                    if remainingTime > 0 then
+                        timerLabel.Text = string.format("%02d:%02d", math.floor(remainingTime / 60), remainingTime % 60)
+                    else
+                        timerLabel.Visible = false
+                    end
+                else
+                    timerLabel.Visible = false
+                end
+            end
+        end)
+    else
+        warn("Timer label failed to load for canvas:", instance:GetFullName())
     end
 
     -- Adjust the SurfaceGui's resolution based on device capability

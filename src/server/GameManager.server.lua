@@ -22,6 +22,7 @@ local BackendService = require(ServerScriptService.modules.BackendService)
 local ThemeStore = require(ServerScriptService.modules.ThemeStore)
 local ServerStates = require(ServerScriptService.modules.ServerStates)
 local CanvasManager = require(ServerScriptService.modules.CanvasManager)
+local CanvasTTLManager = require(ServerScriptService.modules.CanvasTTLManager)
 
 -- Remote events
 local Events = ReplicatedStorage:WaitForChild("Events")
@@ -145,6 +146,8 @@ local function populateDisplayCanvases()
         else
             ServerStates.CanvasState[canvas].drawing = nil
         end
+        
+        CanvasTTLManager.setCanvasTTL(canvas, ServerConfig.CANVAS_TTL.DISPLAY_CANVAS_TTL_MINUTES)
     end
 
     -- Signal that the display canvas drawings are ready
@@ -221,19 +224,8 @@ local function handlePlayerLeft(player: Player)
     clearSupporterCache(player.UserId)
     
     local playerData = PlayerStore:getPlayer(tostring(player.UserId))
-    local ownedCanvasList = ServerStates.PlayerState[player].ownedCanvas
-    local canvasTTL = playerData.drawingTTLAfterPlayerLeft
 
-    -- Spawn a task that removes the player's canvas after the TTL.
-    for _, canvas in ipairs(ownedCanvasList) do
-        task.spawn(function()
-            -- Only let the drawing live if there is drawing data.
-            if (ServerStates.CanvasState[canvas].drawing) then
-                task.wait(canvasTTL)
-            end 
-            CanvasManager.resetCanvas(canvas)
-        end)
-    end
+    -- Canvas owned by the player would be garbage collected by the server automatically.
 
     -- Remove player from active players list
     ServerStates.PlayerState[player] = nil
@@ -369,6 +361,9 @@ local function runGradingPhase(player: Player, themeName: string, themeDifficult
                 
                 -- TODO, once the grading is done, we check if the image is appropriate to be displayed.
 
+                -- Set initial TTL for the canvas when drawing is displayed
+                CanvasTTLManager.setCanvasTTL(playerState.canvas, ServerConfig.CANVAS_TTL.INITIAL_TTL_MINUTES)
+
                 -- Save the player drawing data to the canvas state so we can display it to other players
                 -- that join the game later.
                 ServerStates.CanvasState[playerState.canvas].drawing = {
@@ -378,7 +373,6 @@ local function runGradingPhase(player: Player, themeName: string, themeDifficult
                         drawingId = drawingData.uuid,
                 }
 
-            -- If the canvas is registered, we request the drawing data from the server.
                 Events.DrawToCanvas:FireAllClients(imageData, 
                     {themeName = drawingData.themeName, canvas = playerState.canvas, 
                      playerId = drawingData.playerId, drawingId = drawingData.uuid})
@@ -597,6 +591,8 @@ local function processDisplayCanvasRequest(request)
     else
         Events.DrawToCanvas:FireClient(player, nil, {canvas = canvas})
     end
+
+    Events.CanvasTTLUpdated:FireClient(player, canvas, CanvasTTLManager.getCanvasExpirationTime(canvas))
 end
 
 local function processRequestQueues()
@@ -690,6 +686,9 @@ local function handleReportDrawing(player, reportedPlayerId, canvas)
         Events.ShowNotification:FireClient(player, "You have already reported this drawing.", "yellow")
         return
     end
+
+    -- Reduce TTL when drawing is reported
+    CanvasTTLManager.reduceCanvasTTL(canvas, ServerConfig.CANVAS_TTL.REPORT_REDUCTION_MINUTES)
     
     -- Increment report count and add reporter
     drawingReportData[drawingId].count = drawingReportData[drawingId].count + 1
@@ -716,12 +715,6 @@ local function handleReportDrawing(player, reportedPlayerId, canvas)
             if success then
                 Events.ShowNotification:FireClient(player, 
                     "Drawing reported successfully. This drawing has been flagged for review.", "green")
-                
-                -- Optionally clear the drawing immediately after multiple reports
-                -- Uncomment if you want automatic removal:
-                -- if canvasData.registered and canvasData.ownerPlayer then
-                --     CanvasManager.resetCanvas(canvas)
-                -- end
             else
                 warn("Failed to report drawing to backend: " .. tostring(error))
                 Events.ShowNotification:FireClient(player, 
@@ -732,6 +725,7 @@ local function handleReportDrawing(player, reportedPlayerId, canvas)
         -- Reset the canvas after a certain number of reports.
         if reportCount >= ServerConfig.REPORT_DRAWING.RESET_CANVAS_AFTER_REPORTS then
             CanvasManager.resetCanvas(canvas)
+            CanvasTTLManager.clearCanvasTTL(canvas)
         end
     else
         -- First report - just acknowledge it
@@ -846,6 +840,16 @@ local function init()
 
     -- Populate the display canvases once using top player drawings.
     task.spawn(populateDisplayCanvases)
+    
+    -- Set up canvas TTL cleanup callback and start the loop
+    CanvasTTLManager.setCleanupCallback(function(canvas)
+        -- Only reset if the canvas still has a drawing
+        if ServerStates.CanvasState[canvas] and ServerStates.CanvasState[canvas].drawing then
+            CanvasManager.resetCanvas(canvas)
+            -- TTL is already cleared by the cleanup process, no need to clear again
+        end
+    end)
+    CanvasTTLManager.startCleanupLoop()
     
     task.spawn(function()
         while true do

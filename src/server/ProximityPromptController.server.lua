@@ -7,6 +7,7 @@ local GameConstants = require(ReplicatedStorage.Modules.GameData.GameConstants)
 local Events = ReplicatedStorage:WaitForChild("Events")
 local PPS = game:GetService("ProximityPromptService")
 local CanvasManager = require(ServerScriptService.modules.CanvasManager)
+local CanvasTTLManager = require(ServerScriptService.modules.CanvasTTLManager)
 
 -- Attach drawing prompts to the canvas
 local function attachDrawingPrompts(canvasModel)
@@ -23,6 +24,8 @@ local function attachDrawingPrompts(canvasModel)
     prompt.Parent = board
 
     CollectionService:AddTag(prompt, "CanvasPrompt")
+
+    return prompt
 end
 
 local TELEPORT_DISTANCE = ServerConfig.PROMPT.TELEPORT_DISTANCE   -- studs in front of the board
@@ -54,11 +57,13 @@ local function initialize()
     local displayCanvasList = CollectionService:GetTagged("DisplayCanvas")
     -- existing canvases
     for _, c in pairs(CollectionService:GetTagged("Canvas")) do
+        local prompt = attachDrawingPrompts(c)
         -- Skip the canvases that are used for display
         if table.find(displayCanvasList, c) then
-            continue
+            -- Disable the prompt for display canvases.
+            -- This will be enabled when the canvas is reset.
+            prompt.Enabled = false
         end
-        attachDrawingPrompts(c)
     end
 
     PPS.PromptTriggered:Connect(function(prompt, player)
@@ -112,17 +117,9 @@ local function initialize()
             return
         end
 
-        -- remove the canvas from the player's ownedCanvas.
-        local ownedCanvasList = ServerStates.PlayerState[player].ownedCanvas
-        for i, ownedCanvas in ipairs(ownedCanvasList) do
-            if ownedCanvas == canvas then
-                table.remove(ownedCanvasList, i)
-                break
-            end
-        end
-        
         -- Unregister the canvas.
         CanvasManager.resetCanvas(canvas)
+        CanvasTTLManager.clearCanvasTTL(canvas)
 
         -- Notify the client that the canvas has been unregistered.
         Events.UnregisterCanvas:FireClient(player, canvas)

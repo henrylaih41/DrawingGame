@@ -15,8 +15,23 @@ function CanvasManager.resetCanvas(canvas)
         return
     end
 
-    print("Resetting canvas")
-    
+    local player = ServerStates.CanvasState[canvas].ownerPlayer
+
+    -- When we reset the canvas, the player may not be in the server.
+    -- Or, the owner is actually the server, which the value is nil.
+    if player then
+        -- If the player is in the server, remove the canvas from the player's ownedCanvas.
+        local ownedCanvasList = ServerStates.PlayerState[player].ownedCanvas
+        for i, ownedCanvas in ipairs(ownedCanvasList) do
+        if ownedCanvas == canvas then
+            table.remove(ownedCanvasList, i)
+                break
+            end
+        end
+        -- Notify the client that the canvas has been unregistered.
+        Events.UnregisterCanvas:FireClient(player, canvas)
+    end
+        
     -- Unregister the canvas.
     ServerStates.CanvasState[canvas].registered = false
     ServerStates.CanvasState[canvas].ownerPlayer = nil
@@ -28,7 +43,7 @@ function CanvasManager.resetCanvas(canvas)
     if registerPrompt then
         registerPrompt.Enabled = true
     end
-    
+
     -- Clear canvas display for all clients
     Events.DrawToCanvas:FireAllClients(nil, 
         {themeName = nil, canvas = canvas, playerId = nil, drawingId = nil})

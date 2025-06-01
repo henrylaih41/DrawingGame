@@ -71,4 +71,15 @@ ServerConfig.REPORT_DRAWING = {
     RESET_CANVAS_AFTER_REPORTS = 2, -- Number of reports needed before resetting the canvas
 }
 
+-- Canvas TTL settings
+ServerConfig.CANVAS_TTL = {
+    DISPLAY_CANVAS_TTL_MINUTES = 30, -- Initial TTL for server selected drawing.
+    INITIAL_TTL_MINUTES = 5, -- Initial TTL when drawing is displayed
+    LIKE_EXTENSION_MINUTES = 5, -- Extension per like
+    REPORT_REDUCTION_MINUTES = 5, -- Reduction per report
+    MINIMUM_TTL_MINUTES = -1, -- Minimum TTL (can't go below this)
+    MAXIMUM_TTL_MINUTES = 3000, -- Maximum TTL (can't go above this)
+    CLEANUP_INTERVAL_SECONDS = 5, -- How often to check for expired canvases
+}
+
 return ServerConfig

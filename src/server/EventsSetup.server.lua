@@ -53,6 +53,8 @@ createEvent("LikeDrawing")
 createEvent("RequestDisplayCanvasDrawing")
 createEvent("ReportDrawing")
 createEvent("RequestAllPlayerData")
+createEvent("CanvasTTLUpdated")
+createEvent("RequestCanvasTTL")
 -- Set the parent of the Events folder
 Events.Parent = ReplicatedStorage
 print("Events setup complete")  
